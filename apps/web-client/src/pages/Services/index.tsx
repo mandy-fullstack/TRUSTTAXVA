@@ -183,7 +183,13 @@ const styles = StyleSheet.create({
     priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 12, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
     priceLabel: { fontSize: 12, color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', marginBottom: 2 },
     priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    originalPrice: { fontSize: 16, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '400' },
+    originalPrice: {
+        fontSize: 18,
+        color: '#94A3B8',
+        textDecorationLine: 'line-through',
+        fontWeight: '500',
+        marginRight: 8
+    },
     priceValue: { color: 'var(--secondary-color, #0F172A)', marginBottom: 0 } as any,
     startBtn: { minWidth: 140, height: 44 },
     discountBanner: {

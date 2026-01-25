@@ -1,6 +1,26 @@
+# Dependencies & build
 node_modules
-.DS_Store
 dist
 .turbo
+*.tsbuildinfo
+
+# Environment & secrets
 .env
+.env.*
 .env.*.local
+!.env.example
+
+# Database (local / SQLite dev)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# OS & editors
+.DS_Store
+Thumbs.db
+
+# Logs & debug
+*.log
+coverage
+.nyc_output
