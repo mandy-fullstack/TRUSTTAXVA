@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
 
     formSection: { maxWidth: 600 },
     label: { fontSize: 14, fontWeight: '600', color: '#334155', marginBottom: 8, marginTop: 16 },
-    input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 0, padding: 12, backgroundColor: '#FFF' },
-    textArea: { minHeight: 100, textAlignVertical: 'top' },
+    input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 0, padding: 12, fontSize: 16, color: '#0F172A', backgroundColor: '#FFF' },
+    textArea: { minHeight: 100, textAlignVertical: 'top', fontSize: 16 },
     saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F172A', padding: 12, borderRadius: 0, marginTop: 24 },
     saveButtonText: { color: '#FFF', fontWeight: '600' },
 
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
     modalContent: { backgroundColor: '#FFF', borderRadius: 0, padding: 24, width: '100%', maxWidth: 500 },
-    jsonInput: { fontFamily: 'monospace', minHeight: 150, textAlignVertical: 'top' },
+    jsonInput: { fontFamily: 'monospace', fontSize: 16, minHeight: 150, textAlignVertical: 'top' },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 24 },
     cancelButton: { padding: 12, borderRadius: 0 },
 });

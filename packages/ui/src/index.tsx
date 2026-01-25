@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: 6 },
     inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: 16, backgroundColor: '#FFFFFF', justifyContent: 'center' },
     inputWrapperFocused: { borderColor: theme.colors.primary },
-    inputText: { flex: 1, fontSize: 14, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none' } as any,
+    inputText: { flex: 1, fontSize: 16, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none' } as any,
 
     // NEW SHADCN STYLES
     table: { width: '100%', borderTopWidth: 1, borderTopColor: theme.colors.slate[200] },

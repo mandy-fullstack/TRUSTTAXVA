@@ -54,6 +54,13 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Evitar zoom en iOS al enfocar inputs (font-size < 16px provoca zoom automático) */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

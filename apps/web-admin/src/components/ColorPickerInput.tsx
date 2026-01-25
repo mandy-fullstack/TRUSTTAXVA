@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
 
     inputWrapper: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     preview: { width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' },
-    input: { flex: 1, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, padding: 10, fontSize: 13, color: '#0F172A', backgroundColor: '#F8FAFC' },
+    input: { flex: 1, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, padding: 10, fontSize: 16, color: '#0F172A', backgroundColor: '#F8FAFC' },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
     popover: { backgroundColor: '#FFF', padding: 24, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },

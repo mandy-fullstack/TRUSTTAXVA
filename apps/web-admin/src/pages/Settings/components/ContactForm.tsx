@@ -44,5 +44,5 @@ const styles = StyleSheet.create({
     group: { marginBottom: 16 },
     iconLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
     label: { fontSize: 13, fontWeight: '600', color: '#475569' },
-    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 10, fontSize: 14, backgroundColor: '#F8FAFC', color: '#0F172A' },
+    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 10, fontSize: 16, backgroundColor: '#F8FAFC', color: '#0F172A' },
 });

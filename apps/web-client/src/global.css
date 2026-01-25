@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Evitar zoom en iOS al enfocar inputs (font-size < 16px provoca zoom automático) */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
 .debug-bg {
   background-color: #ff00ff !important;
 }

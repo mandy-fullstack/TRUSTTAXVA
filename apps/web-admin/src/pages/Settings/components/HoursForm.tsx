@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
     fieldCol: { flex: 1 },
 
     label: { fontSize: 12, fontWeight: '600', color: '#475569', marginBottom: 4 },
-    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 8, fontSize: 14, backgroundColor: '#FFF', color: '#0F172A' },
+    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 8, fontSize: 16, backgroundColor: '#FFF', color: '#0F172A' },
 
     deleteBtn: { padding: 10, backgroundColor: '#FEF2F2', borderRadius: 6, borderWidth: 1, borderColor: '#FECACA' },
 

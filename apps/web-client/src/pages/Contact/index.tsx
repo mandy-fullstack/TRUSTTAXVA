@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     inputGroup: { marginBottom: 24 },
     label: { fontSize: 14, fontWeight: '600', color: '#334155', marginBottom: 8, letterSpacing: 0.2 },
     input: { height: 50, borderWidth: 1, borderColor: '#CBD5E1', paddingHorizontal: 16, color: '#0F172A', fontSize: 16, backgroundColor: '#F8FAFC' },
-    textArea: { height: 140, paddingTop: 16, textAlignVertical: 'top' },
+    textArea: { height: 140, paddingTop: 16, textAlignVertical: 'top', fontSize: 16 },
     submitButton: { backgroundColor: '#0F172A', height: 56, alignItems: 'center', justifyContent: 'center' } as any,
     submitText: { color: '#FFF', fontWeight: '600', fontSize: 16, letterSpacing: 0.5 }
 });

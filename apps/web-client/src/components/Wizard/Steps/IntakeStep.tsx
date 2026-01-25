@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     form: { gap: 20 },
     field: { gap: 8 },
     label: { fontSize: 14, fontWeight: '600', color: '#334155' },
-    input: { height: 48, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, paddingHorizontal: 16, fontSize: 16, color: '#0F172A', backgroundColor: '#FFF' },
-    textArea: { height: 120, paddingTop: 12, textAlignVertical: 'top' },
+    input: { height: 48, minHeight: 48, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 8, paddingHorizontal: 16, fontSize: 16, color: '#0F172A', backgroundColor: '#FFF' },
+    textArea: { height: 120, paddingTop: 12, textAlignVertical: 'top', fontSize: 16 },
     switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 8, backgroundColor: '#F8FAFC' }
 });
