@@ -20,7 +20,7 @@ services:
 
     buildCommand: |
       corepack enable pnpm
-      pnpm install
+      NODE_ENV=development pnpm install
       cd packages/database && pnpm exec prisma generate && cd ../..
       pnpm exec turbo run build --filter=api
 
@@ -57,7 +57,7 @@ services:
 
     buildCommand: |
       corepack enable pnpm
-      pnpm install --frozen-lockfile
+      NODE_ENV=development pnpm install
       pnpm exec turbo run build --filter=web-client
 
     staticPublishPath: apps/web-client/dist
@@ -89,7 +89,7 @@ services:
 
     buildCommand: |
       corepack enable pnpm
-      pnpm install --frozen-lockfile
+      NODE_ENV=development pnpm install
       pnpm exec turbo run build --filter=web-admin
 
     staticPublishPath: apps/web-admin/dist
