@@ -7,13 +7,37 @@ import { Card, H1, H2, H3, Text, Button, Badge, Input } from '@trusttax/ui';
 import { api } from '../../services/api';
 import type { Service } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { PageMeta } from '../../components/PageMeta';
+import type { ViewStyle, TextStyle } from 'react-native';
+
+type CategoryId = 'ALL' | 'TAX' | 'LEGAL' | 'BUSINESS';
+
+function parsePrice(v: unknown): number {
+    if (v == null) return 0;
+    if (typeof v === 'number' && !Number.isNaN(v)) return v;
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+}
+function hasDiscount(s: Service): boolean {
+    const orig = parsePrice(s.originalPrice);
+    const pr = parsePrice(s.price);
+    return orig > 0 && orig > pr;
+}
+function discountAmount(s: Service): number {
+    return Math.round(parsePrice(s.originalPrice) - parsePrice(s.price));
+}
+function discountPercent(s: Service): number {
+    const o = parsePrice(s.originalPrice);
+    const p = parsePrice(s.price);
+    return o > 0 ? Math.round((1 - p / o) * 100) : 0;
+}
 
 export const PublicServicesPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const [services, setServices] = useState<Service[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [activeCategory, setActiveCategory] = useState<'ALL' | 'TAX' | 'LEGAL' | 'BUSINESS'>('ALL');
+    const [activeCategory, setActiveCategory] = useState<CategoryId>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
@@ -37,7 +61,7 @@ export const PublicServicesPage = () => {
         return matchesCategory && matchesSearch;
     });
 
-    const categories = [
+    const categories: Array<{ id: CategoryId; label: string; icon: typeof ShoppingBag }> = [
         { id: 'ALL', label: t('services.all', 'All Services'), icon: ShoppingBag },
         { id: 'TAX', label: t('services.tax_prep', 'Tax Prep'), icon: ShieldCheck },
         { id: 'LEGAL', label: t('services.immigration', 'Immigration'), icon: Scale },
@@ -57,6 +81,10 @@ export const PublicServicesPage = () => {
 
     return (
         <PublicLayout>
+            <PageMeta
+                title={`${t('services.title', 'Professional Services')} | TrustTax`}
+                description={t('services.subtitle', 'Choose from our range of expert financial and legal services designed to help you succeed.')}
+            />
             <View style={styles.hero}>
                 <View style={styles.heroContent}>
                     <View style={{ flex: 1, minWidth: 300 }}>
@@ -84,7 +112,7 @@ export const PublicServicesPage = () => {
                         <TouchableOpacity
                             key={cat.id}
                             style={[styles.tab, activeCategory === cat.id && styles.tabActive]}
-                            onPress={() => setActiveCategory(cat.id as any)}
+                            onPress={() => setActiveCategory(cat.id)}
                         >
                             <cat.icon size={18} color={activeCategory === cat.id ? '#FFFFFF' : '#64748B'} />
                             <Text style={[styles.tabText, activeCategory === cat.id && styles.tabTextActive]}>
@@ -99,9 +127,21 @@ export const PublicServicesPage = () => {
                     {filteredServices.length > 0 ? (
                         filteredServices.map((service) => (
                             <Card key={service.id} style={styles.serviceCard} elevated padding="none">
+                                {hasDiscount(service) && (
+                                    <View style={styles.discountBanner}>
+                                        <Text style={styles.discountBannerText}>
+                                            {t('common.save', 'SAVE')} ${discountAmount(service)} • {discountPercent(service)}% {t('common.off', 'OFF')}
+                                        </Text>
+                                    </View>
+                                )}
                                 <View style={styles.cardInfo}>
                                     <View style={styles.categoryBadgeRow}>
-                                        <Badge label={service.category} variant="primary" />
+                                        <View style={styles.badgesRow}>
+                                            <Badge label={service.category} variant="primary" />
+                                            {hasDiscount(service) && (
+                                                <Badge label={`${discountPercent(service)}% ${t('common.off', 'OFF')}`} variant="success" />
+                                            )}
+                                        </View>
                                         <View style={styles.durationRow}>
                                             <Clock size={14} color="#64748B" />
                                             <Text style={styles.durationText}>{t('common.days_estimated', '2-4 Days estimated')}</Text>
@@ -127,7 +167,17 @@ export const PublicServicesPage = () => {
                                     <View style={styles.priceRow}>
                                         <View>
                                             <Text style={styles.priceLabel}>{t('common.starting_at', 'Starting at')}</Text>
-                                            <H3 style={styles.priceValue}>${Number(service.price).toFixed(0)}</H3>
+                                            <View style={styles.priceContainer}>
+                                                {hasDiscount(service) && (
+                                                    <Text style={styles.originalPrice}>${parsePrice(service.originalPrice).toFixed(0)}</Text>
+                                                )}
+                                                <H3 style={styles.priceValue}>${parsePrice(service.price).toFixed(0)}</H3>
+                                            </View>
+                                            {hasDiscount(service) && (
+                                                <Text style={styles.savingsAmount}>
+                                                    {t('common.you_save', 'You save')} ${discountAmount(service)}
+                                                </Text>
+                                            )}
                                         </View>
                                         <Button
                                             title={t('common.get_started', 'Get Started')}
@@ -182,7 +232,7 @@ const styles = StyleSheet.create({
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 400 },
     hero: { backgroundColor: '#0F172A', paddingVertical: 48, paddingHorizontal: 24 },
     heroContent: { maxWidth: 1200, marginHorizontal: 'auto', width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' },
-    heroTitle: { color: '#FFFFFF', fontSize: 36, fontWeight: '700', marginBottom: 12, letterSpacing: -1 } as any,
+    heroTitle: { color: '#FFFFFF', fontSize: 36, fontWeight: '700', marginBottom: 12, letterSpacing: -1 } as TextStyle,
     heroSubtitle: { color: '#94A3B8', fontSize: 18, maxWidth: 600, lineHeight: 28, fontWeight: '300' },
 
     searchWrapper: { width: '100%', maxWidth: 400 },
@@ -192,17 +242,20 @@ const styles = StyleSheet.create({
 
     tabContainer: { flexDirection: 'row', gap: 12, marginTop: 32, marginBottom: 40, flexWrap: 'wrap', justifyContent: 'center', paddingHorizontal: 24 },
     tab: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 24, paddingVertical: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0' },
-    tabActive: { backgroundColor: '#0F172A', borderColor: '#0F172A' } as any,
+    tabActive: { backgroundColor: '#0F172A', borderColor: '#0F172A' } as ViewStyle,
     tabText: { fontWeight: '600', color: '#64748B', fontSize: 15 },
     tabTextActive: { color: '#FFFFFF' },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 32, justifyContent: 'center', paddingHorizontal: 24, maxWidth: 1280, marginHorizontal: 'auto', width: '100%' },
     serviceCard: { width: '100%', maxWidth: 380, overflow: 'hidden', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0' },
+    discountBanner: { backgroundColor: '#10B981', paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
+    discountBannerText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
     cardInfo: { padding: 32, gap: 16 },
-    categoryBadgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    categoryBadgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 },
+    badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
     durationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     durationText: { fontSize: 13, color: '#64748B', fontWeight: '500' },
-    serviceTitle: { fontSize: 22, color: '#1E293B', fontWeight: '600', letterSpacing: -0.5 } as any,
+    serviceTitle: { fontSize: 22, color: '#1E293B', fontWeight: '600', letterSpacing: -0.5 } as TextStyle,
     serviceDesc: { fontSize: 15, color: '#64748B', lineHeight: 24, fontWeight: '300' },
 
     featuresList: { marginTop: 12, gap: 8 },
@@ -211,16 +264,19 @@ const styles = StyleSheet.create({
 
     priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 16, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
     priceLabel: { fontSize: 13, color: '#94A3B8', fontWeight: '600', textTransform: 'uppercase', marginBottom: 4, letterSpacing: 0.5 },
-    priceValue: { color: '#0F172A', fontSize: 24, fontWeight: '600', marginBottom: 0 } as any,
+    priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+    originalPrice: { fontSize: 18, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '500' },
+    priceValue: { color: '#0F172A', fontSize: 24, fontWeight: '600', marginBottom: 0 } as TextStyle,
+    savingsAmount: { marginTop: 4, color: '#10B981', fontSize: 13, fontWeight: '700' },
     startBtn: { paddingHorizontal: 24, height: 48, backgroundColor: '#0F172A' },
 
     emptyContainer: { alignItems: 'center', justifyContent: 'center', padding: 80, backgroundColor: '#F8FAFC', width: '100%', borderWidth: 1, borderColor: '#E2E8F0', borderStyle: 'dashed' },
 
     trustSection: { marginTop: 64, paddingHorizontal: 24, maxWidth: 1200, marginHorizontal: 'auto', width: '100%' },
-    trustTitle: { textAlign: 'center', fontSize: 32, color: '#0F172A', marginBottom: 40, fontWeight: '700', letterSpacing: -0.8 } as any,
+    trustTitle: { textAlign: 'center', fontSize: 32, color: '#0F172A', marginBottom: 40, fontWeight: '700', letterSpacing: -0.8 } as TextStyle,
     trustGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 40, justifyContent: 'center' },
-    trustItem: { flex: 1, minWidth: 240, alignItems: 'center', textAlign: 'center' },
-    iconBox: { width: 64, height: 64, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 } as any,
-    trustItemTitle: { fontSize: 20, fontWeight: '600', color: '#0F172A', marginBottom: 12 } as any,
+    trustItem: { flex: 1, minWidth: 240, alignItems: 'center', textAlign: 'center' } as ViewStyle,
+    iconBox: { width: 64, height: 64, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 24 } as ViewStyle,
+    trustItemTitle: { fontSize: 20, fontWeight: '600', color: '#0F172A', marginBottom: 12 } as TextStyle,
     trustItemText: { fontSize: 16, color: '#64748B', lineHeight: 24, fontWeight: '300' }
 });

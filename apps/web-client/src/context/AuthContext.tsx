@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import Cookies from 'js-cookie';
+import * as cookieStorage from '../lib/cookies';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
 
 interface User {
@@ -8,6 +9,17 @@ interface User {
     email: string;
     name?: string;
     role: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    countryOfBirth?: string;
+    primaryLanguage?: string;
+    ssnMasked?: string | null;
+    driverLicenseMasked?: string | null;
+    passportMasked?: string | null;
+    profileComplete?: boolean;
+    termsAcceptedAt?: string;
 }
 
 interface AuthContextType {
@@ -19,6 +31,7 @@ interface AuthContextType {
     logout: () => void;
     isAuthenticated: boolean;
     clearError: () => void;
+    refreshUser: () => Promise<void>; // Método para actualizar los datos del usuario
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,40 +44,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         const initAuth = async () => {
-            const storedToken = Cookies.get('token');
-            if (storedToken) {
-                try {
-                    setToken(storedToken);
-                    const userData = await api.getMe();
-                    setUser(userData);
-                    setError(null);
-                } catch (err) {
-                    console.error('Failed to restore session:', err);
-
-                    // Handle different error types
-                    if (err instanceof AuthenticationError || err instanceof NotFoundError) {
-                        // Token invalid or user deleted - clear session
-                        if (err instanceof NotFoundError) {
-                            setError('Your account is no longer active. Please contact support.');
-                        }
-                        logout();
-                    } else if (err instanceof NetworkError) {
-                        // Network issue - keep session but show error
-                        setError('Connection issue. Retrying...');
-                        setIsLoading(false);
-                        // Retry after 3 seconds
-                        setTimeout(() => {
-                            setError(null);
-                            initAuth();
-                        }, 3000);
-                        return;
-                    } else {
-                        // Unknown error - clear session to be safe
-                        logout();
-                    }
-                }
+            const storedToken = cookieStorage.getToken();
+            if (!storedToken) {
+                setIsLoading(false);
+                return;
             }
-            setIsLoading(false);
+            try {
+                const userData = await api.getMe();
+                setToken(storedToken);
+                setUser(userData);
+                setError(null);
+            } catch (err) {
+                if (err instanceof AuthenticationError) {
+                    cookieStorage.clearAuth();
+                    setToken(null);
+                    setUser(null);
+                    setError(null);
+                    return;
+                }
+                if (err instanceof NotFoundError) {
+                    setError('Your account is no longer active. Please contact support.');
+                    cookieStorage.clearAuth();
+                    setToken(null);
+                    setUser(null);
+                    return;
+                }
+                if (err instanceof NetworkError) {
+                    setError('Connection issue. Retrying...');
+                    setTimeout(() => {
+                        setError(null);
+                        initAuth();
+                    }, 3000);
+                    return;
+                }
+                console.error('Failed to restore session:', err);
+                cookieStorage.clearAuth();
+                setToken(null);
+                setUser(null);
+            } finally {
+                setIsLoading(false);
+            }
         };
         initAuth();
     }, []);
@@ -73,19 +92,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(newToken);
         setUser(newUser);
         setError(null);
-        Cookies.set('token', newToken, { expires: 7, secure: true, sameSite: 'strict' });
-        Cookies.set('user', JSON.stringify(newUser), { expires: 7, secure: true, sameSite: 'strict' });
+        cookieStorage.setToken(newToken);
+        cookieStorage.setUser(newUser as unknown as Record<string, unknown>);
     };
 
     const logout = () => {
         setToken(null);
         setUser(null);
-        Cookies.remove('token');
-        Cookies.remove('user');
+        cookieStorage.clearAuth();
     };
 
     const clearError = () => {
         setError(null);
+    };
+
+    const refreshUser = async () => {
+        if (token) {
+            try {
+                const userData = await api.getMe();
+                setUser(userData);
+            } catch (err) {
+                console.error('Failed to refresh user data:', err);
+            }
+        }
     };
 
     return (
@@ -98,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 login,
                 logout,
                 clearError,
+                refreshUser,
                 isAuthenticated: !!token
             }}
         >

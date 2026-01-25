@@ -2,6 +2,7 @@ import { View, StyleSheet } from 'react-native';
 import { Text, H1, H2 } from '@trusttax/ui';
 import { PublicLayout } from '../../components/PublicLayout';
 import { useCompany } from '../../context/CompanyContext';
+import { PageMeta } from '../../components/PageMeta';
 
 export const AboutPage = () => {
     const { profile } = useCompany();
@@ -9,6 +10,10 @@ export const AboutPage = () => {
 
     return (
         <PublicLayout>
+            <PageMeta
+                title={`About ${companyName} | TrustTax`}
+                description={profile?.description || 'Our mission is to simplify complex financial and immigration processes for individuals and businesses.'}
+            />
             <View style={styles.header}>
                 <H1 style={styles.title}>About {companyName}</H1>
                 <Text style={styles.subtitle}>{profile?.description || 'Our mission is to simplify complex financial and immigration processes for individuals and businesses.'}</Text>

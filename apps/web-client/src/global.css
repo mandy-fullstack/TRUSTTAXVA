@@ -9,6 +9,64 @@ select {
   font-size: 16px;
 }
 
+/* Estilos para Links de navegación - compatibilidad con react-native-web */
+a[href],
+a[href]:visited,
+a[href]:active {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+}
+
+a[href]:hover {
+  text-decoration: none;
+}
+
+/* Estilos específicos para nav-link */
+.nav-link {
+  text-decoration: none !important;
+  display: inline-flex;
+  align-items: center;
+  outline: none;
+}
+
+.nav-link:focus {
+  outline: none;
+}
+
+/* Logo container link */
+.logo-link {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  outline: none;
+}
+
+.logo-link:focus {
+  outline: none;
+}
+
+/* Skip link - visible solo en focus */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  z-index: 10000;
+  padding: 8px;
+  background-color: #0f172a;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
 .debug-bg {
   background-color: #ff00ff !important;
 }

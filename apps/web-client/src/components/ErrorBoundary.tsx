@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 
 interface Props {
   children: ReactNode;
@@ -26,42 +27,64 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div
-          style={{
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-            fontFamily: 'system-ui, sans-serif',
-            backgroundColor: '#f8fafc',
-            color: '#0f172a',
-          }}
-        >
-          <h1 style={{ fontSize: 24, marginBottom: 12 }}>Algo salió mal</h1>
-          <p style={{ color: '#64748b', marginBottom: 24, textAlign: 'center', maxWidth: 400 }}>
+        <View style={styles.container}>
+          <Text style={styles.title}>Algo salió mal</Text>
+          <Text style={styles.message}>
             Recarga la página o intenta más tarde. Si el problema continúa, contacta a soporte.
-          </p>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '12px 24px',
-              fontSize: 16,
-              fontWeight: 600,
-              color: '#fff',
-              backgroundColor: '#2563eb',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              }
             }}
+            style={styles.button}
           >
-            Recargar página
-          </button>
-        </div>
+            <Text style={styles.buttonText}>Recargar página</Text>
+          </TouchableOpacity>
+        </View>
       );
     }
     return this.props.children;
   }
 }
+
+const styles = StyleSheet.create({
+  container: {
+    minHeight: '100vh' as any,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: '#f8fafc',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: 12,
+    ...(Platform.OS === 'web' ? { fontFamily: 'system-ui, sans-serif' } : {}),
+  },
+  message: {
+    color: '#64748b',
+    marginBottom: 24,
+    textAlign: 'center',
+    maxWidth: 400,
+    fontSize: 16,
+    lineHeight: 24,
+    ...(Platform.OS === 'web' ? { fontFamily: 'system-ui, sans-serif' } : {}),
+  },
+  button: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    ...(Platform.OS === 'web' ? { fontFamily: 'system-ui, sans-serif' } : {}),
+  },
+});

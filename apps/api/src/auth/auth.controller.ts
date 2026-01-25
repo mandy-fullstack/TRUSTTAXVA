@@ -1,6 +1,7 @@
-import { Controller, Post, Body, UseGuards, Request, Get, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, Patch, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -24,5 +25,32 @@ export class AuthController {
     @Get('me')
     async getMe(@Request() req: any) {
         return this.authService.findById(req.user.userId);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Patch('profile')
+    async updateProfile(@Request() req: any, @Body() dto: UpdateProfileDto) {
+        return this.authService.updateProfile(req.user.userId, dto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('profile/decrypt-ssn')
+    async getDecryptedSSN(@Request() req: any) {
+        const ssn = await this.authService.decryptSSN(req.user.userId);
+        return { ssn };
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('profile/decrypt-driver-license')
+    async getDecryptedDriverLicense(@Request() req: any) {
+        const driverLicense = await this.authService.decryptDriverLicense(req.user.userId);
+        return { driverLicense };
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('profile/decrypt-passport')
+    async getDecryptedPassport(@Request() req: any) {
+        const passport = await this.authService.decryptPassport(req.user.userId);
+        return { passport };
     }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
 import { Card, Button, Input, H1, Subtitle, Text } from '@trusttax/ui';
@@ -15,7 +15,14 @@ export const LoginPage = () => {
     const [error, setError] = useState('');
 
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const location = useLocation();
+    const { login, isAuthenticated } = useAuth();
+
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+
+    if (isAuthenticated) {
+        return <Navigate to={from} replace />;
+    }
 
     const handleLogin = async () => {
         if (!email || !password) {
@@ -30,9 +37,9 @@ export const LoginPage = () => {
             const data = await api.login(email, password);
             if (data.access_token) {
                 login(data.access_token, data.user);
-                navigate('/dashboard');
+                navigate(from, { replace: true });
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             if (err instanceof AuthenticationError) {
                 setError(t('auth.error_invalid', 'Invalid email or password. Please try again.'));
             } else if (err instanceof NotFoundError) {
@@ -40,7 +47,7 @@ export const LoginPage = () => {
             } else if (err instanceof NetworkError) {
                 setError(t('auth.error_network', 'Unable to connect. Please check your internet connection.'));
             } else {
-                setError(err.message || t('auth.error_unexpected', 'An unexpected error occurred. Please try again.'));
+                setError((err as Error).message || t('auth.error_unexpected', 'An unexpected error occurred. Please try again.'));
             }
         } finally {
             setIsLoading(false);

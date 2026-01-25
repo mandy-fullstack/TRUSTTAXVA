@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text, H1, H2, H3, H4, Button } from '@trusttax/ui';
 import { PublicLayout } from '../../components/PublicLayout';
 import { AuthorizedIRSBadge } from '../../components/AuthorizedIRSBadge';
@@ -7,6 +7,7 @@ import { ArrowRight, Shield, Award, Briefcase, FileText, UserCheck, TrendingUp }
 import { useCompany } from '../../context/CompanyContext';
 import { Testimonials } from '../../components/Testimonials';
 import { useTranslation } from 'react-i18next';
+import { PageMeta } from '../../components/PageMeta';
 
 export const LandingPage = () => {
     const { t } = useTranslation();
@@ -17,6 +18,10 @@ export const LandingPage = () => {
 
     return (
         <PublicLayout>
+            <PageMeta
+                title={`${t('landing.hero_title', 'Professional Tax & Immigration Services')} | TrustTax`}
+                description={t('landing.hero_subtitle', 'Expert guidance for your tax returns, business formation, and immigration paperwork. Fast, secure, and reliable service.')}
+            />
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Hero Section */}
                 <View style={[styles.hero, isMobile && { paddingVertical: 64 }]}>
@@ -196,7 +201,18 @@ const styles = StyleSheet.create({
     stepText: { fontSize: 15, color: '#64748B', lineHeight: 26, fontWeight: '300' },
 
     grid: { flexDirection: 'row', gap: 24, flexWrap: 'wrap', justifyContent: 'center' },
-    card: { flex: 1, minWidth: 280, padding: 32, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+    card: { 
+        flex: 1, 
+        minWidth: 280, 
+        padding: 32, 
+        backgroundColor: '#FFFFFF', 
+        borderWidth: 1, 
+        borderColor: '#E2E8F0',
+        ...(Platform.OS === 'web' 
+            ? { boxShadow: '0 2px 8px rgba(0,0,0,0.02)' } 
+            : { shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }
+        ),
+    } as any,
     cardIconBox: { width: 48, height: 48, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
     cardTitle: { fontSize: 18, fontWeight: '600', color: '#0F172A', marginBottom: 12, letterSpacing: -0.5 } as any,
     cardDesc: { fontSize: 15, color: '#64748B', lineHeight: 24, fontWeight: '300' },

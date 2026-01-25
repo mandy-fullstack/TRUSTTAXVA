@@ -3,12 +3,17 @@ import { Text, H1, H2 } from '@trusttax/ui';
 import { PublicLayout } from '../../components/PublicLayout';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { useCompany } from '../../context/CompanyContext';
+import { PageMeta } from '../../components/PageMeta';
 
 export const ContactPage = () => {
     const { profile } = useCompany();
 
     return (
         <PublicLayout>
+            <PageMeta
+                title="Contact Us | TrustTax"
+                description="Have questions? We're here to help. Get in touch with TrustTax for expert tax preparation, immigration services, and business consulting."
+            />
             <View style={styles.header}>
                 <H1 style={styles.title}>Contact Us</H1>
                 <Text style={styles.subtitle}>Have questions? We're here to help.</Text>

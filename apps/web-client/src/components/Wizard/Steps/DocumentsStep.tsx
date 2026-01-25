@@ -11,7 +11,8 @@ interface DocumentsStepProps {
 
 export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) => {
     const handleUploadMock = (docType: string) => {
-        // Mock upload
+        // Mock upload — random only when user clicks, not during render
+        // eslint-disable-next-line react-hooks/purity -- used in event handler only
         const fileName = `document_${Math.floor(Math.random() * 1000)}.pdf`;
         onChange({
             ...data,

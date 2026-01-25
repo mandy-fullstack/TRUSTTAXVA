@@ -1,23 +1,18 @@
-import { View, StyleSheet, TouchableOpacity, Linking } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
+import { Link } from 'react-router-dom';
 import { AuthorizedIRSBadge } from './AuthorizedIRSBadge';
 import { Text } from '@trusttax/ui';
 import { Facebook, Instagram, Linkedin, MapPin, Phone, Mail, Twitter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useCompany } from '../context/CompanyContext';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from './TrustTaxLogo';
+import { getPublicNav } from '../config/navigation';
 
 export const Footer = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const { profile } = useCompany();
 
-    const navLinks = [
-        { label: t('header.home', 'Home'), path: '/' },
-        { label: t('header.about', 'About Us'), path: '/about' },
-        { label: t('header.services', 'Services'), path: '/services' },
-        { label: t('header.contact', 'Contact'), path: '/contact' },
-    ];
+    const navItems = getPublicNav();
 
     const companyName = profile?.companyName || 'TrustTax';
     const companyPhone = profile?.phone || '(540) 876-9748';
@@ -41,10 +36,10 @@ export const Footer = () => {
 
                     {/* Brand Section */}
                     <View style={styles.brandSection}>
-                        <TouchableOpacity onPress={() => navigate('/')} style={styles.logoRow}>
+                        <Link to="/" style={styles.logoRow as any}>
                             <TrustTaxLogo size={44} bgColor={secondaryColor} />
                             <Text style={styles.brandName}>{companyName}</Text>
-                        </TouchableOpacity>
+                        </Link>
                         <Text style={styles.brandDesc}>
                             {profile?.description || t('footer.brand_desc', 'Your professional partner for tax preparation, immigration services, and business consulting in Virginia.')}
                         </Text>
@@ -60,11 +55,14 @@ export const Footer = () => {
                     <View style={styles.navSection}>
                         <View style={styles.navCol}>
                             <Text style={styles.colHeader}>{t('footer.navigation', 'Navigation')}</Text>
-                            {navLinks.map((link) => (
-                                <TouchableOpacity key={link.path} onPress={() => navigate(link.path)} style={styles.navLink}>
-                                    <Text style={styles.navLinkText}>{link.label}</Text>
-                                </TouchableOpacity>
-                            ))}
+                            {navItems.map((item) => {
+                                const label = t(item.i18nKey, item.path);
+                                return (
+                                    <Link key={item.path} to={item.path} style={styles.navLink as any} className={Platform.OS === 'web' ? 'nav-link' : undefined}>
+                                        <Text style={styles.navLinkText}>{label}</Text>
+                                    </Link>
+                                );
+                            })}
                         </View>
 
                         <View style={styles.navCol}>

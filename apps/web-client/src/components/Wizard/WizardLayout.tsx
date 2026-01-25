@@ -12,14 +12,14 @@ interface WizardLayoutProps {
     children: ReactNode;
 }
 
-export const WizardLayout = ({ title, currentStep, totalSteps: _totalSteps, steps, children }: WizardLayoutProps) => {
+export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }: WizardLayoutProps) => {
     return (
         <Layout>
             <View style={styles.container}>
-                {/* Sidebar / Progress */}
                 <View style={styles.sidebar}>
                     <Card elevated style={styles.progressCard}>
                         <H3 style={styles.sidebarTitle}>{title}</H3>
+                        <Text style={styles.stepCounter}>Step {currentStep + 1} of {totalSteps}</Text>
                         <View style={styles.stepsList}>
                             {steps.map((step, index) => {
                                 const isActive = index === currentStep;
@@ -63,7 +63,8 @@ export const WizardLayout = ({ title, currentStep, totalSteps: _totalSteps, step
 const styles = StyleSheet.create({
     container: { flexDirection: 'row', gap: 32, paddingVertical: 40, flexWrap: 'wrap' },
     sidebar: { width: 300, minWidth: 280 },
-    sidebarTitle: { marginBottom: 24, fontSize: 20 },
+    sidebarTitle: { marginBottom: 8, fontSize: 20 },
+    stepCounter: { marginBottom: 24, fontSize: 13, color: '#64748B', fontWeight: '500' },
     progressCard: { padding: 24 },
     stepsList: { gap: 0 }, // Gap handled by connector margin
     stepItem: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 48, position: 'relative' },

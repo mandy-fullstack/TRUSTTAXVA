@@ -1,134 +1,192 @@
-import { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Platform, useWindowDimensions } from 'react-native';
-import { Text, Button } from '@trusttax/ui';
-import { Menu, X, ChevronDown } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Platform, useWindowDimensions, type ViewStyle } from 'react-native';
+import { Link, useLocation } from 'react-router-dom';
+import { Text } from '@trusttax/ui';
+import { Menu, X } from 'lucide-react';
 import { useCompany } from '../context/CompanyContext';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from './TrustTaxLogo';
+import { getPublicNav, getAuthNav, MOBILE_BREAKPOINT } from '../config/navigation';
+import { useAuth } from '../context/AuthContext';
+import { LanguageSelector } from './LanguageSelector';
+
 
 export const Header = () => {
-    const navigate = useNavigate();
     const location = useLocation();
     const { width } = useWindowDimensions();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const { profile } = useCompany();
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
+    const { isAuthenticated } = useAuth();
+    const menuButtonRef = useRef<any>(null);
+    const mobileMenuRef = useRef<any>(null);
 
-    const isMobile = width <= 1024;
+    const isMobile = width < MOBILE_BREAKPOINT;
 
-    const toggleLanguage = () => {
-        const nextLang = i18n.language.startsWith('en') ? 'es' : 'en';
-        i18n.changeLanguage(nextLang);
-    };
-
-    const navLinks = [
-        { label: t('header.home', 'Home'), path: '/' },
-        { label: t('header.about', 'About Us'), path: '/about' },
-        { label: t('header.services', 'Services'), path: '/services' },
-        { label: t('header.contact', 'Contact'), path: '/contact' },
-    ];
+    const navItems = getPublicNav();
+    const authItems = getAuthNav(isAuthenticated);
 
     const isActive = (path: string) => location.pathname === path;
 
     const companyName = profile?.companyName || 'TrustTax';
     const primaryColor = profile?.primaryColor || '#0F172A';
     const secondaryColor = profile?.secondaryColor || '#2563EB';
-
     const theme = profile?.themeOptions || {};
 
-    const FlagIcon = ({ lang }: { lang: string }) => {
-        const isEn = lang.startsWith('en');
-        const flagUrl = isEn ? 'https://flagcdn.com/w80/us.png' : 'https://flagcdn.com/w80/es.png';
+    // Close menu on Escape key
+    useEffect(() => {
+        if (!isMenuOpen) return;
 
-        return (
-            <View style={styles.flagWrapper}>
-                <Image
-                    source={{ uri: flagUrl }}
-                    style={styles.flagImage as any}
-                />
-            </View>
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsMenuOpen(false);
+                menuButtonRef.current?.focus?.();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isMenuOpen]);
+
+    // Focus trap for mobile menu
+    useEffect(() => {
+        if (!isMobile || !isMenuOpen) return;
+
+        const menuElement = mobileMenuRef.current;
+        if (!menuElement) return;
+
+        const focusableElements = menuElement.querySelectorAll(
+            'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
         );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        const handleTab = (e: KeyboardEvent) => {
+            if (e.key !== 'Tab') return;
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    e.preventDefault();
+                    lastElement?.focus();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    e.preventDefault();
+                    firstElement?.focus();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleTab);
+        firstElement?.focus();
+
+        return () => document.removeEventListener('keydown', handleTab);
+    }, [isMobile, isMenuOpen]);
+
+    const handleMenuClose = () => {
+        setIsMenuOpen(false);
+        menuButtonRef.current?.focus?.();
     };
 
     return (
-        <View style={[styles.navbar as any, { backgroundColor: theme.surface || '#FFF' }]}>
+        <View
+            style={[styles.navbar, { backgroundColor: (theme as { surface?: string }).surface || '#FFF' }]}
+            accessibilityRole="header"
+        >
             <View style={[styles.navContainer, isMobile && { paddingHorizontal: 20 }]}>
-                {/* Brand Section with new Square Logo */}
-                <TouchableOpacity onPress={() => navigate('/')} style={styles.logoContainer} activeOpacity={0.8}>
+                {/* Brand Section */}
+                <Link to="/" className={Platform.OS === 'web' ? 'logo-link' : undefined} style={Platform.OS === 'web' ? undefined : styles.logoContainer}>
                     <TrustTaxLogo size={isMobile ? 32 : 40} bgColor={primaryColor} />
-                    <Text style={[styles.logoText, { color: primaryColor }, isMobile && { fontSize: 18 }]}>{companyName}</Text>
-                </TouchableOpacity>
+                    <Text style={[styles.logoText, { color: primaryColor }, isMobile && { fontSize: 18 }]}>
+                        {companyName}
+                    </Text>
+                </Link>
 
-                {/* Desktop Menu - Hidden on Mobile */}
+                {/* Desktop Menu */}
                 {!isMobile && (
-                    <View style={styles.desktopMenu}>
+                    <View style={styles.desktopMenu} {...(Platform.OS === 'web' ? { role: 'navigation', 'aria-label': 'Main navigation' } : {})}>
                         <View style={styles.navLinksRow}>
-                            {navLinks.map((link) => (
-                                <TouchableOpacity
-                                    key={link.path}
-                                    onPress={() => navigate(link.path)}
-                                    style={styles.navLink}
-                                    activeOpacity={0.7}
-                                >
-                                    <Text style={[
-                                        styles.navLinkText,
-                                        isActive(link.path) && { color: secondaryColor, fontWeight: '600' }
-                                    ]}>
-                                        {link.label}
-                                    </Text>
-                                    {isActive(link.path) && <View style={[styles.activeIndicator, { backgroundColor: secondaryColor }]} />}
-                                </TouchableOpacity>
-                            ))}
+                            {navItems.map((item) => {
+                                const label = t(item.i18nKey, item.path);
+                                const active = isActive(item.path);
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        className={Platform.OS === 'web' ? 'nav-link' : undefined}
+                                        style={Platform.OS === 'web' ? { padding: '8px 0', position: 'relative' } : [styles.navLink, active && styles.navLinkActive] as any}
+                                        aria-current={active ? 'page' : undefined}
+                                    >
+                                        <Text
+                                            style={[
+                                                styles.navLinkText,
+                                                active && { color: secondaryColor, fontWeight: '600' },
+                                            ]}
+                                        >
+                                            {label}
+                                        </Text>
+                                        {active && (
+                                            <View style={[styles.activeIndicator, { backgroundColor: secondaryColor }]} />
+                                        )}
+                                    </Link>
+                                );
+                            })}
                         </View>
 
                         <View style={styles.authButtons}>
-                            <TouchableOpacity onPress={toggleLanguage} style={styles.langSelector} activeOpacity={0.7}>
-                                <FlagIcon lang={i18n.language} />
-                                <Text style={[styles.langText, { color: primaryColor }]}>
-                                    {i18n.language.startsWith('en') ? 'EN' : 'ES'}
-                                </Text>
-                                <ChevronDown size={14} color="#64748B" />
-                            </TouchableOpacity>
+                            <LanguageSelector variant="desktop" />
 
                             <View style={styles.divider} />
 
-                            <Button
-                                title={t('header.login', 'Log In')}
-                                variant="ghost"
-                                onPress={() => navigate('/login')}
-                                style={styles.loginButton}
-                                textStyle={{ color: primaryColor, fontSize: 14, fontWeight: '500' }}
-                            />
-                            <Button
-                                title={t('common.get_started', 'Get Started')}
-                                variant="primary"
-                                onPress={() => navigate('/register')}
-                                style={[styles.ctaButton, { backgroundColor: secondaryColor }]}
-                            />
+                            {authItems.map((item) => {
+                                if (item.type === 'link') {
+                                    const isRegister = item.path === '/register';
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={item.path}
+                                            className={Platform.OS === 'web' ? 'nav-link' : undefined}
+                                            style={Platform.OS === 'web' 
+                                                ? isRegister
+                                                    ? { padding: '0 24px', height: 44, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: secondaryColor }
+                                                    : { height: 44, padding: '0 16px', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+                                                : isRegister
+                                                    ? { ...styles.ctaButton, backgroundColor: secondaryColor } as any
+                                                    : styles.loginButton as any
+                                            }
+                                        >
+                                            <Text
+                                                style={
+                                                    isRegister
+                                                        ? styles.ctaButtonText
+                                                        : { color: primaryColor, fontSize: 14, fontWeight: '500' }
+                                                }
+                                            >
+                                                {t(item.i18nKey, item.path)}
+                                            </Text>
+                                        </Link>
+                                    );
+                                }
+                                return null;
+                            })}
                         </View>
                     </View>
                 )}
 
-                {/* Mobile Menu Button - Shown on Mobile/Tablet */}
+                {/* Mobile Menu Button */}
                 {isMobile && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <TouchableOpacity onPress={toggleLanguage} style={styles.mobileLangSelector}>
-                            <FlagIcon lang={i18n.language} />
-                            <Text style={{ fontWeight: '700', color: primaryColor, fontSize: 13 }}>
-                                {i18n.language.startsWith('en') ? 'EN' : 'ES'}
-                            </Text>
-                        </TouchableOpacity>
+                        <LanguageSelector variant="mobile" showChevron={false} />
                         <TouchableOpacity
+                            ref={menuButtonRef}
                             style={styles.mobileMenuBtn}
                             onPress={() => setIsMenuOpen(!isMenuOpen)}
                             activeOpacity={0.7}
+                            aria-label={isMenuOpen ? t('header.close_menu', 'Close menu') : t('header.open_menu', 'Open menu')}
+                            aria-expanded={isMenuOpen}
+                            aria-controls="mobile-menu"
                         >
-                            {isMenuOpen ? (
-                                <X size={24} color={secondaryColor} />
-                            ) : (
-                                <Menu size={24} color={secondaryColor} />
-                            )}
+                            {isMenuOpen ? <X size={24} color={secondaryColor} /> : <Menu size={24} color={secondaryColor} />}
                         </TouchableOpacity>
                     </View>
                 )}
@@ -136,38 +194,63 @@ export const Header = () => {
 
             {/* Mobile Dropdown */}
             {isMobile && isMenuOpen && (
-                <View style={[styles.mobileMenu, { backgroundColor: theme.surface || '#FFF' }]}>
-                    {navLinks.map((link) => (
-                        <TouchableOpacity
-                            key={link.path}
-                            onPress={() => {
-                                navigate(link.path);
-                                setIsMenuOpen(false);
-                            }}
-                            style={styles.mobileNavLink}
-                        >
-                            <Text style={[
-                                styles.mobileNavLinkText,
-                                isActive(link.path) && { color: secondaryColor, fontWeight: '600' }
-                            ]}>
-                                {link.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                <View
+                    ref={mobileMenuRef}
+                    id="mobile-menu"
+                    style={[styles.mobileMenu, { backgroundColor: theme.surface || '#FFF' }]}
+                    {...(Platform.OS === 'web' ? { role: 'navigation', 'aria-label': 'Mobile navigation' } : {})}
+                >
+                    {navItems.map((item) => {
+                        const label = t(item.i18nKey, item.path);
+                        const active = isActive(item.path);
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={handleMenuClose}
+                                className={Platform.OS === 'web' ? 'nav-link' : undefined}
+                                style={Platform.OS === 'web' ? { padding: '18px 0', borderBottom: '1px solid #F8FAFC' } : styles.mobileNavLink as any}
+                                aria-current={active ? 'page' : undefined}
+                            >
+                                <Text
+                                    style={[
+                                        styles.mobileNavLinkText,
+                                        active && { color: secondaryColor, fontWeight: '600' },
+                                    ]}
+                                >
+                                    {label}
+                                </Text>
+                            </Link>
+                        );
+                    })}
                     <View style={styles.mobileAuthRow}>
-                        <Button
-                            title={t('header.login', 'Log In')}
-                            variant="ghost"
-                            onPress={() => navigate('/login')}
-                            style={{ flex: 1, height: 44, borderRadius: 0 }}
-                            textStyle={{ color: primaryColor }}
-                        />
-                        <Button
-                            title={t('common.get_started', 'Get Started')}
-                            variant="primary"
-                            onPress={() => navigate('/register')}
-                            style={{ backgroundColor: secondaryColor, flex: 2, height: 44, borderRadius: 0 }}
-                        />
+                        {authItems.map((item) => {
+                            if (item.type === 'link') {
+                                return (
+                                    <Link
+                                        key={item.path}
+                                        to={item.path}
+                                        onClick={handleMenuClose}
+                                        style={
+                                            item.path === '/register'
+                                                ? { flex: 2, height: 44, borderRadius: 0, backgroundColor: secondaryColor, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+                                                : { flex: 1, height: 44, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }
+                                        }
+                                    >
+                                        <Text
+                                            style={
+                                                item.path === '/register'
+                                                    ? { color: '#FFF', fontWeight: '600' }
+                                                    : { color: primaryColor, fontWeight: '500' }
+                                            }
+                                        >
+                                            {t(item.i18nKey, item.path)}
+                                        </Text>
+                                    </Link>
+                                );
+                            }
+                            return null;
+                        })}
                     </View>
                 </View>
             )}
@@ -182,15 +265,15 @@ const styles = StyleSheet.create({
         zIndex: 1000,
         ...Platform.select({
             web: {
-                position: 'sticky' as any,
+                position: 'sticky',
                 top: 0,
                 boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
                 backdropFilter: 'blur(10px)',
-            },
+            } as unknown as ViewStyle,
             default: {
                 borderBottomWidth: 1,
                 borderBottomColor: '#F1F5F9',
-            }
+            },
         }),
     },
     navContainer: {
@@ -226,6 +309,9 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         position: 'relative',
     },
+    navLinkActive: {
+        // Active state handled by text color
+    },
     navLinkText: {
         fontSize: 15,
         fontWeight: '500',
@@ -253,43 +339,6 @@ const styles = StyleSheet.create({
         height: 20,
         backgroundColor: '#E2E8F0',
     },
-    langSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 0,
-        backgroundColor: '#F8FAFC',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    langText: {
-        fontSize: 13,
-        fontWeight: '700',
-    },
-    flagWrapper: {
-        width: 22,
-        height: 22,
-        borderRadius: 0,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#E2E8F0',
-    },
-    flagImage: {
-        width: '100%',
-        height: '100%',
-        resizeMode: 'cover',
-    },
-    mobileLangSelector: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        backgroundColor: '#F1F5F9',
-        borderRadius: 0,
-    },
     loginButton: {
         height: 44,
         paddingHorizontal: 16,
@@ -299,6 +348,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         height: 44,
         borderRadius: 0,
+        ...(Platform.OS === 'web' ? { display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}),
+    } as any,
+    ctaButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '600',
     },
     mobileMenuBtn: {
         padding: 8,
@@ -315,8 +370,8 @@ const styles = StyleSheet.create({
         ...Platform.select({
             web: {
                 boxShadow: '0 10px 30px rgba(0,0,0,0.08)',
-            }
-        })
+            },
+        }),
     },
     mobileNavLink: {
         paddingVertical: 18,
@@ -333,5 +388,5 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         alignItems: 'center',
-    }
+    },
 });

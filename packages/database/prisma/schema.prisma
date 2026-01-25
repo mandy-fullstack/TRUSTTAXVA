@@ -50,6 +50,31 @@ model User {
   updatedAt DateTime @updatedAt
   role      Role     @default(CLIENT)
 
+  // Profile - Personal Information
+  firstName             String?
+  middleName            String?
+  lastName              String?
+  dateOfBirth           DateTime?
+  countryOfBirth        String?   // ISO country code (e.g. "US", "MX")
+  primaryLanguage       String?   // ISO language code (e.g. "en", "es")
+  
+  // Profile - Sensitive Information (stored encrypted)
+  taxIdType             String?   // "SSN" | "ITIN"
+  ssnEncrypted          String?   // Full SSN/ITIN encrypted at rest (AES-256-GCM)
+  ssnLast4              String?   // Last 4 digits for display only (NUNCA descifrar solo para mostrar)
+  driverLicenseEncrypted String?   // JSON encrypted: { number, stateCode, stateName, countryCode, expirationDate }
+  driverLicenseLast4    String?   // Last 4 characters for display only (NUNCA descifrar solo para mostrar)
+  passportDataEncrypted  String?   // JSON encrypted: { number, countryOfIssue, expirationDate }
+  passportLast4         String?   // Last 4 characters for display only (NUNCA descifrar solo para mostrar)
+  
+  // Terms and Conditions
+  termsAcceptedAt       DateTime?
+  termsVersion          String?   // Version of terms accepted (e.g. "1.0")
+  
+  // Profile Completion
+  profileCompleted      Boolean   @default(false)
+  profileCompletedAt    DateTime?
+
   // Relations
   clientTaxReturns    TaxReturn[]       @relation("ClientReturns")
   preparedTaxReturns  TaxReturn[]       @relation("PreparerReturns")

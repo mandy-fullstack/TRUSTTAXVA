@@ -8,6 +8,26 @@ import { api } from '../../services/api';
 import type { Service } from '../../types';
 import { useTranslation } from 'react-i18next';
 
+function parsePrice(v: unknown): number {
+    if (v == null) return 0;
+    if (typeof v === 'number' && !Number.isNaN(v)) return v;
+    const n = Number(v);
+    return Number.isNaN(n) ? 0 : n;
+}
+function hasDiscount(s: Service): boolean {
+    const orig = parsePrice(s.originalPrice);
+    const pr = parsePrice(s.price);
+    return orig > 0 && orig > pr;
+}
+function discountAmount(s: Service): number {
+    return Math.round(parsePrice(s.originalPrice) - parsePrice(s.price));
+}
+function discountPercent(s: Service): number {
+    const o = parsePrice(s.originalPrice);
+    const p = parsePrice(s.price);
+    return o > 0 ? Math.round((1 - p / o) * 100) : 0;
+}
+
 export const ServicesPage = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
@@ -96,19 +116,21 @@ export const ServicesPage = () => {
                 {filteredServices.length > 0 ? (
                     filteredServices.map((service) => (
                         <Card key={service.id} style={styles.serviceCard} elevated padding="none">
-                            {/* Discount Banner - Top of Card */}
-                            {service.originalPrice && Number(service.originalPrice) > 0 && Number(service.originalPrice) > Number(service.price) && (
+                            {hasDiscount(service) && (
                                 <View style={styles.discountBanner}>
                                     <Text style={styles.discountBannerText}>
-                                        SAVE ${Math.round(Number(service.originalPrice) - Number(service.price))} • {Math.round((1 - Number(service.price) / Number(service.originalPrice)) * 100)}% OFF
+                                        {t('common.save', 'SAVE')} ${discountAmount(service)} • {discountPercent(service)}% {t('common.off', 'OFF')}
                                     </Text>
                                 </View>
                             )}
 
                             <View style={styles.cardInfo}>
                                 <View style={styles.categoryBadgeRow}>
-                                    <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                                    <View style={styles.badgesRow}>
                                         <Badge label={service.category} variant="primary" />
+                                        {hasDiscount(service) && (
+                                            <Badge label={`${discountPercent(service)}% ${t('common.off', 'OFF')}`} variant="success" />
+                                        )}
                                     </View>
                                     <View style={styles.durationRow}>
                                         <Clock size={14} color="#64748B" />
@@ -124,15 +146,15 @@ export const ServicesPage = () => {
                                     <View>
                                         <Text style={styles.priceLabel}>{t('common.starting_at', 'Starting at')}</Text>
                                         <View style={styles.priceContainer}>
-                                            {service.originalPrice && Number(service.originalPrice) > 0 && Number(service.originalPrice) > Number(service.price) && (
-                                                <Text style={styles.originalPrice}>${Number(service.originalPrice).toFixed(0)}</Text>
+                                            {hasDiscount(service) && (
+                                                <Text style={styles.originalPrice}>${parsePrice(service.originalPrice).toFixed(0)}</Text>
                                             )}
-                                            <H3 style={styles.priceValue}>${service.price ? Number(service.price).toFixed(0) : '0'}</H3>
+                                            <H3 style={styles.priceValue}>${parsePrice(service.price).toFixed(0)}</H3>
                                         </View>
-                                        {service.originalPrice && Number(service.originalPrice) > 0 && Number(service.originalPrice) > Number(service.price) && (
+                                        {hasDiscount(service) && (
                                             <View style={styles.savingsIndicator}>
                                                 <Text style={styles.savingsAmount}>
-                                                    You save ${Math.round(Number(service.originalPrice) - Number(service.price))}
+                                                    {t('common.you_save', 'You save')} ${discountAmount(service)}
                                                 </Text>
                                             </View>
                                         )}
@@ -175,7 +197,8 @@ const styles = StyleSheet.create({
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 24 },
     serviceCard: { width: '100%', maxWidth: 380, overflow: 'hidden' },
     cardInfo: { padding: 24, gap: 12 },
-    categoryBadgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+    categoryBadgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 8 },
+    badgesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
     durationRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     durationText: { fontSize: 12, color: '#64748B', fontWeight: '500' },
     serviceTitle: { fontSize: 20, color: 'var(--secondary-color, #1E293B)' } as any,

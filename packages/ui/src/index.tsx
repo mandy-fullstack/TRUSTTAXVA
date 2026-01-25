@@ -96,10 +96,10 @@ export const Badge = ({ label, variant = 'neutral', style }: any) => {
 };
 
 // --- BUTTON ---
-export const Button = ({ title, onPress, variant = 'primary', loading, icon, iconPosition = 'left', style, textStyle }: any) => (
+export const Button = ({ title, onPress, variant = 'primary', loading, disabled, icon, iconPosition = 'left', style, textStyle }: any) => (
     <RNTouchableOpacity
         onPress={onPress}
-        disabled={loading}
+        disabled={loading || disabled}
         activeOpacity={0.7}
         style={
             [

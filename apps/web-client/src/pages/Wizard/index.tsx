@@ -28,7 +28,8 @@ export const WizardPage = () => {
                 if (!id) return;
                 const data = await api.getServiceById(id);
                 setService(data);
-            } catch (err) {
+            } catch (e) {
+                console.error('Failed to load service', e);
                 Alert.alert('Error', 'Failed to load service');
                 navigate('/services');
             } finally {
