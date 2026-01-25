@@ -1,11 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import type { ReactNode } from 'react';
+import { View, StyleSheet, ScrollView, type DimensionValue } from 'react-native';
 import { useCompany } from '../context/CompanyContext';
 import { Footer } from './Footer';
 import { Header } from './Header';
 
 interface PublicLayoutProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 export const PublicLayout = ({ children }: PublicLayoutProps) => {
@@ -28,7 +28,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        minHeight: '100vh',
+        minHeight: '100vh' as DimensionValue,
         backgroundColor: '#FFF'
     },
     content: {

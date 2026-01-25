@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, TextInput, Image } from 'react-native';
 import { H4, Text } from '@trusttax/ui';
 import { Palette } from 'lucide-react';

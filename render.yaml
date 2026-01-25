@@ -1,0 +1,113 @@
+# TrustTax VA – Render Blueprint
+# https://render.com/docs/blueprint-spec
+#
+# Cómo usar:
+# 1. En Render Dashboard → New → Blueprint → Conecta este repo.
+# 2. Al crear, te pedirá DATABASE_URL, JWT_SECRET y VITE_API_URL (sync: false).
+# 3. Despliega primero la API, copia su URL (ej. https://trusttax-api.onrender.com).
+# 4. En web-client y web-admin, añade env var VITE_API_URL = esa URL. Redeploy.
+#
+# BD: usas Prisma/Postgres externo. No creamos Render Postgres aquí.
+
+services:
+  # --------------------------------------------------------------------------
+  # API NestJS (backend)
+  # --------------------------------------------------------------------------
+  - type: web
+    name: trusttax-api
+    runtime: node
+    plan: free
+
+    buildCommand: |
+      corepack enable pnpm
+      pnpm install --frozen-lockfile
+      cd packages/database && pnpm exec prisma generate && cd ../..
+      pnpm exec turbo run build --filter=api
+
+    startCommand: node apps/api/dist/main.js
+
+    healthCheckPath: /
+
+    buildFilter:
+      paths:
+        - apps/api/**
+        - packages/database/**
+        - packages/core/**
+        - turbo.json
+        - pnpm-workspace.yaml
+        - package.json
+        - pnpm-lock.yaml
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+
+  # --------------------------------------------------------------------------
+  # Web Client (sitio público)
+  # --------------------------------------------------------------------------
+  - type: web
+    name: trusttax-web-client
+    runtime: static
+    plan: free
+
+    buildCommand: |
+      corepack enable pnpm
+      pnpm install --frozen-lockfile
+      pnpm exec turbo run build --filter=web-client
+
+    staticPublishPath: apps/web-client/dist
+
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+    buildFilter:
+      paths:
+        - apps/web-client/**
+        - packages/ui/**
+        - turbo.json
+        - pnpm-workspace.yaml
+        - package.json
+        - pnpm-lock.yaml
+
+    envVars:
+      - key: VITE_API_URL
+        sync: false
+
+  # --------------------------------------------------------------------------
+  # Web Admin (panel interno)
+  # --------------------------------------------------------------------------
+  - type: web
+    name: trusttax-web-admin
+    runtime: static
+    plan: free
+
+    buildCommand: |
+      corepack enable pnpm
+      pnpm install --frozen-lockfile
+      pnpm exec turbo run build --filter=web-admin
+
+    staticPublishPath: apps/web-admin/dist
+
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+    buildFilter:
+      paths:
+        - apps/web-admin/**
+        - packages/ui/**
+        - turbo.json
+        - pnpm-workspace.yaml
+        - package.json
+        - pnpm-lock.yaml
+
+    envVars:
+      - key: VITE_API_URL
+        sync: false

@@ -1,6 +1,5 @@
-import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { H3, Text, Card, Button } from '@trusttax/ui';
+import { H3, Text, Card } from '@trusttax/ui';
 import { CheckCircle2, FileText } from 'lucide-react';
 
 interface ReviewStepProps {
@@ -44,7 +43,7 @@ export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) 
                     <Text style={styles.sectionTitle}>Documents</Text>
                     <Card padding="sm" style={styles.card}>
                         {Object.keys(docData).length > 0 ? (
-                            Object.entries(docData).map(([key, file]: any) => (
+                            Object.entries(docData).map(([key]: [string, unknown]) => (
                                 <View key={key} style={styles.row}>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                         <FileText size={16} color="#64748B" />

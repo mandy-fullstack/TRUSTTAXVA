@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import Cookies from 'js-cookie';
-import { api, AuthenticationError, NotFoundError, NetworkError, ForbiddenError } from '../services/api';
+import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
 
 interface User {
     id: string;

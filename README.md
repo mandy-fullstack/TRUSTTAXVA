@@ -124,6 +124,12 @@ Full support for:
 - 🇺🇸 English
 - 🇪🇸 Spanish
 
+## 🌐 Desplegar en Render
+
+El proyecto incluye un **Blueprint** (`render.yaml`) para desplegar API, web-client y web-admin en [Render](https://render.com).
+
+**Resumen:** Conecta el repo como Blueprint en Render, configura `DATABASE_URL` y `JWT_SECRET` para la API, y `VITE_API_URL` (URL de la API) para los dos estáticos. Ver **[DEPLOY.md](./DEPLOY.md)** para los pasos detallados.
+
 ## 📤 Subir a GitHub
 
 1. **Crea un repositorio** en [GitHub](https://github.com/new) (vacío, sin README ni .gitignore).

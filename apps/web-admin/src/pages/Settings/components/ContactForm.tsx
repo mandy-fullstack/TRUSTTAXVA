@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, TextInput } from 'react-native';
 import { H4, Text } from '@trusttax/ui';
 import { Phone, Mail, MapPin, Globe } from 'lucide-react';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { H3, Text, Button } from '@trusttax/ui';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';

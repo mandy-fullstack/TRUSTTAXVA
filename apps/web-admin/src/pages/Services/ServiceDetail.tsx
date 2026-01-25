@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
-import { H1, H2, H4, Text } from '@trusttax/ui';
-import { ArrowLeft, Save, Plus, Trash2, GripVertical, ChevronUp, ChevronDown, Edit } from 'lucide-react';
+import { H2, H4, Text } from '@trusttax/ui';
+import { ArrowLeft, Save, Plus, Trash2, ChevronUp, ChevronDown, Edit } from 'lucide-react';
 import { adminApi } from '../../services/adminApi';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
@@ -29,7 +29,7 @@ export const ServiceDetailPage = () => {
     const navigate = useNavigate();
     const [service, setService] = useState<Service | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [, setError] = useState('');
     const [activeTab, setActiveTab] = useState<'overview' | 'steps'>('overview');
 
     // Step Editing

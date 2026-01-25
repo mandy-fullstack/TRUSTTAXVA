@@ -6,6 +6,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   app.useGlobalInterceptors(new ErrorInterceptor());
-  await app.listen(process.env.PORT ?? 4000);
+  const port = parseInt(process.env.PORT ?? '4000', 10);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();

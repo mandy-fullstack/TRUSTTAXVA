@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { H1, H4, Text, Badge } from '@trusttax/ui';
+import { H1, H4, Text } from '@trusttax/ui';
 import { FileText, User, Calendar, DollarSign } from 'lucide-react';
 import { adminApi } from '../../services/adminApi';
 import { useNavigate } from 'react-router-dom';

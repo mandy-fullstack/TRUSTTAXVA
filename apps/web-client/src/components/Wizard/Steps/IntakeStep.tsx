@@ -1,6 +1,5 @@
-import React from 'react';
 import { View, StyleSheet, TextInput, Switch } from 'react-native';
-import { H3, Text, Input, Button, Card } from '@trusttax/ui';
+import { H3, Text } from '@trusttax/ui';
 import type { ServiceStep } from '../../../types';
 
 interface IntakeStepProps {

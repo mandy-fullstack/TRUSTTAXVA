@@ -1,5 +1,3 @@
-import { api } from './api';
-
 export const adminApi = {
     // Clients
     async getClients() {

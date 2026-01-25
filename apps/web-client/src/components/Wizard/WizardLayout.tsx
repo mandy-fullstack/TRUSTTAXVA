@@ -1,18 +1,18 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import type { ReactNode } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Layout } from '../Layout';
 import { H3, Text, Card } from '@trusttax/ui';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 interface WizardLayoutProps {
     title: string;
     currentStep: number;
     totalSteps: number;
     steps: Array<{ id: string; title: string }>;
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
-export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }: WizardLayoutProps) => {
+export const WizardLayout = ({ title, currentStep, totalSteps: _totalSteps, steps, children }: WizardLayoutProps) => {
     return (
         <Layout>
             <View style={styles.container}>

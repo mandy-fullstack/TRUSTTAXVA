@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { H4, Text } from '@trusttax/ui';
 import { Clock, Plus, Trash2 } from 'lucide-react';

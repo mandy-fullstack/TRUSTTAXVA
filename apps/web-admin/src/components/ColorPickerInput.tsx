@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, TextInput, Modal, Pressable } from 'react-native';
 import { HexColorPicker } from 'react-colorful';
 import { Text } from '@trusttax/ui';
