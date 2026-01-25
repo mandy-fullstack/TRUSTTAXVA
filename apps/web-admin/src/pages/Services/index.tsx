@@ -1,0 +1,363 @@
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { H1, H2, H4, Text } from '@trusttax/ui';
+import { Briefcase, DollarSign, Plus, Edit, Trash2, X, Search } from 'lucide-react';
+import { adminApi } from '../../services/adminApi';
+import { useNavigate } from 'react-router-dom';
+import { Layout } from '../../components/Layout';
+
+interface Service {
+    id: string;
+    name: string;
+    description: string;
+    category: string;
+    price: number;
+    originalPrice: number | null;
+    createdAt: string;
+    _count: {
+        orders: number;
+        reviews: number;
+    };
+}
+
+export const ServicesPage = () => {
+    const [services, setServices] = useState<Service[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showModal, setShowModal] = useState(false);
+    const [editingService, setEditingService] = useState<Service | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate();
+
+    // Form state
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        category: '',
+        price: 0,
+        originalPrice: 0,
+    });
+
+
+    useEffect(() => {
+        loadServices();
+    }, []);
+
+    const loadServices = async () => {
+        try {
+            setLoading(true);
+            const data = await adminApi.getServices();
+            setServices(data);
+        } catch (err: any) {
+            setError(err.message || 'Failed to load services');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCreate = () => {
+        setEditingService(null);
+        setFormData({
+            name: '',
+            description: '',
+            category: '',
+            price: 0,
+            originalPrice: 0,
+        });
+        setShowModal(true);
+    };
+
+    const handleEdit = (service: Service) => {
+        navigate(`/services/${service.id}`);
+    };
+
+    const handleSave = async () => {
+        try {
+            const data = {
+                name: formData.name,
+                description: formData.description,
+                category: formData.category,
+                price: Number(formData.price),
+                originalPrice: Number(formData.originalPrice) || undefined,
+            };
+
+            if (editingService) {
+                await adminApi.updateService(editingService.id, data);
+            } else {
+                await adminApi.createService(data);
+            }
+
+            setShowModal(false);
+            loadServices();
+        } catch (err: any) {
+            setError(err.message || 'Failed to save service');
+        }
+    };
+
+    const handleDelete = async (serviceId: string) => {
+        if (confirm('Are you sure you want to delete this service?')) {
+            try {
+                await adminApi.deleteService(serviceId);
+                loadServices();
+            } catch (err: any) {
+                setError(err.message || 'Failed to delete service');
+            }
+        }
+    };
+
+    // Filter and group services
+    const filteredServices = services.filter(s =>
+        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const groupedServices = filteredServices.reduce((acc, service) => {
+        const cat = service.category || 'Uncategorized';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(service);
+        return acc;
+    }, {} as Record<string, Service[]>);
+
+    const categories = Object.keys(groupedServices).sort();
+
+    if (loading) {
+        return (
+            <Layout>
+                <View style={styles.center}>
+                    <ActivityIndicator size="large" color="#0F172A" />
+                </View>
+            </Layout>
+        );
+    }
+
+    if (error) {
+        return (
+            <Layout>
+                <View style={styles.center}>
+                    <Text style={styles.errorText}>{error}</Text>
+                </View>
+            </Layout>
+        );
+    }
+
+    return (
+        <Layout>
+            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.header}>
+                    <View style={{ flex: 1 }}>
+                        <H1>Services</H1>
+                        <Text style={styles.subtitle}>{filteredServices.length} {filteredServices.length === 1 ? 'service' : 'services'} found</Text>
+                    </View>
+                    <View style={styles.headerActions}>
+                        <View style={styles.searchBar}>
+                            <Search size={18} color="#94A3B8" />
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Search services..."
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                        </View>
+                        <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
+                            <Plus size={20} color="#FFF" />
+                            <Text style={styles.createButtonText}>New Service</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {categories.map(category => (
+                    <View key={category} style={styles.categorySection}>
+                        <H4 style={styles.categoryTitle}>{category}</H4>
+                        <View style={styles.servicesGrid}>
+                            {groupedServices[category].map((service) => (
+                                <View key={service.id} style={styles.serviceCard}>
+                                    <View style={styles.cardHeader}>
+                                        <View style={styles.iconContainer}>
+                                            <Briefcase size={24} color="#2563EB" />
+                                        </View>
+                                        <View style={styles.cardActions}>
+                                            <TouchableOpacity onPress={() => handleEdit(service)} style={styles.iconButton}>
+                                                <Edit size={16} color="#64748B" />
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => handleDelete(service.id)} style={styles.iconButton}>
+                                                <Trash2 size={16} color="#EF4444" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+
+                                    <H4 style={styles.serviceName}>{service.name}</H4>
+                                    <Text style={styles.categoryBadge}>{service.category}</Text>
+                                    <Text style={styles.description} numberOfLines={2}>{service.description}</Text>
+
+                                    <View style={styles.cardFooter}>
+                                        <View style={styles.priceContainer}>
+                                            <View style={styles.priceColumn}>
+                                                {service.originalPrice && Number(service.originalPrice) > Number(service.price) && (
+                                                    <Text style={styles.originalPriceText}>${(Number(service.originalPrice)).toFixed(0)}</Text>
+                                                )}
+                                                <View style={styles.currentPriceRow}>
+                                                    <DollarSign size={16} color="#10B981" />
+                                                    <Text style={styles.price}>${(Number(service.price) || 0).toFixed(0)}</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    <View style={styles.statsRow}>
+                                        <Text style={styles.statText}>{service._count.orders} orders</Text>
+                                        <Text style={styles.statText}>{service._count.reviews} reviews</Text>
+                                    </View>
+                                </View>
+                            ))}
+                        </View>
+                    </View>
+                ))}
+
+                {services.length === 0 && (
+                    <View style={styles.emptyState}>
+                        <Briefcase size={48} color="#E2E8F0" />
+                        <H4 style={styles.emptyTitle}>No Services Yet</H4>
+                        <Text style={styles.emptyText}>Create your first service to get started.</Text>
+                        <TouchableOpacity style={styles.emptyButton} onPress={handleCreate}>
+                            <Plus size={20} color="#FFF" />
+                            <Text style={styles.emptyButtonText}>Create Service</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+
+                {/* Service Form Modal */}
+                <Modal visible={showModal} transparent animationType="fade">
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContent}>
+                            <View style={styles.modalHeader}>
+                                <H2>{editingService ? 'Edit Service' : 'New Service'}</H2>
+                                <TouchableOpacity onPress={() => setShowModal(false)}>
+                                    <X size={24} color="#64748B" />
+                                </TouchableOpacity>
+                            </View>
+
+                            <ScrollView style={styles.modalForm}>
+                                <Text style={styles.label}>Name *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.name}
+                                    onChangeText={(text) => setFormData({ ...formData, name: text })}
+                                    placeholder="Service name"
+                                />
+
+                                <Text style={styles.label}>Category *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.category}
+                                    onChangeText={(text) => setFormData({ ...formData, category: text })}
+                                    placeholder="e.g., Tax, Immigration, Legal"
+                                />
+
+                                <Text style={styles.label}>Price *</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.price.toString()}
+                                    onChangeText={(text) => setFormData({ ...formData, price: parseFloat(text) || 0 })}
+                                    placeholder="0.00"
+                                    keyboardType="numeric"
+                                />
+
+                                <Text style={styles.label}>Original Price (Optional)</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.originalPrice?.toString() || ''}
+                                    onChangeText={(text) => setFormData({ ...formData, originalPrice: parseFloat(text) || 0 })}
+                                    placeholder="0.00"
+                                    keyboardType="numeric"
+                                />
+
+                                <Text style={styles.label}>Description *</Text>
+                                <TextInput
+                                    style={[styles.input, styles.textArea]}
+                                    value={formData.description}
+                                    onChangeText={(text) => setFormData({ ...formData, description: text })}
+                                    placeholder="Describe the service..."
+                                    multiline
+                                    numberOfLines={4}
+                                />
+                            </ScrollView>
+
+                            <View style={styles.modalActions}>
+                                <TouchableOpacity style={styles.cancelButton} onPress={() => setShowModal(false)}>
+                                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+                                    <Text style={styles.saveButtonText}>{editingService ? 'Update' : 'Create'}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            </ScrollView>
+        </Layout>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: { flex: 1, padding: 24, width: '100%', minHeight: '100%' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
+    header: { marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 24, flexWrap: 'wrap' },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
+    searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, height: 44, width: 300 },
+    searchInput: { flex: 1, fontSize: 14, color: '#0F172A', outlineStyle: 'none' } as any,
+    subtitle: { color: '#64748B', marginTop: 4 },
+    errorText: { color: '#EF4444', fontSize: 14 },
+
+    createButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: '#0F172A' },
+    createButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+
+    servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, width: '100%' },
+    serviceCard: { width: 'calc(33.333% - 16px)' as any, backgroundColor: '#FFFFFF', padding: 24, borderWidth: 1, borderColor: '#E2E8F0', minWidth: 300 },
+
+    cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
+    iconContainer: { width: 48, height: 48, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderRadius: 0 },
+    cardActions: { flexDirection: 'row', gap: 8 },
+    iconButton: { padding: 8, borderRadius: 0 },
+
+    serviceName: { marginBottom: 8, fontSize: 18 },
+    categoryBadge: { fontSize: 12, color: '#2563EB', backgroundColor: '#EFF6FF', paddingHorizontal: 12, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 12, fontWeight: '600' },
+    description: { color: '#64748B', fontSize: 14, marginBottom: 16, lineHeight: 20 },
+
+    cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F1F5F9' },
+    priceContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    price: { fontSize: 20, fontWeight: '700', color: '#10B981' },
+    timeContainer: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    timeText: { fontSize: 12, color: '#64748B' },
+
+    statsRow: { flexDirection: 'row', gap: 16 },
+    statText: { fontSize: 12, color: '#94A3B8' },
+
+    emptyState: { padding: 64, alignItems: 'center', gap: 16 },
+    emptyTitle: { color: '#1E293B', marginTop: 16 },
+    emptyText: { color: '#94A3B8', textAlign: 'center' },
+    emptyButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: '#0F172A', marginTop: 8, borderRadius: 0 },
+    emptyButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+
+    // Category
+    categorySection: { marginBottom: 32, width: '100%' },
+    categoryTitle: { marginBottom: 16, color: '#334155', borderBottomWidth: 1, borderBottomColor: '#E2E8F0', paddingBottom: 8 },
+
+    // Modal styles
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    modalContent: { backgroundColor: '#FFF', width: '100%', maxWidth: 600, maxHeight: '90%', borderRadius: 0 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+    modalForm: { padding: 24, maxHeight: 500 },
+    label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 8, marginTop: 16 },
+    input: { borderWidth: 1, borderColor: '#E2E8F0', padding: 12, fontSize: 14 },
+    textArea: { minHeight: 100, textAlignVertical: 'top' },
+    modalActions: { flexDirection: 'row', gap: 12, padding: 24, borderTopWidth: 1, borderTopColor: '#E2E8F0' },
+    cancelButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+    cancelButtonText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+    saveButton: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: '#0F172A' },
+    saveButtonText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+    priceColumn: { gap: 2 },
+    originalPriceText: { fontSize: 14, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '400', marginLeft: 20 },
+    currentPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+});
+

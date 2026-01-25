@@ -1,0 +1,366 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+  PREPARER
+}
+
+enum TaxStatus {
+  DRAFT
+  IN_REVIEW
+  FILED
+  ACCEPTED
+  REJECTED
+  COMPLETED
+}
+
+enum CaseType {
+  RESIDENCY
+  CITIZENSHIP
+  VISA_WORK
+  VISA_FAMILY
+  OTHER
+}
+
+enum DocType {
+  PASSPORT
+  ID_CARD
+  TAX_FORM
+  PROOF_OF_INCOME
+  OTHER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      Role     @default(CLIENT)
+
+  // Relations
+  clientTaxReturns    TaxReturn[]       @relation("ClientReturns")
+  preparedTaxReturns  TaxReturn[]       @relation("PreparerReturns")
+  immigrationCases    ImmigrationCase[]
+  documents           Document[]
+  
+  // Enterprise Relations
+  auditLogs           AuditLog[]
+  clientConversations Conversation[] @relation("ClientConversations")
+  preparerConversations Conversation[] @relation("PreparerConversations")
+  sentMessages        Message[]
+  invoices            Invoice[]
+  clientAppointments  Appointment[] @relation("ClientAppointments")
+  preparedAppointments Appointment[] @relation("PreparerAppointments")
+  orders              Order[]
+}
+
+model TaxReturn {
+  id          String    @id @default(uuid())
+  year        Int
+  status      TaxStatus @default(DRAFT)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  clientId    String
+  client      User      @relation("ClientReturns", fields: [clientId], references: [id])
+  
+  preparerId  String?
+  preparer    User?     @relation("PreparerReturns", fields: [preparerId], references: [id])
+  
+  forms       TaxForm[]
+  deductions  Deduction[]
+  documents   Document[]
+}
+
+model TaxForm {
+  id          String    @id @default(uuid())
+  type        String    // e.g. "W-2", "1099-NEC"
+  data        Json      // Flexible JSONB storage for form-specific data
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id])
+}
+
+model Deduction {
+  id          String    @id @default(uuid())
+  category    String
+  amount      Decimal
+  description String?
+  date        DateTime?
+  
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id])
+}
+
+model ImmigrationCase {
+  id              String         @id @default(uuid())
+  type            CaseType
+  uscisReceiptNumber String?
+  priorityDate    DateTime?
+  status          String         @default("OPEN")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  
+  timeline        CaseTimeline[]
+  documents       Document[]
+}
+
+model CaseTimeline {
+  id                String          @id @default(uuid())
+  title             String
+  description       String?
+  date              DateTime        @default(now())
+  status            String          // e.g. "COMPLETED", "PENDING"
+  
+  immigrationCaseId String
+  immigrationCase   ImmigrationCase @relation(fields: [immigrationCaseId], references: [id])
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  title       String
+  type        DocType   @default(OTHER)
+  s3Key       String    // Secure reference to S3 object
+  url         String?   // Temporary signed URL or public URL if applicable
+  mimeType    String?
+  size        Int?
+  uploadedAt  DateTime  @default(now())
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  // Optional relations to specific contexts
+  taxReturnId String?
+  taxReturn   TaxReturn? @relation(fields: [taxReturnId], references: [id])
+  
+  immigrationCaseId String?
+  immigrationCase   ImmigrationCase? @relation(fields: [immigrationCaseId], references: [id])
+
+  orderId     String?
+  order       Order?     @relation(fields: [orderId], references: [id])
+}
+
+// --- Enterprise Modules ---
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String   // e.g. "UPDATE_STATUS", "VIEW_DOC"
+  entity    String   // e.g. "TaxReturn", "User"
+  entityId  String
+  details   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  subject   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Participants
+  clientId  String
+  client    User      @relation("ClientConversations", fields: [clientId], references: [id])
+  
+  preparerId String?
+  preparer   User?    @relation("PreparerConversations", fields: [preparerId], references: [id])
+
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  content        String
+  isRead         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id          String        @id @default(uuid())
+  status      InvoiceStatus @default(DRAFT)
+  amount      Decimal
+  currency    String        @default("USD")
+  dueDate     DateTime?
+  paidAt      DateTime?
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  clientId    String
+  client      User          @relation(fields: [clientId], references: [id])
+
+  payments    Payment[]
+}
+
+model Payment {
+  id          String   @id @default(uuid())
+  amount      Decimal
+  method      String   // e.g. "STRIPE", "CASH", "CHECK"
+  reference   String?  // External ID (Stripe Charge ID)
+  status      String   // "SUCCESS", "FAILED"
+  createdAt   DateTime @default(now())
+
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  title       String
+  date        DateTime
+  duration    Int               // in minutes
+  status      AppointmentStatus @default(SCHEDULED)
+  meetingLink String?           // e.g. Zoom/Google Meet URL
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  clientId    String
+  client      User              @relation("ClientAppointments", fields: [clientId], references: [id])
+
+  preparerId  String?
+  preparer    User?             @relation("PreparerAppointments", fields: [preparerId], references: [id])
+}
+
+// --- Service Catalog & Dynamic Orders ---
+
+model Service {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  price       Decimal
+  originalPrice Decimal?
+  category    String   // "TAX", "LEGAL", "BUSINESS"
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  steps       ServiceStep[]
+  docTypes    ServiceDoctype[]
+  orders      Order[]
+  reviews     ServiceReview[]
+}
+
+model ServiceStep {
+  id          String   @id @default(uuid())
+  orderIndex  Int
+  title       String
+  description String?
+  formConfig  Json     // JSON defining inputs: [{ label: "SSN", type: "text" }, ...]
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+}
+
+model ServiceDoctype {
+  id          String   @id @default(uuid())
+  docType     DocType
+  isRequired  Boolean  @default(true)
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  status      String   @default("IN_PROGRESS") // "IN_PROGRESS", "SUBMITTED", "COMPLETED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+  
+  progress    OrderStepProgress[]
+  documents   Document[]
+}
+
+model OrderStepProgress {
+  id          String   @id @default(uuid())
+  stepIndex   Int
+  data        Json?    // Submitted form data for this step
+  completedAt DateTime @default(now())
+  
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id])
+}
+
+model ServiceReview {
+  id          String   @id @default(uuid())
+  author      String
+  rating      Int
+  text        String
+  date        DateTime @default(now())
+  
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id])
+}
+
+// --- Global Settings ---
+
+model CompanyProfile {
+  id            String   @id @default(uuid())
+  companyName   String   // Legal Name
+  dba           String?  // Doing Business As
+  description   String?  // Short bio
+  email         String
+  phone         String
+  address       String
+  website       String?
+  logoUrl       String?
+  faviconUrl    String?
+  
+  businessHours Json?    // e.g. { "mon": "9-5" }
+  socialLinks   Json?    // e.g. { "facebook": "url" }
+  
+  primaryColor  String?  @default("#0F172A") 
+  secondaryColor String? @default("#2563EB")
+  themeOptions  Json?    // Extended colors: text, background, success, error, etc.
+  
+  updatedAt     DateTime @updatedAt
+}
