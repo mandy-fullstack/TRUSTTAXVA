@@ -52,7 +52,6 @@ services:
   - type: web
     name: trusttax-web-client
     runtime: static
-    plan: free
 
     buildCommand: |
       corepack enable pnpm
@@ -85,7 +84,6 @@ services:
   - type: web
     name: trusttax-web-admin
     runtime: static
-    plan: free
 
     buildCommand: |
       corepack enable pnpm
