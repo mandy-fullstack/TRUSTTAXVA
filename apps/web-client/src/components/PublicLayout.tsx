@@ -28,10 +28,12 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        width: '100%',
         minHeight: '100vh' as DimensionValue,
         backgroundColor: '#FFF'
     },
     content: {
-        flex: 1
+        flex: 1,
+        width: '100%'
     }
 });

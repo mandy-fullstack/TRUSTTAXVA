@@ -51,10 +51,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     } else if (err instanceof NetworkError) {
                         // Network issue - keep session but show error
                         setError('Connection issue. Retrying...');
+                        setIsLoading(false);
                         // Retry after 3 seconds
                         setTimeout(() => {
+                            setError(null);
                             initAuth();
                         }, 3000);
+                        return;
                     } else {
                         // Unknown error - clear session to be safe
                         logout();
