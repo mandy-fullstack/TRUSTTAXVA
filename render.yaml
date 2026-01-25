@@ -18,11 +18,7 @@ services:
     runtime: node
     plan: free
 
-    buildCommand: |
-      corepack enable pnpm
-      NODE_ENV=development pnpm install
-      cd packages/database && pnpm exec prisma generate && cd ../..
-      pnpm exec turbo run build --filter=api
+    buildCommand: sh -c 'export NODE_ENV=development && corepack enable pnpm && pnpm install --config.production=false && cd packages/database && pnpm exec prisma generate && cd ../.. && pnpm exec turbo run build --filter=api'
 
     startCommand: pnpm --filter api run start:prod
 
@@ -55,10 +51,7 @@ services:
     name: trusttax-web-client
     runtime: static
 
-    buildCommand: |
-      corepack enable pnpm
-      NODE_ENV=development pnpm install
-      pnpm exec turbo run build --filter=web-client
+    buildCommand: sh -c 'export NODE_ENV=development && corepack enable pnpm && pnpm install --config.production=false && pnpm exec turbo run build --filter=web-client'
 
     staticPublishPath: apps/web-client/dist
 
@@ -87,10 +80,7 @@ services:
     name: trusttax-web-admin
     runtime: static
 
-    buildCommand: |
-      corepack enable pnpm
-      NODE_ENV=development pnpm install
-      pnpm exec turbo run build --filter=web-admin
+    buildCommand: sh -c 'export NODE_ENV=development && corepack enable pnpm && pnpm install --config.production=false && pnpm exec turbo run build --filter=web-admin'
 
     staticPublishPath: apps/web-admin/dist
 
