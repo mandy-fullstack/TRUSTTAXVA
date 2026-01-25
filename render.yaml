@@ -20,11 +20,11 @@ services:
 
     buildCommand: |
       corepack enable pnpm
-      pnpm install --frozen-lockfile
+      pnpm install
       cd packages/database && pnpm exec prisma generate && cd ../..
       pnpm exec turbo run build --filter=api
 
-    startCommand: node apps/api/dist/main.js
+    startCommand: pnpm --filter api run start:prod
 
     healthCheckPath: /
 
@@ -39,6 +39,8 @@ services:
         - pnpm-lock.yaml
 
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
