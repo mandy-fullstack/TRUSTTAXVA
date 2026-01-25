@@ -1,4 +1,4 @@
-import { View, StyleSheet, TextInput, Platform } from 'react-native';
+import { View, StyleSheet, TextInput } from 'react-native';
 import { Text } from '@trusttax/ui';
 
 interface EditableTextInputProps {

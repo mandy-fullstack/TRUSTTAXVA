@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Text, H1, H3, Card, Button } from '@trusttax/ui';
 import { Layout } from '../../components/Layout';
@@ -181,15 +181,14 @@ export const ProfilePage = () => {
     const scrollToField = (ref: React.RefObject<View>) => {
         if (ref.current && scrollViewRef.current) {
             // Usar measureInWindow para mejor compatibilidad con web
-            ref.current.measureInWindow((x, y, width, height) => {
+            ref.current.measureInWindow((_x, y, _width, _height) => {
                 if (scrollViewRef.current) {
-                    // En web, usar scrollTo con offset
                     if (Platform.OS === 'web') {
                         (scrollViewRef.current as any).scrollTo({ y: Math.max(0, y - 150), animated: true });
                     } else {
                         ref.current?.measureLayout(
                             scrollViewRef.current as any,
-                            (layoutX, layoutY) => {
+                            (_layoutX, layoutY) => {
                                 scrollViewRef.current?.scrollTo({ y: Math.max(0, layoutY - 100), animated: true });
                             },
                             () => {}

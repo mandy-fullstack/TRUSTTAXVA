@@ -28,7 +28,6 @@ export const MaskedInput = ({
     maskType = 'generic',
     maxLength,
     keyboardType = 'default',
-    formatValue,
     inline = false,
     maskedDisplay,
     onLoadDecrypted,
