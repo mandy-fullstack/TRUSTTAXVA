@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { View, Text as RNText, StyleSheet, TouchableOpacity as RNTouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
+import { spacing, space, type SpaceKey } from './spacing';
+
+export { spacing, space } from './spacing';
 
 // Professional Design System Constants
 const theme = {
@@ -23,7 +26,27 @@ const theme = {
         }
     },
     radius: 0,
+    spacing,
+    space,
 };
+
+const toPx = (v: SpaceKey | number) => (typeof v === 'number' ? v : space[v]);
+
+/** Vertical or horizontal spacer. Use for consistent gaps. */
+export const Spacer = ({ size = 'lg', direction = 'vertical', style }: { size?: SpaceKey | number; direction?: 'vertical' | 'horizontal'; style?: any }) => {
+    const px = toPx(size);
+    return <View style={[{ [direction === 'vertical' ? 'height' : 'width']: px, flexShrink: 0 }, style]} />;
+};
+
+/** Vertical stack with gap between children. */
+export const Stack = ({ gap = 'md', children, style }: { gap?: SpaceKey | number; children?: React.ReactNode; style?: any }) => (
+    <View style={[{ flexDirection: 'column', gap: toPx(gap) }, style]}>{children}</View>
+);
+
+/** Horizontal row with gap between children. */
+export const Inline = ({ gap = 'md', wrap, children, style }: { gap?: SpaceKey | number; wrap?: boolean; children?: React.ReactNode; style?: any }) => (
+    <View style={[{ flexDirection: 'row', alignItems: 'center', gap: toPx(gap), flexWrap: wrap ? 'wrap' : 'nowrap' }, style]}>{children}</View>
+);
 
 // --- TYPOGRAPHY ---
 export const H1 = ({ children, style }: any) => <RNText style={[styles.h1, style]}>{children}</RNText>;
@@ -34,16 +57,8 @@ export const Subtitle = ({ children, style }: any) => <RNText style={[styles.sub
 export const Text = ({ children, style }: any) => <RNText style={[styles.text, style]}>{children}</RNText>;
 
 // --- CARD ---
-export const Card = ({ children, style, padding = 24, elevated = true }: any) => (
-    <View style={
-        [
-            styles.card,
-            { padding },
-            elevated && styles.elevated,
-            style
-        ]} >
-        {children}
-    </View>
+export const Card = ({ children, style, padding = spacing[6], elevated = true }: any) => (
+    <View style={[styles.card, { padding }, elevated && styles.elevated, style]}>{children}</View>
 );
 
 // --- INPUT ---
@@ -56,7 +71,7 @@ export const Input = ({ label, placeholder, value, onChangeText, secureTextEntry
             <View style={[
                 styles.inputWrapper,
                 isFocused && styles.inputWrapperFocused,
-                { flexDirection: 'row', alignItems: 'center', gap: 12 }
+                { flexDirection: 'row', alignItems: 'center', gap: spacing[3] }
             ]}>
                 {icon && iconPosition === 'left' && icon}
                 <TextInput
@@ -101,17 +116,12 @@ export const Button = ({ title, onPress, variant = 'primary', loading, disabled,
         onPress={onPress}
         disabled={loading || disabled}
         activeOpacity={0.7}
-        style={
-            [
-                styles.button,
-                variant === 'primary' ? styles.btnPrimary : styles.btnOutline,
-                style
-            ]}
+        style={[styles.button, variant === 'primary' ? styles.btnPrimary : styles.btnOutline, style]}
     >
         {loading ? (
             <ActivityIndicator color={variant === 'primary' ? '#FFF' : theme.colors.primary} />
         ) : (
-            <View style={styles.btnContent}>
+            <View style={[styles.btnContent, { gap: spacing[3] }]}>
                 {icon && iconPosition === 'left' && icon}
                 <RNText style={[
                     styles.btnText,
@@ -178,47 +188,47 @@ export const StatsCard = ({ label, value, trend, trendValue, trendColor, style }
     </Card>
 );
 
+const s = spacing;
 const styles = StyleSheet.create({
-    h1: { fontSize: 32, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.8, marginBottom: 8 },
-    h2: { fontSize: 24, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.5, marginBottom: 4 },
+    h1: { fontSize: 32, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.8, marginBottom: s[2] },
+    h2: { fontSize: 24, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.5, marginBottom: s[1] },
     h3: { fontSize: 20, fontWeight: '600', color: theme.colors.slate[900], letterSpacing: -0.3 },
     h4: { fontSize: 18, fontWeight: '600', color: theme.colors.slate[900] },
     subtitle: { fontSize: 16, color: theme.colors.slate[500], lineHeight: 24 },
     text: { fontSize: 14, color: theme.colors.slate[600], lineHeight: 22 },
     card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.colors.slate[200], overflow: 'hidden' },
     elevated: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
-    badge: { paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
+    badge: { paddingHorizontal: 10, paddingVertical: s[1], alignSelf: 'flex-start' },
     badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-    button: { height: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
+    button: { height: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: s[8] },
     btnPrimary: { backgroundColor: theme.colors.primary },
     btnOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
-    btnContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    btnContent: { flexDirection: 'row', alignItems: 'center' },
     btnText: { fontSize: 13, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1.5 },
     btnTextPrimary: { color: '#FFFFFF' },
     btnTextOutline: { color: theme.colors.primary },
-    inputGroup: { marginBottom: 16, width: '100%' },
-    inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: 6 },
-    inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: 16, backgroundColor: '#FFFFFF', justifyContent: 'center' },
+    inputGroup: { marginBottom: s[4], width: '100%' },
+    inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: s[2] },
+    inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: s[4], backgroundColor: '#FFFFFF', justifyContent: 'center' },
     inputWrapperFocused: { borderColor: theme.colors.primary },
     inputText: { flex: 1, fontSize: 16, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none' } as any,
 
-    // NEW SHADCN STYLES
     table: { width: '100%', borderTopWidth: 1, borderTopColor: theme.colors.slate[200] },
-    tableHeader: { flexDirection: 'row', backgroundColor: theme.colors.slate[50], padding: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200] },
+    tableHeader: { flexDirection: 'row', backgroundColor: theme.colors.slate[50], padding: s[4], borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200] },
     th: { fontSize: 12, fontWeight: '700', color: theme.colors.slate[500], textTransform: 'uppercase', letterSpacing: 1 },
-    tr: { flexDirection: 'row', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.colors.slate[100], alignItems: 'center' },
+    tr: { flexDirection: 'row', padding: s[4], borderBottomWidth: 1, borderBottomColor: theme.colors.slate[100], alignItems: 'center' },
     tdText: { fontSize: 14, color: theme.colors.slate[900] },
 
-    tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200], marginBottom: 24 },
-    tab: { paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+    tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200], marginBottom: s[6] },
+    tab: { paddingVertical: s[3], paddingHorizontal: s[4], borderBottomWidth: 2, borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: theme.colors.primary },
     tabText: { fontSize: 14, fontWeight: '500', color: theme.colors.slate[500] },
     tabTextActive: { color: theme.colors.primary, fontWeight: '600' },
 
     statsCard: { minWidth: 240, flex: 1 },
-    statsLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[500], marginBottom: 8 },
-    statsValue: { fontSize: 28, fontWeight: '700', color: theme.colors.slate[900], marginBottom: 8 },
-    trendRow: { flexDirection: 'row', alignItems: 'center' },
+    statsLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[500], marginBottom: s[2] },
+    statsValue: { fontSize: 28, fontWeight: '700', color: theme.colors.slate[900], marginBottom: s[2] },
+    trendRow: { flexDirection: 'row', alignItems: 'center', gap: s[2] },
     trendValue: { fontSize: 13, fontWeight: '600' },
     trendText: { fontSize: 13, color: theme.colors.slate[400] },
 });

@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { H2, H4, Text } from '@trusttax/ui';
-import { ArrowLeft, Save, Plus, Trash2, ChevronUp, ChevronDown, Edit } from 'lucide-react';
-import { adminApi } from '../../services/adminApi';
+import { ArrowLeft, Save, Plus, Trash2, ChevronUp, ChevronDown, Edit, X } from 'lucide-react';
+import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { AlertDialog } from '../../components/AlertDialog';
 
 interface ServiceStep {
     id: string;
     title: string;
     description: string | null;
-    formConfig: any;
+    formConfig?: any;
+    formId?: string | null;
     orderIndex: number;
+    form?: { id: string; name: string } | null;
 }
 
 interface Service {
@@ -35,12 +39,22 @@ export const ServiceDetailPage = () => {
     // Step Editing
     const [editingStep, setEditingStep] = useState<ServiceStep | null>(null);
     const [isStepModalOpen, setIsStepModalOpen] = useState(false);
-    const [stepFormData, setStepFormData] = useState({ title: '', description: '', formConfig: '[]' });
+    const [stepFormData, setStepFormData] = useState({ title: '', description: '', formId: '' as string });
+    const [forms, setForms] = useState<{ id: string; name: string }[]>([]);
 
     // Service Editing
     const [serviceFormData, setServiceFormData] = useState({
         name: '', description: '', category: '', price: '', originalPrice: ''
     });
+
+    // Dialog states
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning' }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
+    const [confirmDeleteStep, setConfirmDeleteStep] = useState<{ isOpen: boolean; stepId: string | null }>({ isOpen: false, stepId: null });
 
     useEffect(() => {
         if (id) loadService();
@@ -50,7 +64,7 @@ export const ServiceDetailPage = () => {
         if (!id) return;
         try {
             setLoading(true);
-            const data = await adminApi.getServiceDetails(id);
+            const data = await api.getServiceDetails(id);
             setService(data);
             setServiceFormData({
                 name: data.name,
@@ -69,72 +83,83 @@ export const ServiceDetailPage = () => {
     const handleSaveService = async () => {
         if (!service || !id) return;
         try {
-            await adminApi.updateService(id, {
+            await api.updateService(id, {
                 name: serviceFormData.name,
                 description: serviceFormData.description,
                 category: serviceFormData.category,
                 price: parseFloat(serviceFormData.price),
                 originalPrice: parseFloat(serviceFormData.originalPrice) || undefined
             });
-            alert('Service updated successfully');
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Service updated successfully', variant: 'success' });
             loadService();
         } catch (err: any) {
-            alert(err.message || 'Failed to update service');
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to update service', variant: 'error' });
         }
     };
 
-    // Step Handlers
+    const loadForms = async () => {
+        try {
+            const list = await api.getForms();
+            setForms(Array.isArray(list) ? list.map((f: any) => ({ id: f.id, name: f.name })) : []);
+        } catch {
+            setForms([]);
+        }
+    };
+
     const handleOpenStepModal = (step: ServiceStep | null) => {
         setEditingStep(step);
+        loadForms();
         if (step) {
             setStepFormData({
                 title: step.title,
                 description: step.description || '',
-                formConfig: JSON.stringify(step.formConfig, null, 2)
+                formId: step.formId || ''
             });
         } else {
-            setStepFormData({ title: '', description: '', formConfig: '[]' });
+            setStepFormData({ title: '', description: '', formId: '' });
         }
         setIsStepModalOpen(true);
     };
 
     const handleSaveStep = async () => {
         if (!id) return;
+        if (!stepFormData.formId?.trim()) {
+            setAlertDialog({ isOpen: true, title: 'Warning', message: 'Selecciona un formulario. Crea o edita formularios en Forms.', variant: 'warning' });
+            return;
+        }
         try {
-            let formConfigJson;
-            try {
-                formConfigJson = JSON.parse(stepFormData.formConfig);
-            } catch (e) {
-                alert('Invalid JSON in Form Config');
-                return;
-            }
-
             const data = {
                 title: stepFormData.title,
                 description: stepFormData.description,
-                formConfig: formConfigJson
+                formId: stepFormData.formId.trim()
             };
-
             if (editingStep) {
-                await adminApi.updateServiceStep(editingStep.id, data);
+                await api.updateServiceStep(editingStep.id, data);
             } else {
-                await adminApi.createServiceStep(id, data);
+                await api.createServiceStep(id, data);
             }
             setIsStepModalOpen(false);
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Step saved successfully', variant: 'success' });
             loadService();
         } catch (err: any) {
-            alert(err.message || 'Failed to save step');
+            setAlertDialog({ isOpen: true, title: 'Error', message: (err as Error)?.message || 'Failed to save step', variant: 'error' });
         }
     };
 
-    const handleDeleteStep = async (stepId: string) => {
-        if (confirm('Delete this step?')) {
-            try {
-                await adminApi.deleteServiceStep(stepId);
-                loadService();
-            } catch (err: any) {
-                alert(err.message);
-            }
+    const handleDeleteStep = (stepId: string) => {
+        setConfirmDeleteStep({ isOpen: true, stepId });
+    };
+
+    const confirmDeleteStepAction = async () => {
+        if (!confirmDeleteStep.stepId) return;
+        try {
+            await api.deleteServiceStep(confirmDeleteStep.stepId);
+            setConfirmDeleteStep({ isOpen: false, stepId: null });
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Step deleted successfully', variant: 'success' });
+            loadService();
+        } catch (err: any) {
+            setConfirmDeleteStep({ isOpen: false, stepId: null });
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to delete step', variant: 'error' });
         }
     };
 
@@ -154,10 +179,10 @@ export const ServiceDetailPage = () => {
 
         try {
             const stepIds = steps.map(s => s.id);
-            await adminApi.reorderServiceSteps(stepIds);
+            await api.reorderServiceSteps(stepIds);
         } catch (err) {
             loadService(); // Revert on error
-            alert('Failed to reorder');
+            setAlertDialog({ isOpen: true, title: 'Error', message: 'Failed to reorder steps', variant: 'error' });
         }
     };
 
@@ -258,22 +283,54 @@ export const ServiceDetailPage = () => {
                 <Modal visible={isStepModalOpen} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
                         <View style={styles.modalContent}>
-                            <H4 style={{ marginBottom: 16 }}>{editingStep ? 'Edit Step' : 'New Step'}</H4>
+                            <View style={styles.modalHeader}>
+                                <H4 style={styles.modalTitle}>{editingStep ? 'Edit Step' : 'New Step'}</H4>
+                                <TouchableOpacity onPress={() => setIsStepModalOpen(false)} style={styles.modalClose} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                    <X size={20} color="#64748B" />
+                                </TouchableOpacity>
+                            </View>
+                            <ScrollView style={styles.modalScrollBody} contentContainerStyle={styles.modalScrollInner} keyboardShouldPersistTaps="handled">
+                                <Text style={styles.label}>Title</Text>
+                                <TextInput style={styles.input} value={stepFormData.title} onChangeText={t => setStepFormData({ ...stepFormData, title: t })} />
 
-                            <Text style={styles.label}>Title</Text>
-                            <TextInput style={styles.input} value={stepFormData.title} onChangeText={t => setStepFormData({ ...stepFormData, title: t })} />
+                                <Text style={styles.label}>Description</Text>
+                                <TextInput style={styles.input} value={stepFormData.description} onChangeText={t => setStepFormData({ ...stepFormData, description: t })} />
 
-                            <Text style={styles.label}>Description</Text>
-                            <TextInput style={styles.input} value={stepFormData.description} onChangeText={t => setStepFormData({ ...stepFormData, description: t })} />
-
-                            <Text style={styles.label}>Form Configuration (JSON)</Text>
-                            <TextInput style={[styles.input, styles.jsonInput]} value={stepFormData.formConfig} onChangeText={t => setStepFormData({ ...stepFormData, formConfig: t })} multiline />
-
-                            <View style={styles.modalActions}>
+                                <Text style={styles.label}>Formulario</Text>
+                                <View style={styles.selectWrap}>
+                                    <select
+                                        value={stepFormData.formId}
+                                        onChange={(e) => setStepFormData({ ...stepFormData, formId: e.target.value })}
+                                        style={styles.select as any}
+                                        aria-label="Formulario del paso"
+                                    >
+                                        <option value="">— Selecciona un formulario —</option>
+                                        {forms.map((f) => (
+                                            <option key={f.id} value={f.id}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </View>
+                                <View style={styles.hintRow}>
+                                    <Text style={styles.hint}>Crea o edita formularios de forma visual en </Text>
+                                    <TouchableOpacity onPress={() => typeof window !== 'undefined' && window.open('/forms', '_blank')}>
+                                        <Text style={styles.link}>Forms</Text>
+                                    </TouchableOpacity>
+                                    <Text style={styles.hint}> y asígnalos aquí.</Text>
+                                </View>
+                                {stepFormData.formId && (
+                                    <TouchableOpacity
+                                        style={styles.viewFormLink}
+                                        onPress={() => typeof window !== 'undefined' && window.open(`/forms/${stepFormData.formId}`, '_blank')}
+                                    >
+                                        <Text style={styles.link}>Ver formulario →</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </ScrollView>
+                            <View style={styles.modalFooter}>
                                 <TouchableOpacity onPress={() => setIsStepModalOpen(false)} style={styles.cancelButton}>
                                     <Text>Cancel</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity onPress={handleSaveStep} style={styles.saveButton}>
+                                <TouchableOpacity onPress={handleSaveStep} style={[styles.saveButton, { marginTop: 0 }]}>
                                     <Text style={styles.saveButtonText}>Save Step</Text>
                                 </TouchableOpacity>
                             </View>
@@ -282,13 +339,34 @@ export const ServiceDetailPage = () => {
                 </Modal>
 
             </ScrollView>
+
+            {/* Confirm Dialog for Step Deletion */}
+            <ConfirmDialog
+                isOpen={confirmDeleteStep.isOpen}
+                onClose={() => setConfirmDeleteStep({ isOpen: false, stepId: null })}
+                onConfirm={confirmDeleteStepAction}
+                title="Delete Step"
+                message="Are you sure you want to delete this step? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+            />
         </Layout>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 40 },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    container: { flex: 1, padding: 32, width: '100%', maxWidth: 900, alignSelf: 'center' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 200 },
     header: { marginBottom: 24 },
     backButton: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 8 },
     backText: { color: '#64748B', fontSize: 14 },
@@ -319,9 +397,53 @@ const styles = StyleSheet.create({
     addStepButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderStyle: 'dashed', borderWidth: 2, borderColor: '#CBD5E1', padding: 16, borderRadius: 0, marginTop: 16 },
     addStepText: { color: '#64748B', fontWeight: '600' },
 
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
-    modalContent: { backgroundColor: '#FFF', borderRadius: 0, padding: 24, width: '100%', maxWidth: 500 },
-    jsonInput: { fontFamily: 'monospace', fontSize: 16, minHeight: 150, textAlignVertical: 'top' },
-    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 24 },
-    cancelButton: { padding: 12, borderRadius: 0 },
+    modalOverlay: {
+        flex: 1,
+        width: '100%',
+        minHeight: '100%',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    } as any,
+    modalContent: {
+        backgroundColor: '#FFF',
+        borderRadius: 0,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        width: '100%',
+        maxWidth: 500,
+        maxHeight: '90%',
+        overflow: 'hidden',
+        flexDirection: 'column',
+    } as any,
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 24,
+        paddingTop: 24,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    modalTitle: { margin: 0, flex: 1 },
+    modalClose: { padding: 8 },
+    modalScrollBody: { flex: 1, minHeight: 0 } as any,
+    modalScrollInner: { padding: 24, paddingBottom: 24 },
+    modalFooter: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+        padding: 24,
+        borderTopWidth: 1,
+        borderTopColor: '#E2E8F0',
+    },
+    selectWrap: { width: '100%', marginBottom: 8 },
+    select: { width: '100%', padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 0, backgroundColor: '#FFF', color: '#0F172A' },
+    hintRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 12, gap: 4 },
+    hint: { fontSize: 13, color: '#64748B' },
+    link: { fontSize: 13, color: '#2563EB', fontWeight: '600' },
+    viewFormLink: { marginTop: 12, paddingVertical: 4 },
+    cancelButton: { paddingVertical: 12, paddingHorizontal: 24, borderRadius: 0 },
 });

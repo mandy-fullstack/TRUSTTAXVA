@@ -528,6 +528,6 @@ const styles = StyleSheet.create({
     mobileUserRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 4, borderTopWidth: 1, borderTopColor: '#F1F5F9', marginTop: 8 },
     mobileUserName: { fontSize: 14, fontWeight: '600', color: '#0F172A', flex: 1 },
     contentScroll: { flex: 1 },
-    contentInner: { maxWidth: 1200, width: '100%', marginHorizontal: 'auto', padding: 24 },
+    contentInner: { maxWidth: 1200, width: '100%', minWidth: '100%' as any, marginHorizontal: 'auto', padding: 24 },
     mainContent: {},
 });

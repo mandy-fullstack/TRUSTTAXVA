@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
     tabText: { fontWeight: '600', color: '#64748B', fontSize: 15 },
     tabTextActive: { color: '#FFFFFF' },
 
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 32, justifyContent: 'center', paddingHorizontal: 24, maxWidth: 1280, marginHorizontal: 'auto', width: '100%' },
-    serviceCard: { width: '100%', maxWidth: 380, overflow: 'hidden', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0' },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 32, paddingHorizontal: 24, maxWidth: 1280, marginHorizontal: 'auto', width: '100%' },
+    serviceCard: { flex: 1, minWidth: 280, maxWidth: 380, overflow: 'hidden', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0' } as any,
     discountBanner: { backgroundColor: '#10B981', paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
     discountBannerText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
     cardInfo: { padding: 32, gap: 16 },

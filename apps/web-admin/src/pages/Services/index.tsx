@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Modal, useWindowDimensions } from 'react-native';
 import { H1, H2, H4, Text } from '@trusttax/ui';
 import { Briefcase, DollarSign, Plus, Edit, Trash2, X, Search } from 'lucide-react';
-import { adminApi } from '../../services/adminApi';
+import { api } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { AlertDialog } from '../../components/AlertDialog';
 
 interface Service {
     id: string;
@@ -20,7 +22,11 @@ interface Service {
     };
 }
 
+const MOBILE_BREAKPOINT = 768;
+
 export const ServicesPage = () => {
+    const { width } = useWindowDimensions();
+    const isMobile = width < MOBILE_BREAKPOINT;
     const [services, setServices] = useState<Service[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -28,6 +34,15 @@ export const ServicesPage = () => {
     const [editingService, setEditingService] = useState<Service | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
+    
+    // Dialog states
+    const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; serviceId: string | null }>({ isOpen: false, serviceId: null });
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning' }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
 
     // Form state
     const [formData, setFormData] = useState({
@@ -46,7 +61,7 @@ export const ServicesPage = () => {
     const loadServices = async () => {
         try {
             setLoading(true);
-            const data = await adminApi.getServices();
+            const data = await api.getServices();
             setServices(data);
         } catch (err: any) {
             setError(err.message || 'Failed to load services');
@@ -82,26 +97,34 @@ export const ServicesPage = () => {
             };
 
             if (editingService) {
-                await adminApi.updateService(editingService.id, data);
+                await api.updateService(editingService.id, data);
+                setAlertDialog({ isOpen: true, title: 'Success', message: 'Service updated successfully', variant: 'success' });
             } else {
-                await adminApi.createService(data);
+                await api.createService(data);
+                setAlertDialog({ isOpen: true, title: 'Success', message: 'Service created successfully', variant: 'success' });
             }
 
             setShowModal(false);
             loadServices();
         } catch (err: any) {
-            setError(err.message || 'Failed to save service');
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to save service', variant: 'error' });
         }
     };
 
-    const handleDelete = async (serviceId: string) => {
-        if (confirm('Are you sure you want to delete this service?')) {
-            try {
-                await adminApi.deleteService(serviceId);
-                loadServices();
-            } catch (err: any) {
-                setError(err.message || 'Failed to delete service');
-            }
+    const handleDelete = (serviceId: string) => {
+        setConfirmDialog({ isOpen: true, serviceId });
+    };
+
+    const confirmDelete = async () => {
+        if (!confirmDialog.serviceId) return;
+        try {
+            await api.deleteService(confirmDialog.serviceId);
+            setConfirmDialog({ isOpen: false, serviceId: null });
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Service deleted successfully', variant: 'success' });
+            loadServices();
+        } catch (err: any) {
+            setConfirmDialog({ isOpen: false, serviceId: null });
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to delete service', variant: 'error' });
         }
     };
 
@@ -143,14 +166,14 @@ export const ServicesPage = () => {
 
     return (
         <Layout>
-            <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-                <View style={styles.header}>
-                    <View style={{ flex: 1 }}>
-                        <H1>Services</H1>
+            <ScrollView style={styles.scroll} contentContainerStyle={[styles.container, isMobile && styles.containerMobile]} showsVerticalScrollIndicator={false}>
+                <View style={[styles.header, isMobile && styles.headerMobile]}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                        <H1 style={isMobile ? styles.titleMobile : undefined}>Services</H1>
                         <Text style={styles.subtitle}>{filteredServices.length} {filteredServices.length === 1 ? 'service' : 'services'} found</Text>
                     </View>
-                    <View style={styles.headerActions}>
-                        <View style={styles.searchBar}>
+                    <View style={[styles.headerActions, isMobile && styles.headerActionsMobile]}>
+                        <View style={[styles.searchBar, isMobile && styles.searchBarMobile]}>
                             <Search size={18} color="#94A3B8" />
                             <TextInput
                                 style={styles.searchInput}
@@ -159,7 +182,7 @@ export const ServicesPage = () => {
                                 onChangeText={setSearchQuery}
                             />
                         </View>
-                        <TouchableOpacity style={styles.createButton} onPress={handleCreate}>
+                        <TouchableOpacity style={styles.createButton} onPress={handleCreate} activeOpacity={0.7}>
                             <Plus size={20} color="#FFF" />
                             <Text style={styles.createButtonText}>New Service</Text>
                         </TouchableOpacity>
@@ -169,9 +192,9 @@ export const ServicesPage = () => {
                 {categories.map(category => (
                     <View key={category} style={styles.categorySection}>
                         <H4 style={styles.categoryTitle}>{category}</H4>
-                        <View style={styles.servicesGrid}>
+                        <View style={[styles.servicesGrid, isMobile && styles.servicesGridMobile]}>
                             {groupedServices[category].map((service) => (
-                                <View key={service.id} style={styles.serviceCard}>
+                                <View key={service.id} style={[styles.serviceCard, isMobile && styles.serviceCardMobile]}>
                                     <View style={styles.cardHeader}>
                                         <View style={styles.iconContainer}>
                                             <Briefcase size={24} color="#2563EB" />
@@ -295,25 +318,64 @@ export const ServicesPage = () => {
                     </View>
                 </Modal>
             </ScrollView>
+
+            {/* Confirm Dialog */}
+            <ConfirmDialog
+                isOpen={confirmDialog.isOpen}
+                onClose={() => setConfirmDialog({ isOpen: false, serviceId: null })}
+                onConfirm={confirmDelete}
+                title="Delete Service"
+                message="Are you sure you want to delete this service? This action cannot be undone."
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+            />
         </Layout>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, padding: 24, width: '100%', minHeight: '100%' },
-    center: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' },
-    header: { marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 24, flexWrap: 'wrap' },
-    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
-    searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 16, height: 44, width: 300 },
-    searchInput: { flex: 1, fontSize: 16, color: '#0F172A', outlineStyle: 'none' } as any,
+    scroll: { flex: 1, width: '100%' },
+    container: { padding: 32, width: '100%', minWidth: '100%' as any, minHeight: '100%', maxWidth: 1200, alignSelf: 'center' },
+    containerMobile: { padding: 16, paddingTop: 24 },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: 200 },
+    header: { marginBottom: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: 16, flexWrap: 'wrap' },
+    headerMobile: { flexDirection: 'column', alignItems: 'stretch' },
+    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+    headerActionsMobile: { width: '100%' },
+    searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', paddingHorizontal: 14, height: 44, flex: 1, minWidth: 200 },
+    searchBarMobile: { minWidth: 0, width: '100%' },
+    searchInput: { flex: 1, fontSize: 16, color: '#0F172A', minWidth: 0 } as any,
+    titleMobile: { fontSize: 24 },
     subtitle: { color: '#64748B', marginTop: 4 },
     errorText: { color: '#EF4444', fontSize: 14 },
 
     createButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 24, backgroundColor: '#0F172A' },
     createButtonText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
 
-    servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 24, width: '100%' },
-    serviceCard: { width: 'calc(33.333% - 16px)' as any, backgroundColor: '#FFFFFF', padding: 24, borderWidth: 1, borderColor: '#E2E8F0', minWidth: 300 },
+    servicesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 20, width: '100%' },
+    servicesGridMobile: { gap: 12 },
+    serviceCard: {
+        flexBasis: '31%' as any,
+        flexGrow: 0,
+        flexShrink: 1,
+        minWidth: 320,
+        maxWidth: 380,
+        backgroundColor: '#FFFFFF',
+        padding: 20,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    } as any,
+    serviceCardMobile: { flexBasis: '100%' as any, minWidth: 0, maxWidth: '100%' as any },
 
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 },
     iconContainer: { width: 48, height: 48, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', borderRadius: 0 },

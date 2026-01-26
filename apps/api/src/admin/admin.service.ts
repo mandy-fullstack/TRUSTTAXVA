@@ -1,32 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/services/encryption.service';
 
 @Injectable()
 export class AdminService {
-    constructor(private prisma: PrismaService) { }
+    constructor(
+        private prisma: PrismaService,
+        private encryptionService: EncryptionService,
+    ) { }
 
     async getAllClients() {
         const clients = await this.prisma.user.findMany({
-            where: {
-                role: 'CLIENT'
-            },
+            where: { role: 'CLIENT' },
             select: {
                 id: true,
                 email: true,
                 name: true,
+                firstName: true,
+                middleName: true,
+                lastName: true,
+                dateOfBirth: true,
+                countryOfBirth: true,
+                primaryLanguage: true,
+                profileCompleted: true,
+                taxIdType: true,
+                ssnLast4: true,
+                driverLicenseLast4: true,
+                passportLast4: true,
+                termsAcceptedAt: true,
                 createdAt: true,
+                updatedAt: true,
                 _count: {
-                    select: {
-                        orders: true,
-                        invoices: true
-                    }
+                    select: { orders: true, invoices: true }
                 }
             },
-            orderBy: {
-                createdAt: 'desc'
-            }
+            orderBy: { createdAt: 'desc' }
         });
-
         return clients;
     }
 
@@ -35,17 +44,11 @@ export class AdminService {
             where: { id: clientId },
             include: {
                 orders: {
-                    include: {
-                        service: true
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
+                    orderBy: { createdAt: 'desc' as const },
+                    include: { service: true }
                 },
                 invoices: {
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
+                    orderBy: { createdAt: 'desc' as const }
                 }
             }
         });
@@ -54,8 +57,83 @@ export class AdminService {
             throw new Error('Client not found');
         }
 
-        const { password, ...clientData } = client;
-        return clientData;
+        const {
+            password,
+            ssnEncrypted,
+            driverLicenseEncrypted,
+            passportDataEncrypted,
+            ...rest
+        } = client;
+        return rest;
+    }
+
+    async getClientSensitiveData(clientId: string): Promise<{
+        ssn: string | null;
+        driverLicense: { number: string; stateCode: string; stateName: string; expirationDate: string } | null;
+        passport: { number: string; countryOfIssue: string; expirationDate: string } | null;
+    }> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: clientId },
+            select: {
+                ssnEncrypted: true,
+                driverLicenseEncrypted: true,
+                passportDataEncrypted: true,
+            },
+        });
+
+        if (!user) {
+            throw new Error('Client not found');
+        }
+
+        let ssn: string | null = null;
+        let driverLicense: { number: string; stateCode: string; stateName: string; expirationDate: string } | null = null;
+        let passport: { number: string; countryOfIssue: string; expirationDate: string } | null = null;
+
+        try {
+            if (user.ssnEncrypted) {
+                ssn = this.encryptionService.decrypt(user.ssnEncrypted);
+                console.log(`[AUDIT] Admin decrypted SSN for client ${clientId} at ${new Date().toISOString()}`);
+            }
+        } catch (e) {
+            console.error('Failed to decrypt SSN for admin:', e);
+        }
+
+        try {
+            if (user.driverLicenseEncrypted) {
+                const raw = this.encryptionService.decrypt(user.driverLicenseEncrypted);
+                if (raw) {
+                    const dl = JSON.parse(raw);
+                    driverLicense = {
+                        number: dl.number ?? '',
+                        stateCode: dl.stateCode ?? '',
+                        stateName: dl.stateName ?? '',
+                        expirationDate: dl.expirationDate ?? '',
+                    };
+                    console.log(`[AUDIT] Admin decrypted driver license for client ${clientId} at ${new Date().toISOString()}`);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to decrypt driver license for admin:', e);
+        }
+
+        try {
+            if (user.passportDataEncrypted) {
+                const raw = this.encryptionService.decrypt(user.passportDataEncrypted);
+                if (raw) {
+                    const pp = JSON.parse(raw);
+                    passport = {
+                        number: pp.number ?? '',
+                        countryOfIssue: pp.countryOfIssue ?? '',
+                        expirationDate: pp.expirationDate ?? '',
+                    };
+                    console.log(`[AUDIT] Admin decrypted passport for client ${clientId} at ${new Date().toISOString()}`);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to decrypt passport for admin:', e);
+        }
+
+        return { ssn, driverLicense, passport };
     }
 
     async getAllOrders() {
@@ -82,11 +160,14 @@ export class AdminService {
             }
         });
 
-        return orders;
+        return orders.map((o) => ({
+            ...o,
+            total: Number((o.service as { price: unknown }).price ?? 0),
+        }));
     }
 
     async getOrderDetails(orderId: string) {
-        const order = await (this.prisma.order.findUnique({
+        const order = await this.prisma.order.findUnique({
             where: { id: orderId },
             include: {
                 service: true,
@@ -99,16 +180,17 @@ export class AdminService {
                     }
                 }
             }
-        }) as any);
+        });
 
         if (!order) {
             throw new Error('Order not found');
         }
 
-        return order;
+        const total = Number((order.service as { price?: unknown }).price ?? 0);
+        return { ...order, total };
     }
 
-    async updateOrderStatus(orderId: string, status: string, notes?: string) {
+    async updateOrderStatus(orderId: string, status: string, _notes?: string) {
         const order = await this.prisma.order.update({
             where: { id: orderId },
             data: {
@@ -127,7 +209,8 @@ export class AdminService {
             }
         });
 
-        return order;
+        const total = Number((order.service as { price?: unknown }).price ?? 0);
+        return { ...order, total };
     }
 
     async getDashboardMetrics() {
@@ -137,22 +220,23 @@ export class AdminService {
             pendingOrders,
             completedOrders,
             activeOrders,
-            totalRevenue
+            completedOrdersList
         ] = await Promise.all([
             this.prisma.user.count({ where: { role: 'CLIENT' } }),
             this.prisma.order.count(),
             this.prisma.order.count({ where: { status: 'PENDING' } }),
             this.prisma.order.count({ where: { status: 'COMPLETED' } }),
             this.prisma.order.count({ where: { status: 'IN_PROGRESS' } }),
-            this.prisma.order.aggregate({
-                _sum: {
-                    total: true
-                },
-                where: {
-                    status: 'COMPLETED'
-                }
-            } as any)
+            this.prisma.order.findMany({
+                where: { status: 'COMPLETED' },
+                include: { service: { select: { price: true } } }
+            })
         ]);
+
+        const totalRevenue = completedOrdersList.reduce(
+            (sum, o) => sum + Number((o.service as { price: unknown }).price ?? 0),
+            0
+        );
 
         return {
             totalClients,
@@ -160,13 +244,13 @@ export class AdminService {
             pendingOrders,
             completedOrders,
             activeOrders,
-            totalRevenue: (totalRevenue as any)._sum?.total || 0
+            totalRevenue
         };
     }
 
     // Services Management
     async getAllServices() {
-        const services = await this.prisma.service.findMany({
+        const services = await this.prisma.client.service.findMany({
             include: {
                 _count: {
                     select: {
@@ -183,7 +267,7 @@ export class AdminService {
     }
 
     async getServiceById(serviceId: string) {
-        const service = await this.prisma.service.findUnique({
+        const service = await this.prisma.client.service.findUnique({
             where: { id: serviceId },
             include: {
                 reviews: {
@@ -192,10 +276,17 @@ export class AdminService {
                     }
                 },
                 steps: {
-                    orderBy: {
-                        orderIndex: 'asc'
+                    orderBy: { orderIndex: 'asc' },
+                    include: {
+                        form: {
+                            include: {
+                                sections: { orderBy: { order: 'asc' }, include: { fields: { orderBy: { order: 'asc' } } } },
+                                fields: { where: { sectionId: null }, orderBy: { order: 'asc' } }
+                            }
+                        }
                     }
                 },
+                docTypes: true,
                 _count: {
                     select: {
                         orders: true,
@@ -219,7 +310,7 @@ export class AdminService {
         price: number;
         originalPrice?: number;
     }) {
-        const service = await this.prisma.service.create({
+        const service = await this.prisma.client.service.create({
             data: {
                 name: data.name,
                 description: data.description,
@@ -239,7 +330,7 @@ export class AdminService {
         price?: number;
         originalPrice?: number;
     }) {
-        const service = await this.prisma.service.update({
+        const service = await this.prisma.client.service.update({
             where: { id: serviceId },
             data: {
                 ...(data.name && { name: data.name }),
@@ -263,19 +354,50 @@ export class AdminService {
             throw new Error('Cannot delete service with existing orders');
         }
 
-        // Delete reviews first
-        await this.prisma.serviceReview.deleteMany({
-            where: { serviceId }
-        });
+        // Use transaction to ensure all deletions happen atomically
+        await this.prisma.client.$transaction(async (tx) => {
+            // 1. Delete reviews
+            await (tx as any).serviceReview.deleteMany({
+                where: { serviceId }
+            });
 
-        // Delete steps
-        await (this.prisma.client as any).serviceStep.deleteMany({
-            where: { serviceId }
-        });
+            // 2. Delete doc types - CRITICAL: must delete before service
+            // Note: Schema has onDelete: Cascade, but we delete manually as backup
+            try {
+                // Try using raw SQL (most reliable method)
+                await tx.$executeRawUnsafe(
+                    `DELETE FROM "ServiceDoctype" WHERE "serviceId" = $1`,
+                    serviceId
+                );
+            } catch (sqlError: any) {
+                // If SQL fails, try with model (if available)
+                try {
+                    if ((tx as any).serviceDoctype) {
+                        await (tx as any).serviceDoctype.deleteMany({
+                            where: { serviceId }
+                        });
+                    }
+                } catch (modelError: any) {
+                    // If both fail, log but continue
+                    // With onDelete: Cascade in schema, Prisma should handle it when deleting service
+                    console.warn('Could not manually delete ServiceDoctype, relying on Cascade:', {
+                        sqlError: sqlError.message,
+                        modelError: modelError?.message
+                    });
+                }
+            }
 
-        // Delete service
-        await this.prisma.service.delete({
-            where: { id: serviceId }
+            // 3. Delete steps
+            await (tx as any).serviceStep.deleteMany({
+                where: { serviceId }
+            });
+
+            // 4. Delete service (this will fail if ServiceDoctype still exists)
+            await tx.service.delete({
+                where: { id: serviceId }
+            });
+        }, {
+            timeout: 10000, // 10 second timeout
         });
 
         return { message: 'Service deleted successfully' };
@@ -286,8 +408,8 @@ export class AdminService {
         title: string;
         description?: string;
         formConfig?: any;
+        formId?: string | null;
     }) {
-        // Get max order index
         const lastStep = await (this.prisma.client as any).serviceStep.findFirst({
             where: { serviceId },
             orderBy: { orderIndex: 'desc' }
@@ -299,7 +421,8 @@ export class AdminService {
                 serviceId,
                 title: data.title,
                 description: data.description || null,
-                formConfig: data.formConfig || [], // Default empty array as JSON
+                formConfig: data.formId ? null : (data.formConfig ?? []),
+                formId: data.formId || null,
                 orderIndex
             }
         });
@@ -309,14 +432,20 @@ export class AdminService {
         title?: string;
         description?: string;
         formConfig?: any;
+        formId?: string | null;
     }) {
+        const update: any = {};
+        if (data.title != null) update.title = data.title;
+        if (data.description !== undefined) update.description = data.description;
+        if (data.formId !== undefined) {
+            update.formId = data.formId || null;
+            update.formConfig = data.formId ? null : (data.formConfig ?? []);
+        } else if (data.formConfig !== undefined) {
+            update.formConfig = data.formConfig;
+        }
         return (this.prisma.client as any).serviceStep.update({
             where: { id: stepId },
-            data: {
-                ...(data.title && { title: data.title }),
-                ...(data.description !== undefined && { description: data.description }),
-                ...(data.formConfig && { formConfig: data.formConfig }),
-            }
+            data: update
         });
     }
 

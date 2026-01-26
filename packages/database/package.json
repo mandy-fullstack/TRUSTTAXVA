@@ -5,13 +5,19 @@
     "types": "src/index.ts",
     "scripts": {
         "generate": "prisma generate",
-        "db:push": "prisma db push"
+        "db:push": "prisma db push",
+        "db:seed": "ts-node -P prisma/tsconfig.seed.json seed.ts"
+    },
+    "prisma": {
+        "seed": "ts-node -P prisma/tsconfig.seed.json seed.ts"
     },
     "peerDependencies": {
         "prisma": "^5.0.0"
     },
     "devDependencies": {
+        "@types/node": "^20.0.0",
         "prisma": "^5.10.0",
+        "ts-node": "^10.9.2",
         "typescript": "^5.0.0"
     },
     "dependencies": {

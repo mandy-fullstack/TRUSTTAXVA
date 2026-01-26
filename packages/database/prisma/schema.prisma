@@ -314,10 +314,67 @@ model ServiceStep {
   orderIndex  Int
   title       String
   description String?
-  formConfig  Json     // JSON defining inputs: [{ label: "SSN", type: "text" }, ...]
+  formConfig  Json?    // Legacy JSON; used when formId is null
+  formId      String?  // Optional link to Form (sections + fields)
   
   serviceId   String
   service     Service  @relation(fields: [serviceId], references: [id])
+  form        Form?    @relation(fields: [formId], references: [id], onDelete: SetNull)
+}
+
+model Form {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  nameI18n      Json?    // { "en": "...", "es": "..." }
+  descriptionI18n Json?
+  version       String   @default("1.0")
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sections    FormSection[]
+  fields      FormField[]
+  serviceSteps ServiceStep[]
+}
+
+model FormSection {
+  id         String   @id @default(uuid())
+  formId     String
+  title      String
+  titleI18n  Json?    // { "en": "...", "es": "..." }
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  form   Form       @relation(fields: [formId], references: [id], onDelete: Cascade)
+  fields FormField[]
+}
+
+model FormField {
+  id              String   @id @default(uuid())
+  formId          String
+  sectionId       String?
+  type            String
+  name            String
+  label           String
+  placeholder     String?
+  helpText        String?
+  labelI18n       Json?    // { "en": "...", "es": "..." }
+  placeholderI18n Json?
+  helpTextI18n    Json?
+  required        Boolean  @default(false)
+  order           Int      @default(0)
+  rules           Json?
+  options         Json?    // [{ value, label, labelI18n?: { en, es } }]
+  accept          String?
+  maxFiles        Int?
+  maxSize         Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  form    Form         @relation(fields: [formId], references: [id], onDelete: Cascade)
+  section FormSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 }
 
 model ServiceDoctype {
@@ -326,7 +383,7 @@ model ServiceDoctype {
   isRequired  Boolean  @default(true)
   
   serviceId   String
-  service     Service  @relation(fields: [serviceId], references: [id])
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 }
 
 model Order {

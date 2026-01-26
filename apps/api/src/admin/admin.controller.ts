@@ -16,6 +16,14 @@ export class AdminController {
         return this.adminService.getAllClients();
     }
 
+    @Get('clients/:id/sensitive')
+    async getClientSensitive(@Request() req: any, @Param('id') id: string) {
+        if (req.user.role !== 'ADMIN') {
+            throw new Error('Unauthorized');
+        }
+        return this.adminService.getClientSensitiveData(id);
+    }
+
     @Get('clients/:id')
     async getClientDetails(@Request() req: any, @Param('id') id: string) {
         if (req.user.role !== 'ADMIN') {

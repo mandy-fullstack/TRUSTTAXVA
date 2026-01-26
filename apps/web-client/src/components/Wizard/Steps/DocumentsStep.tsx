@@ -1,5 +1,5 @@
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { H3, Text, Button } from '@trusttax/ui';
+import { H3, Text, Button, spacing, Spacer, Stack } from '@trusttax/ui';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';
 import type { ServiceDocType } from '../../../types';
 
@@ -27,10 +27,12 @@ export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) 
     };
 
     return (
-        <View>
-            <H3>Required Documents</H3>
-            <Text style={styles.desc}>Please upload the following documents to proceed with your application. All files are securely encrypted.</Text>
-
+        <Stack gap="xl">
+            <View>
+                <H3>Required Documents</H3>
+                <Spacer size="sm" />
+                <Text style={styles.desc}>Please upload the following documents to proceed with your application. All files are securely encrypted.</Text>
+            </View>
             <View style={styles.list}>
                 {docTypes.map((doc) => {
                     const file = data[doc.docType];
@@ -69,21 +71,22 @@ export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) 
                     );
                 })}
             </View>
-        </View>
+        </Stack>
     );
 };
 
+const s = spacing;
 const styles = StyleSheet.create({
-    desc: { fontSize: 16, color: '#64748B', marginBottom: 24 },
-    list: { gap: 16 },
-    docItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF' },
-    docInfo: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-    iconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    desc: { fontSize: 16, color: '#64748B', lineHeight: 24 },
+    list: { gap: s[4] },
+    docItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: s[4], borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF' },
+    docInfo: { flexDirection: 'row', alignItems: 'center', gap: s[4] },
+    iconBox: { width: 40, height: 40, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
     iconBoxPending: { backgroundColor: '#F1F5F9' },
     iconBoxSuccess: { backgroundColor: '#ECFDF5' },
     docTitle: { fontWeight: '600', color: '#0F172A', fontSize: 14 },
     fileName: { color: '#10B981', fontSize: 12 },
     docStatus: { color: '#94A3B8', fontSize: 12 },
-    uploadBtn: { height: 36, paddingHorizontal: 16 },
-    removeBtn: { padding: 8 }
+    uploadBtn: { height: 36, paddingHorizontal: s[4] },
+    removeBtn: { padding: s[2] }
 });

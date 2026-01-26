@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Layout } from '../Layout';
-import { H3, Text, Card } from '@trusttax/ui';
+import { H3, Text, Card, spacing, Spacer } from '@trusttax/ui';
 import { Check } from 'lucide-react';
 
 interface WizardLayoutProps {
@@ -19,7 +19,9 @@ export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }
                 <View style={styles.sidebar}>
                     <Card elevated style={styles.progressCard}>
                         <H3 style={styles.sidebarTitle}>{title}</H3>
+                        <Spacer size="sm" />
                         <Text style={styles.stepCounter}>Step {currentStep + 1} of {totalSteps}</Text>
+                        <Spacer size="lg" />
                         <View style={styles.stepsList}>
                             {steps.map((step, index) => {
                                 const isActive = index === currentStep;
@@ -60,14 +62,15 @@ export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }
     );
 };
 
+const s = spacing;
 const styles = StyleSheet.create({
-    container: { flexDirection: 'row', gap: 32, paddingVertical: 40, flexWrap: 'wrap' },
+    container: { flexDirection: 'row', gap: s[8], paddingVertical: s[10], flexWrap: 'wrap', width: '100%' },
     sidebar: { width: 300, minWidth: 280 },
-    sidebarTitle: { marginBottom: 8, fontSize: 20 },
-    stepCounter: { marginBottom: 24, fontSize: 13, color: '#64748B', fontWeight: '500' },
-    progressCard: { padding: 24 },
-    stepsList: { gap: 0 }, // Gap handled by connector margin
-    stepItem: { flexDirection: 'row', alignItems: 'center', gap: 12, height: 48, position: 'relative' },
+    sidebarTitle: { fontSize: 20 },
+    stepCounter: { fontSize: 13, color: '#64748B', fontWeight: '500' },
+    progressCard: { padding: s[6], width: '100%' },
+    stepsList: { gap: 0 },
+    stepItem: { flexDirection: 'row', alignItems: 'center', gap: s[3], height: 48, position: 'relative' },
     stepIcon: { width: 28, height: 28, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#E2E8F0', zIndex: 2 },
     stepIconActive: { borderColor: 'var(--primary-color, #2563EB)', backgroundColor: '#FFF' } as any,
     stepIconCompleted: { backgroundColor: 'var(--primary-color, #2563EB)', borderColor: 'var(--primary-color, #2563EB)' } as any,
@@ -76,9 +79,9 @@ const styles = StyleSheet.create({
     stepLabel: { fontSize: 14, color: '#64748B', fontWeight: '500' },
     stepLabelActive: { color: '#0F172A', fontWeight: '700' },
     stepLabelCompleted: { color: '#0F172A' },
-    connectorLine: { position: 'absolute', top: 38, left: 13, bottom: -10, width: 2, alignItems: 'center', zIndex: 1 }, // Connecting to next item
+    connectorLine: { position: 'absolute', top: 38, left: 13, bottom: -10, width: 2, alignItems: 'center', zIndex: 1 },
     line: { width: 2, height: 20, backgroundColor: '#E2E8F0' },
     lineCompleted: { backgroundColor: 'var(--primary-color, #2563EB)' } as any,
     content: { flex: 1, minWidth: 340 },
-    contentCard: { padding: 40, minHeight: 500 }
+    contentCard: { padding: s[10], minHeight: 500, width: '100%' }
 });

@@ -1,126 +1,130 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import Cookies from 'js-cookie';
+import * as cookieStorage from '../lib/cookies';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
 
 interface User {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
+  id: string;
+  email: string;
+  name?: string;
+  role: string;
 }
 
 interface AuthContextType {
-    user: User | null;
-    token: string | null;
-    isLoading: boolean;
-    error: string | null;
-    login: (token: string, user: User) => void;
-    logout: () => void;
-    isAuthenticated: boolean;
-    clearError: () => void;
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+  login: (token: string, user: User) => void;
+  logout: () => void;
+  isAuthenticated: boolean;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const initAuth = async () => {
-            const storedToken = Cookies.get('admin_token');
-            if (storedToken) {
-                try {
-                    setToken(storedToken);
-                    const userData = await api.getMe();
+  useEffect(() => {
+    let cancelled = false;
 
-                    // Verify user has ADMIN role
-                    if (userData.role !== 'ADMIN') {
-                        setError('Access denied. Admin privileges required.');
-                        logout();
-                        return;
-                    }
-
-                    setUser(userData);
-                    setError(null);
-                } catch (err) {
-                    console.error('Failed to restore session:', err);
-
-                    // Handle different error types
-                    if (err instanceof AuthenticationError || err instanceof NotFoundError) {
-                        // Token invalid or user deleted - clear session
-                        if (err instanceof NotFoundError) {
-                            setError('Your account is no longer active. Please contact support.');
-                        }
-                        logout();
-                    } else if (err instanceof NetworkError) {
-                        // Network issue - keep session but show error
-                        setError('Connection issue. Retrying...');
-                        // Retry after 3 seconds
-                        setTimeout(() => {
-                            initAuth();
-                        }, 3000);
-                    } else {
-                        // Unknown error - clear session to be safe
-                        logout();
-                    }
-                }
-            }
-            setIsLoading(false);
-        };
-        initAuth();
-    }, []);
-
-    const login = (newToken: string, newUser: User) => {
-        // Verify ADMIN role before setting session
-        if (newUser.role !== 'ADMIN') {
-            setError('Access denied. Admin privileges required.');
-            return;
+    async function initAuth() {
+      const storedToken = cookieStorage.getToken();
+      if (!storedToken) {
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const userData = await api.getMe();
+        if (cancelled) return;
+        if (userData?.role !== 'ADMIN') {
+          setError('Access denied. Admin privileges required.');
+          cookieStorage.clearAuth();
+          setToken(null);
+          setUser(null);
+          setIsLoading(false);
+          return;
         }
-
-        setToken(newToken);
-        setUser(newUser);
+        setToken(storedToken);
+        setUser(userData);
         setError(null);
-        Cookies.set('admin_token', newToken, { expires: 7, secure: true, sameSite: 'strict' });
-        Cookies.set('admin_user', JSON.stringify(newUser), { expires: 7, secure: true, sameSite: 'strict' });
-    };
-
-    const logout = () => {
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof AuthenticationError || err instanceof NotFoundError) {
+          cookieStorage.clearAuth();
+          setToken(null);
+          setUser(null);
+          setError(err instanceof NotFoundError ? 'Your account is no longer active. Please contact support.' : null);
+          setIsLoading(false);
+          return;
+        }
+        if (err instanceof NetworkError) {
+          setError('Connection issue. Retrying...');
+          setIsLoading(false);
+          setTimeout(() => {
+            setError(null);
+            initAuth();
+          }, 3000);
+          return;
+        }
+        console.error('Failed to restore session:', err);
+        cookieStorage.clearAuth();
         setToken(null);
         setUser(null);
-        Cookies.remove('admin_token');
-        Cookies.remove('admin_user');
-    };
-
-    const clearError = () => {
-        setError(null);
-    };
-
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                token,
-                isLoading,
-                error,
-                login,
-                logout,
-                clearError,
-                isAuthenticated: !!token && !!user && user.role === 'ADMIN'
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     }
-    return context;
-};
+
+    initAuth();
+    return () => { cancelled = true; };
+  }, []);
+
+  const login = (newToken: string, newUser: User) => {
+    if (newUser.role !== 'ADMIN') {
+      setError('Access denied. Admin privileges required.');
+      return;
+    }
+    setToken(newToken);
+    setUser(newUser);
+    setError(null);
+    cookieStorage.setToken(newToken);
+    cookieStorage.setUser(newUser as unknown as Record<string, unknown>);
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    setError(null);
+    cookieStorage.clearAuth();
+  };
+
+  const clearError = () => setError(null);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        isLoading,
+        error,
+        login,
+        logout,
+        clearError,
+        isAuthenticated: !!token && !!user && user.role === 'ADMIN',
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

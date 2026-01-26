@@ -5,6 +5,7 @@ import { api } from '../services/api';
 import { Card, Button, Input, H1, Subtitle, Text } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from '../components/TrustTaxLogo';
+import { AlertDialog } from '../components/AlertDialog';
 
 export const RegisterPage = () => {
     const { t } = useTranslation();
@@ -13,6 +14,12 @@ export const RegisterPage = () => {
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning'; buttons?: Array<{ text: string; onPress: () => void }> }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
 
     const navigate = useNavigate();
 
@@ -27,8 +34,13 @@ export const RegisterPage = () => {
 
         try {
             await api.register({ name, email, password });
-            alert(t('auth.reg_success', 'Registration successful! Please sign in.'));
-            navigate('/login');
+            setAlertDialog({
+                isOpen: true,
+                title: t('auth.success', 'Success'),
+                message: t('auth.reg_success', 'Registration successful! Please sign in.'),
+                variant: 'success',
+                buttons: [{ text: t('common.ok', 'OK'), onPress: () => navigate('/login') }]
+            });
         } catch (err: any) {
             setError(err.message || t('auth.error_unexpected', 'Something went wrong. Please try again.'));
         } finally {
@@ -86,6 +98,16 @@ export const RegisterPage = () => {
                     </View>
                 </Card>
             </View>
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+                buttons={alertDialog.buttons}
+            />
         </View>
     );
 };

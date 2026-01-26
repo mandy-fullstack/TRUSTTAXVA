@@ -1,5 +1,5 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { H3, Text, Card } from '@trusttax/ui';
+import { H3, Text, Card, spacing, Spacer, Stack } from '@trusttax/ui';
 import { CheckCircle2, FileText } from 'lucide-react';
 
 interface ReviewStepProps {
@@ -10,22 +10,26 @@ interface ReviewStepProps {
 
 export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) => {
     return (
-        <View>
-            <H3>Review & Submit</H3>
-            <Text style={styles.desc}>Please review the information below before creating your order.</Text>
-
+        <Stack gap="xl">
+            <View>
+                <H3>Review & Submit</H3>
+                <Spacer size="sm" />
+                <Text style={styles.desc}>Please review the information below before creating your order.</Text>
+            </View>
             <ScrollView style={styles.reviewList}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Service Details</Text>
-                    <Card padding="sm" style={styles.card}>
+                    <Spacer size="sm" />
+                    <Card style={styles.card}>
                         <Text style={styles.label}>Service Type</Text>
                         <Text style={styles.value}>{serviceName}</Text>
                     </Card>
                 </View>
-
+                <Spacer size="lg" />
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Intake Information</Text>
-                    <Card padding="sm" style={styles.card}>
+                    <Spacer size="sm" />
+                    <Card style={styles.card}>
                         {Object.keys(formData).length > 0 ? (
                             Object.entries(formData).map(([key, val]) => (
                                 <View key={key} style={styles.row}>
@@ -39,9 +43,11 @@ export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) 
                     </Card>
                 </View>
 
+                <Spacer size="lg" />
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Documents</Text>
-                    <Card padding="sm" style={styles.card}>
+                    <Spacer size="sm" />
+                    <Card style={styles.card}>
                         {Object.keys(docData).length > 0 ? (
                             Object.entries(docData).map(([key]: [string, unknown]) => (
                                 <View key={key} style={styles.row}>
@@ -60,27 +66,28 @@ export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) 
                         )}
                     </Card>
                 </View>
-
+                <Spacer size="xl" />
                 <View style={styles.policies}>
                     <Text style={styles.policyText}>
                         By submitting this order, you agree to our Terms of Service. A TrustTax professional will review your data and create an invoice for the initial deposit.
                     </Text>
                 </View>
             </ScrollView>
-        </View>
+        </Stack>
     );
 };
 
+const s = spacing;
 const styles = StyleSheet.create({
-    desc: { fontSize: 16, color: '#64748B', marginBottom: 24 },
+    desc: { fontSize: 16, color: '#64748B', lineHeight: 24 },
     reviewList: {},
-    section: { marginBottom: 24 },
-    sectionTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A', textTransform: 'uppercase', marginBottom: 8, letterSpacing: 0.5 },
-    card: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1 },
-    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
+    section: {},
+    sectionTitle: { fontSize: 14, fontWeight: '700', color: '#0F172A', textTransform: 'uppercase', letterSpacing: 0.5 },
+    card: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1, padding: s[4], borderRadius: 0 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: s[2], borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
     label: { color: '#64748B', fontSize: 14, textTransform: 'capitalize' },
     value: { color: '#0F172A', fontWeight: '500', fontSize: 14 },
     empty: { fontStyle: 'italic', color: '#94A3B8' },
-    policies: { padding: 16, backgroundColor: '#EFF6FF', borderRadius: 8, marginTop: 8 },
+    policies: { padding: s[4], backgroundColor: '#EFF6FF', borderRadius: 0 },
     policyText: { fontSize: 13, color: '#475569', textAlign: 'center', lineHeight: 20 }
 });

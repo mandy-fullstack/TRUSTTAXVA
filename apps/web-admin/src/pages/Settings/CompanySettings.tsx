@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { H1, Text } from '@trusttax/ui';
-import { adminApi } from '../../services/adminApi';
+import { api } from '../../services/api';
 import { Save, RotateCcw } from 'lucide-react';
 import { Layout } from '../../components/Layout';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
+import { AlertDialog } from '../../components/AlertDialog';
 
 // Subcomponents
 import { GeneralForm } from './components/GeneralForm';
@@ -29,7 +31,7 @@ export const CompanySettingsPage = () => {
 
     const loadProfile = async () => {
         try {
-            const data = await adminApi.getCompanyProfile();
+            const data = await api.getCompanyProfile();
 
             setGeneral({
                 companyName: data.companyName || '',
@@ -68,35 +70,47 @@ export const CompanySettingsPage = () => {
         }
     };
 
+    const [confirmReset, setConfirmReset] = useState(false);
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning' }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
+
     const handleReset = () => {
-        if (window.confirm('Are you sure you want to reset all settings to the default professional theme? This will discard your current changes.')) {
-            setGeneral({
-                companyName: 'Trust Tax Services',
-                dba: '',
-                description: 'Professional Tax Preparation & Immigration Services.',
-                email: 'contact@trusttax.com',
-                phone: '(555) 123-4567',
-                address: '',
-                website: '',
-                primaryColor: '#0F172A',
-                secondaryColor: '#2563EB',
-                logoUrl: '',
-                faviconUrl: ''
-            });
+        setConfirmReset(true);
+    };
 
-            setThemeOptions({
-                background: '#FFFFFF',
-                surface: '#F8FAFC',
-                textMain: '#0F172A',
-                accent: '#F59E0B',
-                success: '#10B981',
-                error: '#EF4444',
-                warning: '#F59E0B'
-            });
+    const confirmResetAction = () => {
+        setGeneral({
+            companyName: 'Trust Tax Services',
+            dba: '',
+            description: 'Professional Tax Preparation & Immigration Services.',
+            email: 'contact@trusttax.com',
+            phone: '(555) 123-4567',
+            address: '',
+            website: '',
+            primaryColor: '#0F172A',
+            secondaryColor: '#2563EB',
+            logoUrl: '',
+            faviconUrl: ''
+        });
 
-            setHours([{ id: '1', label: 'Mon-Fri', value: '9:00 AM - 5:00 PM' }]);
-            setSocialLinks({});
-        }
+        setThemeOptions({
+            background: '#FFFFFF',
+            surface: '#F8FAFC',
+            textMain: '#0F172A',
+            accent: '#F59E0B',
+            success: '#10B981',
+            error: '#EF4444',
+            warning: '#F59E0B'
+        });
+
+        setHours([{ id: '1', label: 'Mon-Fri', value: '9:00 AM - 5:00 PM' }]);
+        setSocialLinks({});
+        setConfirmReset(false);
+        setAlertDialog({ isOpen: true, title: 'Success', message: 'Settings reset to default values', variant: 'success' });
     };
 
     const handleSave = async () => {
@@ -108,10 +122,10 @@ export const CompanySettingsPage = () => {
                 themeOptions
             };
 
-            await adminApi.updateCompanyProfile(payload);
-            alert('Settings saved successfully!');
+            await api.updateCompanyProfile(payload);
+            setAlertDialog({ isOpen: true, title: 'Success', message: 'Settings saved successfully!', variant: 'success' });
         } catch (err: any) {
-            alert('Failed to save settings: ' + err.message);
+            setAlertDialog({ isOpen: true, title: 'Error', message: 'Failed to save settings: ' + err.message, variant: 'error' });
         }
     };
 
@@ -175,6 +189,27 @@ export const CompanySettingsPage = () => {
                 </TouchableOpacity>
 
             </ScrollView>
+
+            {/* Confirm Dialog for Reset */}
+            <ConfirmDialog
+                isOpen={confirmReset}
+                onClose={() => setConfirmReset(false)}
+                onConfirm={confirmResetAction}
+                title="Reset Settings"
+                message="Are you sure you want to reset all settings to the default professional theme? This will discard your current changes."
+                confirmText="Reset"
+                cancelText="Cancel"
+                variant="warning"
+            />
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+            />
         </Layout>
     );
 };

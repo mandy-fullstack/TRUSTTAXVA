@@ -21,7 +21,15 @@ export class ServicesService {
             where: { id },
             include: {
                 steps: {
-                    orderBy: { orderIndex: 'asc' }
+                    orderBy: { orderIndex: 'asc' },
+                    include: {
+                        form: {
+                            include: {
+                                sections: { orderBy: { order: 'asc' }, include: { fields: { orderBy: { order: 'asc' } } } },
+                                fields: { where: { sectionId: null }, orderBy: { order: 'asc' } }
+                            }
+                        }
+                    }
                 },
                 docTypes: true,
                 reviews: {

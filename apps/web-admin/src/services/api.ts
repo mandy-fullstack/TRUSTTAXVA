@@ -1,95 +1,193 @@
-import Cookies from 'js-cookie';
+import { getToken } from '../lib/cookies';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
-// Custom error classes
 export class AuthenticationError extends Error {
-    statusCode: number;
-    constructor(message: string, statusCode: number = 401) {
-        super(message);
-        this.name = 'AuthenticationError';
-        this.statusCode = statusCode;
-    }
+  statusCode: number;
+  constructor(message: string, statusCode = 401) {
+    super(message);
+    this.name = 'AuthenticationError';
+    this.statusCode = statusCode;
+  }
 }
 
 export class NotFoundError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NotFoundError';
-    }
-}
-
-export class NetworkError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'NetworkError';
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
 }
 
 export class ForbiddenError extends Error {
-    constructor(message: string) {
-        super(message);
-        this.name = 'ForbiddenError';
-    }
+  constructor(message: string) {
+    super(message);
+    this.name = 'ForbiddenError';
+  }
 }
 
-class ApiService {
-    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-        try {
-            const response = await fetch(`${BASE_URL}${endpoint}`, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...options.headers,
-                },
-            });
-
-            if (!response.ok) {
-                const error = await response.json().catch(() => ({ message: 'A technical error occurred' }));
-                const message = error.message || 'Request failed';
-
-                // Handle specific status codes
-                if (response.status === 401) {
-                    throw new AuthenticationError(message, 401);
-                } else if (response.status === 403) {
-                    throw new ForbiddenError(message);
-                } else if (response.status === 404) {
-                    throw new NotFoundError(message);
-                } else {
-                    throw new Error(message);
-                }
-            }
-
-            return response.json();
-        } catch (error) {
-            // Network errors (no response from server)
-            if (error instanceof TypeError && error.message.includes('fetch')) {
-                throw new NetworkError('Unable to connect to server. Please check your connection.');
-            }
-            // Re-throw our custom errors
-            throw error;
-        }
-    }
-
-    // --- Auth ---
-    async login(email: string, password: string): Promise<any> {
-        return this.request<any>('/auth/login', {
-            method: 'POST',
-            body: JSON.stringify({ email, password }),
-        });
-    }
-
-    async getMe(): Promise<any> {
-        const token = Cookies.get('admin_token');
-        if (!token) throw new AuthenticationError('No authentication token found');
-        return this.request<any>('/auth/me', {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-    }
-
-    // Add future admin-specific endpoints here
+export class NetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NetworkError';
+  }
 }
 
-export const api = new ApiService();
+type RequestOpts = RequestInit & { skipAuth?: boolean };
+
+async function request<T>(endpoint: string, options: RequestOpts = {}): Promise<T> {
+  const { skipAuth, ...init } = options;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(typeof init.headers === 'object' && !(init.headers instanceof Headers)
+      ? (init.headers as Record<string, string>)
+      : {}),
+  };
+
+  if (!skipAuth) {
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, { ...init, headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: 'A technical error occurred' }));
+      const msg = (err && typeof err === 'object' && 'message' in err && err.message) || 'Request failed';
+      if (res.status === 401) throw new AuthenticationError(String(msg), 401);
+      if (res.status === 403) throw new ForbiddenError(String(msg));
+      if (res.status === 404) throw new NotFoundError(String(msg));
+      throw new Error(String(msg));
+    }
+    return res.json();
+  } catch (e) {
+    if (e instanceof AuthenticationError || e instanceof ForbiddenError || e instanceof NotFoundError || e instanceof NetworkError) throw e;
+    if (e instanceof TypeError && (e.message || '').includes('fetch')) throw new NetworkError('Unable to connect to server. Please check your connection.');
+    throw e;
+  }
+}
+
+export const api = {
+  login(email: string, password: string) {
+    return request<{ access_token: string; user: { id: string; email: string; name?: string; role: string } }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+      skipAuth: true,
+    });
+  },
+
+  getMe() {
+    const token = getToken();
+    if (!token) throw new AuthenticationError('No authentication token found');
+    return request<any>('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+  },
+
+  getClients: () => request<any[]>('/admin/clients'),
+  getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
+  getClientSensitive: (id: string) =>
+    request<{
+      ssn: string | null;
+      driverLicense: { number: string; stateCode: string; stateName: string; expirationDate: string } | null;
+      passport: { number: string; countryOfIssue: string; expirationDate: string } | null;
+    }>(`/admin/clients/${id}/sensitive`),
+
+  getOrders: () => request<any[]>('/admin/orders'),
+  getOrderDetails: (id: string) => request<any>(`/admin/orders/${id}`),
+  updateOrderStatus: (id: string, status: string, notes?: string) =>
+    request<any>(`/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, notes }),
+    }),
+
+  getDashboardMetrics: () => request<any>('/admin/dashboard/metrics'),
+
+  getServices: () => request<any[]>('/admin/services'),
+  getServiceDetails: (id: string) => request<any>(`/admin/services/${id}`),
+  createService: (data: { name: string; description: string; category: string; price: number; originalPrice?: number }) =>
+    request<any>('/admin/services', { method: 'POST', body: JSON.stringify(data) }),
+  updateService: (id: string, data: { name?: string; description?: string; category?: string; price?: number; originalPrice?: number }) =>
+    request<any>(`/admin/services/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteService: (id: string) => request<any>(`/admin/services/${id}`, { method: 'DELETE' }),
+
+  createServiceStep: (serviceId: string, data: { title: string; description?: string; formConfig?: any; formId?: string | null }) =>
+    request<any>(`/admin/services/${serviceId}/steps`, { method: 'POST', body: JSON.stringify(data) }),
+  updateServiceStep: (stepId: string, data: { title?: string; description?: string; formConfig?: any; formId?: string | null }) =>
+    request<any>(`/admin/services/steps/${stepId}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteServiceStep: (stepId: string) =>
+    request<any>(`/admin/services/steps/${stepId}`, { method: 'DELETE' }),
+  reorderServiceSteps: (stepIds: string[]) =>
+    request<any>('/admin/services/steps/reorder', { method: 'PUT', body: JSON.stringify({ stepIds }) }),
+
+  getCompanyProfile: () => request<any>('/company/public', { skipAuth: true }),
+  updateCompanyProfile: (data: any) => request<any>('/company', { method: 'PUT', body: JSON.stringify(data) }),
+
+  getForms: () => request<any[]>('/admin/forms'),
+  getForm: (id: string) => request<any>(`/admin/forms/${id}`),
+  createForm: (data: { name: string; description?: string; version?: string; active?: boolean }) =>
+    request<any>('/admin/forms', { method: 'POST', body: JSON.stringify(data) }),
+  createFormFromTemplate: (template: 'tax') =>
+    request<any>('/admin/forms/from-template', { method: 'POST', body: JSON.stringify({ template }) }),
+  updateForm: (id: string, data: {
+    name?: string;
+    description?: string;
+    nameI18n?: { en?: string; es?: string };
+    descriptionI18n?: { en?: string; es?: string };
+    version?: string;
+    active?: boolean;
+  }) =>
+    request<any>(`/admin/forms/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteForm: (id: string) => request<any>(`/admin/forms/${id}`, { method: 'DELETE' }),
+  createFormSection: (formId: string, data: {
+    title: string;
+    order?: number;
+    titleI18n?: { en?: string; es?: string };
+  }) =>
+    request<any>(`/admin/forms/${formId}/sections`, { method: 'POST', body: JSON.stringify(data) }),
+  updateFormSection: (formId: string, sectionId: string, data: {
+    title?: string;
+    order?: number;
+    titleI18n?: { en?: string; es?: string };
+  }) =>
+    request<any>(`/admin/forms/${formId}/sections/${sectionId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteFormSection: (formId: string, sectionId: string) =>
+    request<any>(`/admin/forms/${formId}/sections/${sectionId}`, { method: 'DELETE' }),
+  createFormField: (formId: string, data: {
+    sectionId?: string | null;
+    type: string;
+    name: string;
+    label: string;
+    placeholder?: string;
+    helpText?: string;
+    labelI18n?: { en?: string; es?: string };
+    placeholderI18n?: { en?: string; es?: string };
+    helpTextI18n?: { en?: string; es?: string };
+    required?: boolean;
+    order?: number;
+    rules?: object;
+    options?: object;
+    accept?: string;
+    maxFiles?: number;
+    maxSize?: number;
+  }) =>
+    request<any>(`/admin/forms/${formId}/fields`, { method: 'POST', body: JSON.stringify(data) }),
+  updateFormField: (formId: string, fieldId: string, data: Partial<{
+    sectionId: string | null;
+    type: string;
+    name: string;
+    label: string;
+    placeholder: string;
+    helpText: string;
+    labelI18n: { en?: string; es?: string };
+    placeholderI18n: { en?: string; es?: string };
+    helpTextI18n: { en?: string; es?: string };
+    required: boolean;
+    order: number;
+    rules: object;
+    options: object;
+    accept: string;
+    maxFiles: number;
+    maxSize: number;
+  }>) =>
+    request<any>(`/admin/forms/${formId}/fields/${fieldId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteFormField: (formId: string, fieldId: string) =>
+    request<any>(`/admin/forms/${formId}/fields/${fieldId}`, { method: 'DELETE' }),
+};

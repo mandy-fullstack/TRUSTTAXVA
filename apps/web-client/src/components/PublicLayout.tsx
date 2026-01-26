@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%'
     },
-    mainContent: {},
+    mainContent: { width: '100%' as DimensionValue, minWidth: '100%' as DimensionValue },
 });

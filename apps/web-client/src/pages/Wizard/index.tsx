@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Alert } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { useParams, useNavigate } from 'react-router-dom';
 import { WizardLayout } from '../../components/Wizard/WizardLayout';
 import { IntakeStep } from '../../components/Wizard/Steps/IntakeStep';
@@ -8,6 +8,7 @@ import { ReviewStep } from '../../components/Wizard/Steps/ReviewStep';
 import { Button } from '@trusttax/ui';
 import { api } from '../../services/api';
 import type { Service } from '../../types';
+import { AlertDialog } from '../../components/AlertDialog';
 
 export const WizardPage = () => {
     const { id } = useParams<{ id: string }>();
@@ -21,6 +22,12 @@ export const WizardPage = () => {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [formData, setFormData] = useState<any>({});
     const [docData, setDocData] = useState<any>({});
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning'; buttons?: Array<{ text: string; onPress: () => void }> }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
 
     useEffect(() => {
         const fetchService = async () => {
@@ -30,8 +37,7 @@ export const WizardPage = () => {
                 setService(data);
             } catch (e) {
                 console.error('Failed to load service', e);
-                Alert.alert('Error', 'Failed to load service');
-                navigate('/services');
+                setAlertDialog({ isOpen: true, title: 'Error', message: 'Failed to load service', variant: 'error', buttons: [{ text: 'OK', onPress: () => navigate('/services') }] });
             } finally {
                 setLoading(false);
             }
@@ -91,11 +97,15 @@ export const WizardPage = () => {
             await api.createOrder(service.id, payload);
 
             // Success
-            Alert.alert('Success', 'Your order has been created!', [
-                { text: 'Go to Dashboard', onPress: () => navigate('/dashboard') }
-            ]);
+            setAlertDialog({ 
+                isOpen: true, 
+                title: 'Success', 
+                message: 'Your order has been created!', 
+                variant: 'success',
+                buttons: [{ text: 'Go to Dashboard', onPress: () => navigate('/dashboard') }]
+            });
         } catch (err: any) {
-            Alert.alert('Error', err.message || 'Failed to create order');
+            setAlertDialog({ isOpen: true, title: 'Error', message: err.message || 'Failed to create order', variant: 'error' });
         } finally {
             setSubmitting(false);
         }
@@ -160,6 +170,16 @@ export const WizardPage = () => {
                     loading={submitting}
                 />
             </View>
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+                buttons={alertDialog.buttons}
+            />
         </WizardLayout>
     );
 };

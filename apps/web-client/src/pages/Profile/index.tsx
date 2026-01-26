@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { Text, H1, H3, Card, Button } from '@trusttax/ui';
 import { Layout } from '../../components/Layout';
+import { AlertDialog } from '../../components/AlertDialog';
 import { User, Shield, FileText, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
@@ -43,6 +44,12 @@ export const ProfilePage = () => {
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [initialFormData, setInitialFormData] = useState<ProfileData | null>(null);
     const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning'; buttons?: Array<{ text: string; onPress: () => void }> }>({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        variant: 'info' 
+    });
     const scrollViewRef = useRef<ScrollView>(null);
     const initialSsnRef = useRef<string | null>(null);
     const lastDecryptedLicenseRef = useRef<{ number: string; stateCode: string; stateName: string; expirationDate: string } | null>(null);
@@ -258,10 +265,12 @@ export const ProfilePage = () => {
             if (errors.has('ssn')) errorMessages.push(t('profile.tax_id', 'SSN or ITIN'));
             if (errors.has('acceptTerms')) errorMessages.push(t('profile.terms', 'Terms and Conditions'));
 
-            Alert.alert(
-                t('profile.validation_error', 'Validation Error'),
-                t('profile.required_fields_message', 'Please complete the following required fields:') + '\n\n• ' + errorMessages.join('\n• ')
-            );
+            setAlertDialog({
+                isOpen: true,
+                title: t('profile.validation_error', 'Validation Error'),
+                message: t('profile.required_fields_message', 'Please complete the following required fields:') + '\n\n• ' + errorMessages.join('\n• '),
+                variant: 'warning'
+            });
             return;
         }
 
@@ -392,23 +401,25 @@ export const ProfilePage = () => {
             lastDecryptedLicenseRef.current = null;
             lastDecryptedPassportRef.current = null;
 
-            Alert.alert(
-                t('profile.success', 'Success'),
-                t('profile.update_success_detail', 'Your profile has been saved successfully. Personal information, SSN/ITIN, terms acceptance, and any driver\'s license or passport data you provided have been updated and stored securely.'),
-                [
-                    {
-                        text: t('common.ok', 'OK'),
-                        onPress: () => {
-                            if (typeof window !== 'undefined') window.location.reload();
-                        },
+            setAlertDialog({
+                isOpen: true,
+                title: t('profile.success', 'Success'),
+                message: t('profile.update_success_detail', 'Your profile has been saved successfully. Personal information, SSN/ITIN, terms acceptance, and any driver\'s license or passport data you provided have been updated and stored securely.'),
+                variant: 'success',
+                buttons: [{
+                    text: t('common.ok', 'OK'),
+                    onPress: () => {
+                        if (typeof window !== 'undefined') window.location.reload();
                     },
-                ]
-            );
+                }]
+            });
         } catch (error: any) {
-            Alert.alert(
-                t('profile.error', 'Error'),
-                error.message || t('profile.update_error', 'Failed to update profile')
-            );
+            setAlertDialog({
+                isOpen: true,
+                title: t('profile.error', 'Error'),
+                message: error.message || t('profile.update_error', 'Failed to update profile'),
+                variant: 'error'
+            });
         } finally {
             setIsLoading(false);
         }
@@ -725,6 +736,16 @@ export const ProfilePage = () => {
                 isOpen={showTermsModal}
                 onClose={() => setShowTermsModal(false)}
                 onAccept={handleAcceptTerms}
+            />
+
+            {/* Alert Dialog */}
+            <AlertDialog
+                isOpen={alertDialog.isOpen}
+                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
+                title={alertDialog.title}
+                message={alertDialog.message}
+                variant={alertDialog.variant}
+                buttons={alertDialog.buttons}
             />
         </>
     );
