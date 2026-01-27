@@ -9,8 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
-import { UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { ClientToServerEvents, ServerToClientEvents } from '@trusttax/core';
 
 @WebSocketGateway({
     cors: {
@@ -19,7 +19,7 @@ import { ChatService } from './chat.service';
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
-    server: Server;
+    server: Server<ClientToServerEvents, ServerToClientEvents>;
 
     constructor(
         private jwtService: JwtService,
@@ -58,8 +58,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('joinRoom')
     handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() room: string) {
-        // Basic validation: user can join conversation room if they are part of it
-        // For now, simpler: check if room is conversation_${id}
         client.join(room);
         console.log(`Client ${client.id} joined room ${room}`);
     }
@@ -75,7 +73,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         @MessageBody() payload: { conversationId: string; isTyping: boolean }
     ) {
         // Broadcast to the conversation room EXCEPT the sender
-        client.to(`conversation_${payload.conversationId}`).emit('userTyping', {
+        client.broadcast.to(`conversation_${payload.conversationId}`).emit('userTyping', {
             userId: client.data.user?.sub,
             userName: client.data.user?.name,
             isTyping: payload.isTyping,
@@ -97,10 +95,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // Emit to room
         this.server.to(`conversation_${payload.conversationId}`).emit('newMessage', message);
 
-        // Also notify admins if client sent, or client if admin sent
-        // This part is tricky if they are not in the room. 
-        // Ideally we notify the user's personal channel too if they are offline? 
-        // Backend logic for push notifications would go here.
         return message;
     }
 }

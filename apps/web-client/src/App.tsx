@@ -19,6 +19,7 @@ import { AdminOrderDetailPage } from './pages/Admin/AdminOrderDetail';
 import { AdminServicesPage } from './pages/Admin/AdminServices';
 import { ChatPage } from './pages/Chat/ChatPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import { CompanyProvider } from './context/CompanyContext';
 import { NotificationProvider } from './context/NotificationContext';
 import type { ReactNode } from 'react';
@@ -59,41 +60,43 @@ function App() {
     <AuthProvider>
       <CompanyProvider>
         <NotificationProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public Website Routes */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
+          <SocketProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public Website Routes */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
 
-              {/* Auth Routes */}
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+                {/* Auth Routes */}
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 
-              {/* Public Services Routes */}
-              <Route path="/services" element={<PublicServicesPage />} />
-              <Route path="/services/:id" element={<ServiceDetailPage />} />
+                {/* Public Services Routes */}
+                <Route path="/services" element={<PublicServicesPage />} />
+                <Route path="/services/:id" element={<ServiceDetailPage />} />
 
-              {/* Protected Routes */}
-              <Route path="/services/:id/wizard" element={<ProtectedRoute><WizardPage /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/dashboard/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
-              <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-              <Route path="/dashboard/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-              <Route path="/dashboard/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-              <Route path="/dashboard/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                {/* Protected Routes */}
+                <Route path="/services/:id/wizard" element={<ProtectedRoute><WizardPage /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/dashboard/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+                <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                <Route path="/dashboard/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+                <Route path="/dashboard/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                <Route path="/dashboard/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
 
-              {/* Admin Routes */}
-              <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
-              <Route path="/admin/orders/:id" element={<AdminRoute><AdminOrderDetailPage /></AdminRoute>} />
-              <Route path="/admin/services" element={<AdminRoute><AdminServicesPage /></AdminRoute>} />
+                {/* Admin Routes */}
+                <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
+                <Route path="/admin/orders/:id" element={<AdminRoute><AdminOrderDetailPage /></AdminRoute>} />
+                <Route path="/admin/services" element={<AdminRoute><AdminServicesPage /></AdminRoute>} />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </SocketProvider>
         </NotificationProvider>
       </CompanyProvider>
     </AuthProvider>

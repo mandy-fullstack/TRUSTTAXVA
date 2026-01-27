@@ -1,71 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import { api } from '../../services/api';
 import { H4, Text, Button } from '@trusttax/ui';
 import { MessageCircle, Send, Plus, Search, ArrowLeft, User, MoreVertical, Check, CheckCheck } from 'lucide-react';
-import { socket } from '../../services/socket';
 import { useTranslation } from 'react-i18next';
+import { useSocket } from '../../hooks/useSocket';
 
 export const ChatPage = () => {
     const { t } = useTranslation();
     const { id: paramId } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedId, setSelectedId] = useState<string | null>(paramId || null);
     const [messages, setMessages] = useState<any[]>([]);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<any>(null);
-    const [socketConnected, setSocketConnected] = useState(socket.connected);
     const [isTyping, setIsTyping] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef<any>(null);
-    const [user, setUser] = useState<any>(null); // To know who "I" am for typing checks
+    const [user, setUser] = useState<any>(null);
+
+    // Use Professional Socket Hook
+    // paramId is now the source of truth for the selected room
+    const { socket, isConnected: socketConnected } = useSocket(paramId ? `conversation_${paramId}` : undefined);
 
     // Initial load
     useEffect(() => {
         fetchConversations();
-        api.getMe().then(setUser).catch(() => { }); // Fetch current user for typing logic
-
-        const onConnect = () => setSocketConnected(true);
-        const onDisconnect = () => setSocketConnected(false);
-
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-
-        return () => {
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-        };
+        api.getMe().then(setUser).catch(() => { });
     }, []);
 
-    // Load messages when selectedId changes
+    // Effect to select the first conversation on desktop if none selected
     useEffect(() => {
-        if (selectedId) {
-            fetchMessages(selectedId);
+        if (!loading && conversations.length > 0 && !paramId && Platform.OS === 'web' && window.innerWidth > 768) {
+            navigate(`/dashboard/chat/${conversations[0].id}`, { replace: true });
+        }
+    }, [conversations, loading, paramId, navigate]);
 
-            // Join room function
-            const joinChatRoom = () => {
-                socket.emit('joinRoom', `conversation_${selectedId}`);
-            };
-
-            // Connect and Join
-            if (!socket.connected) {
-                socket.connect();
-            } else {
-                joinChatRoom();
-            }
-
-            // Ensure we join if we reconnect
-            const onReConnect = () => joinChatRoom();
-            socket.on('connect', onReConnect);
+    // Load messages when paramId changes
+    useEffect(() => {
+        if (paramId) {
+            fetchMessages(paramId);
 
             // Listen for new messages
             const handleNewMessage = (msg: any) => {
-                if (msg.conversationId === selectedId) {
+                if (msg.conversationId === paramId) {
                     setMessages(prev => {
                         if (prev.some(m => m.id === msg.id)) return prev;
                         return [...prev, msg];
@@ -75,8 +58,7 @@ export const ChatPage = () => {
             };
 
             const handleUserTyping = (data: any) => {
-                // If it's this conversation and NOT me typing (though broadcast usually excludes sender, good to be safe)
-                if (data.conversationId === selectedId && data.userId !== user?.id) {
+                if (data.conversationId === paramId && data.userId !== user?.id) {
                     setIsOtherTyping(data.isTyping);
                     if (data.isTyping) scrollToBottom();
                 }
@@ -86,22 +68,19 @@ export const ChatPage = () => {
             socket.on('userTyping', handleUserTyping);
 
             return () => {
-                socket.off('connect', onReConnect);
-                socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
                 socket.off('userTyping', handleUserTyping);
             };
+        } else {
+            setMessages([]);
         }
-    }, [selectedId]);
+    }, [paramId, user, socket]);
 
     const fetchConversations = async () => {
         try {
             setLoading(true);
             const data = await api.getConversations();
             setConversations(data);
-            if (!selectedId && data.length > 0 && Platform.OS === 'web' && window.innerWidth > 768) {
-                setSelectedId(data[0].id);
-            }
         } catch (error) {
             console.error('Failed to fetch conversations:', error);
         } finally {
@@ -123,14 +102,14 @@ export const ChatPage = () => {
     };
 
     const handleSend = async () => {
-        if (!selectedId || !inputText.trim()) return;
+        if (!paramId || !inputText.trim()) return;
         try {
             setSending(true);
             const content = inputText;
             setInputText(''); // Clear immediately for better UX
 
             // Send via API
-            const newMessage = await api.sendMessage(selectedId, content);
+            const newMessage = await api.sendMessage(paramId, content);
 
             // OPTIMISTIC UPDATE: Manually append message immediately
             setMessages(prev => {
@@ -139,7 +118,10 @@ export const ChatPage = () => {
             });
             scrollToBottom();
 
-            fetchConversations(); // Refresh list to update latest message preview
+            // Refresh list to update latest message preview, but don't reset selection
+            const data = await api.getConversations();
+            setConversations(data);
+
         } catch (error) {
             console.error('Failed to send message:', error);
             setInputText(inputText); // Restore on failure
@@ -154,7 +136,7 @@ export const ChatPage = () => {
             try {
                 const newConv = await api.createConversation(subject);
                 setConversations([newConv, ...conversations]);
-                setSelectedId(newConv.id);
+                navigate(`/dashboard/chat/${newConv.id}`);
             } catch (error) {
                 console.error("Failed to create conversation:", error);
             }
@@ -169,13 +151,13 @@ export const ChatPage = () => {
         }, 100);
     };
 
-    const currentConversation = conversations.find(c => c.id === selectedId);
+    const currentConversation = conversations.find(c => c.id === paramId);
 
     return (
         <Layout>
             <View style={styles.container}>
                 {/* Sidebar List */}
-                <View style={[styles.sidebar, selectedId && styles.sidebarHiddenOnMobile]}>
+                <View style={[styles.sidebar, paramId && styles.sidebarHiddenOnMobile]}>
                     <View style={styles.sidebarHeader}>
                         <H4>Mensajes</H4>
                         <TouchableOpacity onPress={handleCreateConversation} style={styles.iconBtn}>
@@ -197,8 +179,8 @@ export const ChatPage = () => {
                             conversations.map(conv => (
                                 <TouchableOpacity
                                     key={conv.id}
-                                    style={[styles.convItem, selectedId === conv.id && styles.convItemActive]}
-                                    onPress={() => setSelectedId(conv.id)}
+                                    style={[styles.convItem, paramId === conv.id && styles.convItemActive]}
+                                    onPress={() => navigate(`/dashboard/chat/${conv.id}`)}
                                 >
                                     <View style={styles.avatar}>
                                         <Text style={styles.avatarText}>{(conv.preparer?.name || 'S')[0]}</Text>
@@ -226,11 +208,11 @@ export const ChatPage = () => {
                 </View>
 
                 {/* Chat Details Area */}
-                <View style={[styles.chatArea, !selectedId && styles.chatAreaHiddenOnMobile]}>
-                    {selectedId ? (
+                <View style={[styles.chatArea, !paramId && styles.chatAreaHiddenOnMobile]}>
+                    {paramId ? (
                         <>
                             <View style={styles.chatHeader}>
-                                <TouchableOpacity style={styles.mobileBackBtn} onPress={() => setSelectedId(null)}>
+                                <TouchableOpacity style={styles.mobileBackBtn} onPress={() => navigate('/dashboard/chat')}>
                                     <ArrowLeft size={20} color="#64748B" />
                                 </TouchableOpacity>
                                 <View style={styles.avatarSmall}>
@@ -310,16 +292,16 @@ export const ChatPage = () => {
                                         setInputText(text);
 
                                         // Emit typing event
-                                        if (!isTyping && selectedId) {
+                                        if (!isTyping && paramId) {
                                             setIsTyping(true);
-                                            socket.emit('typing', { conversationId: selectedId, isTyping: true });
+                                            socket.emit('typing', { conversationId: paramId, isTyping: true });
                                         }
 
                                         // Debounce stop typing
                                         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
                                         typingTimeoutRef.current = setTimeout(() => {
                                             setIsTyping(false);
-                                            if (selectedId) socket.emit('typing', { conversationId: selectedId, isTyping: false });
+                                            if (paramId) socket.emit('typing', { conversationId: paramId, isTyping: false });
                                         }, 1500);
                                     }}
                                     multiline

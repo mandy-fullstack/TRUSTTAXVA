@@ -6,7 +6,7 @@ import { api } from '../../services/api';
 import { H4, Text } from '@trusttax/ui';
 import { MessageCircle, Send, Search, ArrowLeft, User, Trash2, Check, CheckCheck } from 'lucide-react';
 
-import { socket } from '../../services/socket';
+import { useSocket } from '../../hooks/useSocket';
 import { getCategoryColor, getCategoryLabel } from '../../utils/conversationColors';
 
 export const AdminChatPage = () => {
@@ -14,7 +14,6 @@ export const AdminChatPage = () => {
     const navigate = useNavigate();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedId, setSelectedId] = useState<string | null>(paramId || null);
     const [messages, setMessages] = useState<any[]>([]);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [inputText, setInputText] = useState('');
@@ -24,41 +23,33 @@ export const AdminChatPage = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef<any>(null);
-    const [socketConnected, setSocketConnected] = useState(socket.connected);
+
+    // Use Professional Socket Hook
+    const { socket, isConnected: socketConnected } = useSocket(paramId ? `conversation_${paramId}` : undefined);
 
     useEffect(() => {
         fetchConversations();
         api.getMe().then(setUser).catch(console.error);
-
-        const onConnect = () => setSocketConnected(true);
-        const onDisconnect = () => setSocketConnected(false);
-
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-
-        return () => {
-            socket.off('connect', onConnect);
-            socket.off('disconnect', onDisconnect);
-        };
     }, []);
 
+    // Load messages when paramId changes
     useEffect(() => {
-        if (selectedId) {
-            fetchMessages(selectedId);
-
-            // Join room
-            socket.emit('joinRoom', `conversation_${selectedId}`);
+        if (paramId) {
+            fetchMessages(paramId);
 
             // Listen for new messages
             const handleNewMessage = (msg: any) => {
-                if (msg.conversationId === selectedId) {
-                    setMessages(prev => [...prev, msg]);
+                if (msg.conversationId === paramId) {
+                    setMessages(prev => {
+                        if (prev.some(m => m.id === msg.id)) return prev;
+                        return [...prev, msg];
+                    });
                     scrollToBottom();
                 }
             };
 
             const handleUserTyping = (data: any) => {
-                if (data.conversationId === selectedId && data.userId !== user?.id) {
+                if (data.conversationId === paramId && data.userId !== user?.id) {
                     setIsOtherTyping(data.isTyping);
                 }
             };
@@ -67,21 +58,19 @@ export const AdminChatPage = () => {
             socket.on('userTyping', handleUserTyping);
 
             return () => {
-                socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
                 socket.off('userTyping', handleUserTyping);
             };
+        } else {
+            setMessages([]);
         }
-    }, [selectedId, user]); // Added user dependency for typing check
+    }, [paramId, user, socket]);
 
     const fetchConversations = async () => {
         try {
             setLoading(true);
             const data = await api.getConversations();
             setConversations(data);
-            if (!selectedId && data.length > 0 && Platform.OS === 'web' && window.innerWidth > 768) {
-                setSelectedId(data[0].id);
-            }
         } catch (error) {
             console.error('Failed to fetch conversations:', error);
         } finally {
@@ -108,7 +97,7 @@ export const AdminChatPage = () => {
             try {
                 await api.deleteConversation(id);
                 setConversations(conversations.filter(c => c.id !== id));
-                if (selectedId === id) setSelectedId(null);
+                if (paramId === id) navigate('/chat');
             } catch (error) {
                 console.error("Failed to delete conversation:", error);
             }
@@ -116,10 +105,10 @@ export const AdminChatPage = () => {
     };
 
     const handleSend = async () => {
-        if (!selectedId || !inputText.trim()) return;
+        if (!paramId || !inputText.trim()) return;
         try {
             setSending(true);
-            const sentMsg = await api.sendMessage(selectedId, inputText);
+            const sentMsg = await api.sendMessage(paramId, inputText);
             setInputText('');
 
             // Optimistic Update
@@ -130,8 +119,10 @@ export const AdminChatPage = () => {
             scrollToBottom();
 
             fetchConversations();
+            fetchConversations();
         } catch (error) {
             console.error('Failed to send message:', error);
+            setInputText(inputText); // Restore text so user can try again
         } finally {
             setSending(false);
         }
@@ -145,13 +136,13 @@ export const AdminChatPage = () => {
         }, 100);
     };
 
-    const currentConversation = conversations.find(c => c.id === selectedId);
+    const currentConversation = conversations.find(c => c.id === paramId);
 
     return (
         <Layout>
             <View style={styles.container}>
                 {/* Sidebar List */}
-                <View style={[styles.sidebar, selectedId && styles.sidebarHiddenOnMobile]}>
+                <View style={[styles.sidebar, paramId && styles.sidebarHiddenOnMobile]}>
                     <View style={styles.sidebarHeader}>
                         <H4>Inbox</H4>
                         {/* Admin typically doesn't start generic chat? Or maybe they do. */}
@@ -175,7 +166,7 @@ export const AdminChatPage = () => {
                                         key={conv.id}
                                         style={[
                                             styles.convItem,
-                                            selectedId === conv.id && styles.convItemActive,
+                                            paramId === conv.id && styles.convItemActive,
                                             {
                                                 backgroundColor: colors.bg,
                                                 borderLeftWidth: 4,
@@ -183,7 +174,6 @@ export const AdminChatPage = () => {
                                             }
                                         ]}
                                         onPress={() => {
-                                            setSelectedId(conv.id);
                                             navigate(`/chat/${conv.id}`);
                                         }}
                                     >
@@ -224,11 +214,11 @@ export const AdminChatPage = () => {
                 </View>
 
                 {/* Chat Details Area */}
-                <View style={[styles.chatArea, !selectedId && styles.chatAreaHiddenOnMobile]}>
-                    {selectedId ? (
+                <View style={[styles.chatArea, !paramId && styles.chatAreaHiddenOnMobile]}>
+                    {paramId ? (
                         <>
                             <View style={styles.chatHeader}>
-                                <TouchableOpacity style={styles.mobileBackBtn} onPress={() => setSelectedId(null)}>
+                                <TouchableOpacity style={styles.mobileBackBtn} onPress={() => navigate('/chat')}>
                                     <ArrowLeft size={20} color="#64748B" />
                                 </TouchableOpacity>
                                 <View style={styles.avatarSmall}>
@@ -298,16 +288,16 @@ export const AdminChatPage = () => {
                                     onChangeText={(text) => {
                                         setInputText(text);
 
-                                        if (!isTyping && selectedId) {
+                                        if (!isTyping && paramId) {
                                             setIsTyping(true);
-                                            socket.emit('typing', { conversationId: selectedId, isTyping: true });
+                                            socket.emit('typing', { conversationId: paramId, isTyping: true });
                                         }
 
                                         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
                                         typingTimeoutRef.current = setTimeout(() => {
                                             setIsTyping(false);
-                                            if (selectedId) socket.emit('typing', { conversationId: selectedId, isTyping: false });
+                                            if (paramId) socket.emit('typing', { conversationId: paramId, isTyping: false });
                                         }, 1500);
                                     }}
                                     multiline

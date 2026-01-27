@@ -53,6 +53,9 @@ importers:
       '@nestjs/websockets':
         specifier: ^11.1.12
         version: 11.1.12(@nestjs/common@11.1.12(class-transformer@0.5.1)(class-validator@0.14.3)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.12)(@nestjs/platform-socket.io@11.1.12)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@trusttax/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@trusttax/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -220,6 +223,9 @@ importers:
 
   apps/web-admin:
     dependencies:
+      '@trusttax/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@trusttax/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -296,6 +302,9 @@ importers:
 
   apps/web-client:
     dependencies:
+      '@trusttax/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@trusttax/ui':
         specifier: workspace:*
         version: link:../../packages/ui

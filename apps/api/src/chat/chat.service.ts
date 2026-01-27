@@ -127,6 +127,12 @@ export class ChatService {
                         email: true,
                         role: true
                     }
+                },
+                conversation: {
+                    select: {
+                        clientId: true,
+                        preparerId: true
+                    }
                 }
             }
         });

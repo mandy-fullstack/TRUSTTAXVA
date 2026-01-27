@@ -38,13 +38,44 @@ export class ChatController {
         @Param('id') id: string,
         @Body() body: { content: string }
     ) {
-        const message = await this.chatService.sendMessage(id, req.user.userId, body.content);
+        const message: any = await this.chatService.sendMessage(id, req.user.userId, body.content);
 
-        // Real-time update via Socket
+        // 1. Real-time update to the conversation room (for visible chat)
         this.chatGateway.server.to(`conversation_${id}`).emit('newMessage', message);
 
-        // Optional: Send push notification logic here if needed, 
-        // e.g. finding the other participant and emitting to their personal room 'user_{id}'
+        // 2. Global Notification to Recipient
+        const senderRole = req.user.role;
+        const conv = message.conversation;
+
+        if (senderRole === 'CLIENT') {
+            // If sender is Client -> Notify assigned preparer OR all admins
+            if (conv.preparerId) {
+                this.chatGateway.server.to(`user_${conv.preparerId}`).emit('notification', {
+                    type: 'message',
+                    title: 'New Message',
+                    message: `You have a new message from ${message.sender?.name || 'Client'}`,
+                    conversationId: id
+                });
+            } else {
+                // If unassigned, notify all admins
+                this.chatGateway.server.to('admin_notifications').emit('notification', {
+                    type: 'message',
+                    title: 'Unassigned Message',
+                    message: `New message from ${message.sender?.name || 'Client'} in unassigned chat`,
+                    conversationId: id
+                });
+            }
+        } else {
+            // If sender is Admin/Preparer -> Notify Client
+            if (conv.clientId) {
+                this.chatGateway.server.to(`user_${conv.clientId}`).emit('notification', {
+                    type: 'message',
+                    title: 'New Message from Support',
+                    message: message.content, // Maybe truncate?
+                    conversationId: id
+                });
+            }
+        }
 
         return message;
     }
