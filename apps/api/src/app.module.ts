@@ -10,6 +10,7 @@ import { CompanyModule } from './company/company.module';
 import { FormsModule } from './forms/forms.module';
 import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { FaqModule } from './faq/faq.module';
     CompanyModule,
     FormsModule,
     OrdersModule,
-    FaqModule
+    FaqModule,
+    ChatModule
   ],
   controllers: [AppController],
   providers: [AppService],
