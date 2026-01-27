@@ -17,10 +17,11 @@ export interface TypingPayload {
 
 export interface ServerToClientEvents {
     newMessage: (message: any) => void;
-    userTyping: (data: UserTypingPayload) => void;
+    userTyping: (data: { userId: string; userName?: string; isTyping: boolean; conversationId: string }) => void;
+    messagesRead: (data: { conversationId: string; userId: string }) => void;
     error: (error: { message: string }) => void;
-    notification: (data: any) => void; // TODO: Define strict Notification payload
-    profile_completed: (data: any) => void;
+    notification: (notification: any) => void; // TODO: Define strict Notification payload
+    profile_completed: (data: { userId: string; completedAt: Date }) => void;
 }
 
 export interface ClientToServerEvents {
@@ -28,4 +29,5 @@ export interface ClientToServerEvents {
     leaveRoom: (room: string) => void;
     sendMessage: (payload: SendMessagePayload) => void;
     typing: (payload: TypingPayload) => void;
+    markAsRead: (payload: { conversationId: string }) => void;
 }

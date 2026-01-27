@@ -46,6 +46,9 @@ export const ChatPage = () => {
         if (paramId) {
             fetchMessages(paramId);
 
+            // Mark messages as read when opening conversation
+            socket.emit('markAsRead', { conversationId: paramId });
+
             // Listen for new messages
             const handleNewMessage = (msg: any) => {
                 if (msg.conversationId === paramId) {
@@ -54,6 +57,8 @@ export const ChatPage = () => {
                         return [...prev, msg];
                     });
                     scrollToBottom();
+                    // Auto-mark new messages as read
+                    socket.emit('markAsRead', { conversationId: paramId });
                 }
             };
 
@@ -64,12 +69,24 @@ export const ChatPage = () => {
                 }
             };
 
+            const handleMessagesRead = (data: any) => {
+                if (data.conversationId === paramId) {
+                    // Update messages to mark them as read
+                    setMessages(prev => prev.map(msg => ({
+                        ...msg,
+                        isRead: msg.sender?.role !== 'CLIENT' ? msg.isRead : true
+                    })));
+                }
+            };
+
             socket.on('newMessage', handleNewMessage);
             socket.on('userTyping', handleUserTyping);
+            socket.on('messagesRead', handleMessagesRead);
 
             return () => {
                 socket.off('newMessage', handleNewMessage);
                 socket.off('userTyping', handleUserTyping);
+                socket.off('messagesRead', handleMessagesRead);
             };
         } else {
             setMessages([]);

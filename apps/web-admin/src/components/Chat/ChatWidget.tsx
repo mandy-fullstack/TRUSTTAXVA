@@ -30,18 +30,35 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
             fetchMessages(selectedId);
             socket.emit('joinRoom', `conversation_${selectedId}`);
 
+            // Mark messages as read when admin opens conversation
+            socket.emit('markAsRead', { conversationId: selectedId });
+
             const handleNewMessage = (msg: any) => {
                 if (msg.conversationId === selectedId) {
                     setMessages(prev => [...prev, msg]);
                     scrollToBottom();
+                    // Auto-mark new messages as read
+                    socket.emit('markAsRead', { conversationId: selectedId });
+                }
+            };
+
+            const handleMessagesRead = (data: any) => {
+                if (data.conversationId === selectedId) {
+                    // Update messages to mark them as read
+                    setMessages(prev => prev.map(msg => ({
+                        ...msg,
+                        isRead: msg.sender?.role === 'CLIENT' ? msg.isRead : true
+                    })));
                 }
             };
 
             socket.on('newMessage', handleNewMessage);
+            socket.on('messagesRead', handleMessagesRead);
 
             return () => {
                 socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
+                socket.off('messagesRead', handleMessagesRead);
             };
         }
     }, [selectedId]);

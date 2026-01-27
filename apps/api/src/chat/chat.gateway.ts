@@ -90,11 +90,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (!user) return;
 
         // Save message via service
-        const message = await this.chatService.sendMessage(user.sub, payload.conversationId, payload.content);
+        const message = await this.chatService.sendMessage(payload.conversationId, user.sub, payload.content);
 
         // Emit to room
         this.server.to(`conversation_${payload.conversationId}`).emit('newMessage', message);
 
         return message;
+    }
+
+    @SubscribeMessage('markAsRead')
+    async handleMarkAsRead(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: { conversationId: string }
+    ) {
+        const user = client.data.user;
+        if (!user) return;
+
+        // Mark messages as read in database
+        await this.chatService.markMessagesAsRead(payload.conversationId, user.sub);
+
+        // Emit to conversation room that messages were read
+        this.server.to(`conversation_${payload.conversationId}`).emit('messagesRead', {
+            conversationId: payload.conversationId,
+            userId: user.sub
+        });
     }
 }

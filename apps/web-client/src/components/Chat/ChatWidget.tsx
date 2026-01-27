@@ -56,10 +56,25 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
             fetchMessages(selectedId);
             socket.emit('joinRoom', `conversation_${selectedId}`);
 
+            // Mark messages as read when opening conversation
+            socket.emit('markAsRead', { conversationId: selectedId });
+
             const handleNewMessage = (msg: any) => {
                 if (msg.conversationId === selectedId) {
                     setMessages(prev => [...prev, msg]);
                     scrollToBottom();
+                    // Auto-mark new messages as read
+                    socket.emit('markAsRead', { conversationId: selectedId });
+                }
+            };
+
+            const handleMessagesRead = (data: any) => {
+                if (data.conversationId === selectedId) {
+                    // Update messages to mark them as read
+                    setMessages(prev => prev.map(msg => ({
+                        ...msg,
+                        isRead: msg.sender?.id !== user?.id ? msg.isRead : true
+                    })));
                 }
             };
 
@@ -71,13 +86,16 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                 }
             });
 
+            socket.on('messagesRead', handleMessagesRead);
+
             return () => {
                 socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
                 socket.off('userTyping');
+                socket.off('messagesRead', handleMessagesRead);
             };
         }
-    }, [selectedId]);
+    }, [selectedId, user]);
 
     const fetchConversations = async () => {
         try {
