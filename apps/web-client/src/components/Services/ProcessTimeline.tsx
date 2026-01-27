@@ -14,7 +14,7 @@ interface ProcessTimelineProps {
     steps?: Array<{ title: string; description: string; }>;
 }
 
-function getDefaultSteps(t: (key: string) => string): ProcessStep[] {
+function getDefaultSteps(t: any): ProcessStep[] {
     return [
         {
             title: t('services.process.step1_title', 'Submit Your Information'),

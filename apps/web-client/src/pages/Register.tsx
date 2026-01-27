@@ -38,7 +38,7 @@ export const RegisterPage = () => {
         setError('');
 
         try {
-            const response = await api.register({ name, email, password });
+            await api.register({ name, email, password });
 
             // Show success message and redirect to login
             showAlert({
