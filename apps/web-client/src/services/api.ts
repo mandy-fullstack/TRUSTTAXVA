@@ -1,7 +1,7 @@
 import { getToken } from '../lib/cookies';
 import type { Service } from '../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://trusttax-api.onrender.com';
 
 // Custom error classes
 export class AuthenticationError extends Error {
