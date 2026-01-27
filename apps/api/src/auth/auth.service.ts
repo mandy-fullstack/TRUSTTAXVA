@@ -844,11 +844,4 @@ export class AuthService {
 
         return { message: 'Admin invitation has been sent successfully', email };
     }
-
-    async updateFcmToken(userId: string, fcmToken: string) {
-        return this.prisma.user.update({
-            where: { id: userId },
-            data: { fcmToken },
-        });
-    }
 }

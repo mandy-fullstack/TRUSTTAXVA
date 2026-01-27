@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { socket } from '../services/socket';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
-import { requestForToken, onMessageListener } from '../lib/firebase';
 
 interface NotificationItem {
     id: string;
@@ -43,33 +42,8 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         if ('Notification' in window) {
             const perm = await Notification.requestPermission();
             setPermission(perm);
-            if (perm === 'granted' && isAuthenticated) {
-                const token = await requestForToken();
-                if (token) {
-                    await api.updateFcmToken(token).catch(e => console.error('FCM token registration failed', e));
-                }
-            }
         }
     };
-
-    // FCM Message Listener
-    useEffect(() => {
-        if (isAuthenticated && permission === 'granted') {
-            onMessageListener().then((payload: any) => {
-                const newNotif: NotificationItem = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    type: payload.data?.type || 'message',
-                    title: payload.notification?.title || 'TrustTax',
-                    body: payload.notification?.body || '',
-                    date: new Date(),
-                    read: false,
-                    link: payload.data?.link || '/dashboard'
-                };
-                setNotifications(prev => [newNotif, ...prev]);
-                playSound();
-            }).catch(err => console.log('FCM listener error: ', err));
-        }
-    }, [isAuthenticated, permission]);
 
     const playSound = () => {
         try {

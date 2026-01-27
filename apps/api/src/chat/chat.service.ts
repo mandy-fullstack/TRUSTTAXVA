@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PushService } from '../notification/push.service';
 
 @Injectable()
 export class ChatService {
     constructor(
-        private prisma: PrismaService,
-        private pushService: PushService
+        private prisma: PrismaService
     ) { }
 
     async createConversation(clientId: string, subject?: string) {
@@ -146,36 +144,6 @@ export class ChatService {
             where: { id: conversationId },
             data: { updatedAt: new Date() }
         });
-
-        // Trigger Push Notification
-        try {
-            const recipientId = senderId === message.conversation.clientId
-                ? message.conversation.preparerId
-                : message.conversation.clientId;
-
-            if (recipientId) {
-                const recipient = await this.prisma.user.findUnique({
-                    where: { id: recipientId },
-                    select: { fcmToken: true, name: true }
-                });
-
-                if (recipient?.fcmToken) {
-                    await this.pushService.sendNotification(
-                        recipient.fcmToken,
-                        `Nuevo mensaje de ${message.sender.name}`,
-                        content,
-                        {
-                            type: 'chat_message',
-                            conversationId: conversationId,
-                            senderId: senderId
-                        }
-                    );
-                }
-            }
-        } catch (error) {
-            console.error('Failed to trigger push notification:', error);
-            // Don't fail the message send if push fails
-        }
 
         return message;
     }

@@ -9,7 +9,6 @@ interface AdminConversationViewProps {
     onSendMessage: (content: string) => void;
     onTyping: (isTyping: boolean) => void;
     isOtherTyping: boolean;
-    user: any;
     isMobile?: boolean;
 }
 
@@ -19,7 +18,6 @@ export const AdminConversationView = ({
     onSendMessage,
     onTyping,
     isOtherTyping,
-    user,
     isMobile = false
 }: AdminConversationViewProps) => {
     const [inputText, setInputText] = useState('');

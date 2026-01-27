@@ -96,7 +96,6 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                     onSendMessage={sendMessage}
                     onTyping={handleTyping}
                     isOtherTyping={isOtherTyping}
-                    user={user}
                 />
             ) : (
                 <View style={styles.listContainer}>

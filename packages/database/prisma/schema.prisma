@@ -58,9 +58,6 @@ model User {
   twoFactorSecret        String?   // Encrypted TOTP secret
   twoFactorEnabled       Boolean   @default(false)
   twoFactorBackupCodes   String?   // Encrypted JSON array of backup codes
-
-  // Push Notification fields
-  fcmToken               String?
 }
 
 model TaxReturn {

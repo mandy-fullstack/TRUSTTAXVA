@@ -163,7 +163,6 @@ export const AdminChatPage = () => {
                                 onSendMessage={sendMessage}
                                 onTyping={handleTyping}
                                 isOtherTyping={isOtherTyping}
-                                user={user}
                             />
                         </>
                     ) : (

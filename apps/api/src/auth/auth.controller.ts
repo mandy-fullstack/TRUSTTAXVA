@@ -130,12 +130,4 @@ export class AuthController {
         return this.authService.complete2FALogin(body.tempToken, body.code);
     }
 
-    /**
-     * Update FCM token for push notifications
-     */
-    @UseGuards(JwtAuthGuard)
-    @Patch('fcm-token')
-    async updateFcmToken(@Request() req: any, @Body() body: { fcmToken: string }) {
-        return this.authService.updateFcmToken(req.user.userId, body.fcmToken);
-    }
 }

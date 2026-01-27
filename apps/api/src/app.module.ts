@@ -11,7 +11,6 @@ import { FormsModule } from './forms/forms.module';
 import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
-import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -27,8 +26,7 @@ import { NotificationModule } from './notification/notification.module';
     FormsModule,
     OrdersModule,
     FaqModule,
-    ChatModule,
-    NotificationModule
+    ChatModule
   ],
   controllers: [AppController],
   providers: [AppService],
