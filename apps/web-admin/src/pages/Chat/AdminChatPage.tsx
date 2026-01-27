@@ -24,10 +24,22 @@ export const AdminChatPage = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
     const typingTimeoutRef = useRef<any>(null);
+    const [socketConnected, setSocketConnected] = useState(socket.connected);
 
     useEffect(() => {
         fetchConversations();
         api.getMe().then(setUser).catch(console.error);
+
+        const onConnect = () => setSocketConnected(true);
+        const onDisconnect = () => setSocketConnected(false);
+
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+        };
     }, []);
 
     useEffect(() => {
@@ -107,9 +119,16 @@ export const AdminChatPage = () => {
         if (!selectedId || !inputText.trim()) return;
         try {
             setSending(true);
-            await api.sendMessage(selectedId, inputText);
+            const sentMsg = await api.sendMessage(selectedId, inputText);
             setInputText('');
-            // await fetchMessages(selectedId); // Rely on socket
+
+            // Optimistic Update
+            setMessages(prev => {
+                if (prev.some(m => m.id === sentMsg.id)) return prev;
+                return [...prev, sentMsg];
+            });
+            scrollToBottom();
+
             fetchConversations();
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -217,7 +236,10 @@ export const AdminChatPage = () => {
                                 </View>
                                 <View>
                                     <Text style={styles.chatHeaderTitle}>{currentConversation?.client?.name || 'Client'}</Text>
-                                    <Text style={styles.chatHeaderSubtitle}>{currentConversation?.subject || 'Direct Message'}</Text>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: socketConnected ? '#22C55E' : '#EF4444' }} />
+                                        <Text style={styles.chatHeaderSubtitle}>{socketConnected ? 'Online' : 'Reconnecting...'}</Text>
+                                    </View>
                                 </View>
                             </View>
 

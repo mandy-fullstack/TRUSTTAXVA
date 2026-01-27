@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import { api } from '../../services/api';
 import { H4, Text, Button } from '@trusttax/ui';
-import { MessageCircle, Send, Plus, Search, ArrowLeft, User, MoreVertical } from 'lucide-react';
+import { MessageCircle, Send, Plus, Search, ArrowLeft, User, MoreVertical, Check, CheckCheck } from 'lucide-react';
 import { socket } from '../../services/socket';
 import { useTranslation } from 'react-i18next';
 
@@ -20,10 +20,15 @@ export const ChatPage = () => {
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<any>(null);
     const [socketConnected, setSocketConnected] = useState(socket.connected);
+    const [isTyping, setIsTyping] = useState(false);
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
+    const typingTimeoutRef = useRef<any>(null);
+    const [user, setUser] = useState<any>(null); // To know who "I" am for typing checks
 
     // Initial load
     useEffect(() => {
         fetchConversations();
+        api.getMe().then(setUser).catch(() => { }); // Fetch current user for typing logic
 
         const onConnect = () => setSocketConnected(true);
         const onDisconnect = () => setSocketConnected(false);
@@ -69,12 +74,22 @@ export const ChatPage = () => {
                 }
             };
 
+            const handleUserTyping = (data: any) => {
+                // If it's this conversation and NOT me typing (though broadcast usually excludes sender, good to be safe)
+                if (data.conversationId === selectedId && data.userId !== user?.id) {
+                    setIsOtherTyping(data.isTyping);
+                    if (data.isTyping) scrollToBottom();
+                }
+            };
+
             socket.on('newMessage', handleNewMessage);
+            socket.on('userTyping', handleUserTyping);
 
             return () => {
                 socket.off('connect', onReConnect);
                 socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
+                socket.off('userTyping', handleUserTyping);
             };
         }
     }, [selectedId]);
@@ -257,13 +272,32 @@ export const ChatPage = () => {
                                                 )}
                                                 <View style={[styles.messageBubble, isMine ? styles.bubbleRight : styles.bubbleLeft]}>
                                                     <Text style={[styles.messageText, isMine ? styles.textWhite : styles.textDark]}>{msg.content}</Text>
-                                                    <Text style={[styles.messageTime, isMine ? styles.timeWhite : styles.timeDark]}>
-                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </Text>
+                                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4, gap: 4 }}>
+                                                        <Text style={[styles.messageTime, isMine ? styles.timeWhite : styles.timeDark, { marginTop: 0 }]}>
+                                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </Text>
+                                                        {isMine && (
+                                                            msg.isRead ?
+                                                                <CheckCheck size={14} color="rgba(255,255,255,0.9)" /> :
+                                                                <Check size={14} color="rgba(255,255,255,0.6)" />
+                                                        )}
+                                                    </View>
                                                 </View>
                                             </View>
                                         );
                                     })
+                                )}
+                                {isOtherTyping && (
+                                    <View style={[styles.messageRow, styles.rowLeft]}>
+                                        <View style={styles.msgAvatar}>
+                                            <Text style={{ fontSize: 10, color: '#FFF' }}>S</Text>
+                                        </View>
+                                        <View style={[styles.messageBubble, styles.bubbleLeft, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 14 }]}>
+                                            <View style={[styles.dot, { opacity: 0.6 }]} />
+                                            <View style={[styles.dot, { opacity: 0.6 }]} />
+                                            <View style={[styles.dot, { opacity: 0.6 }]} />
+                                        </View>
+                                    </View>
                                 )}
                             </ScrollView>
 
@@ -272,7 +306,22 @@ export const ChatPage = () => {
                                     style={styles.input}
                                     placeholder={t('chat.type_message')}
                                     value={inputText}
-                                    onChangeText={setInputText}
+                                    onChangeText={(text) => {
+                                        setInputText(text);
+
+                                        // Emit typing event
+                                        if (!isTyping && selectedId) {
+                                            setIsTyping(true);
+                                            socket.emit('typing', { conversationId: selectedId, isTyping: true });
+                                        }
+
+                                        // Debounce stop typing
+                                        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                        typingTimeoutRef.current = setTimeout(() => {
+                                            setIsTyping(false);
+                                            if (selectedId) socket.emit('typing', { conversationId: selectedId, isTyping: false });
+                                        }, 1500);
+                                    }}
                                     multiline
                                     onKeyPress={(e: any) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -362,5 +411,6 @@ const styles = StyleSheet.create({
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
 
     noChatSelected: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
-    selectChatText: { color: '#64748B', fontSize: 16, fontWeight: '500' }
+    selectChatText: { color: '#64748B', fontSize: 16, fontWeight: '500' },
+    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8' }
 });
