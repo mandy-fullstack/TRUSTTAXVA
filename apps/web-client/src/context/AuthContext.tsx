@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import * as cookieStorage from '../lib/cookies';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
+import { AlertDialog } from '../components/AlertDialog';
 
 interface User {
     id: string;
@@ -22,16 +23,28 @@ interface User {
     termsAcceptedAt?: string;
 }
 
+interface GlobalAlert {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'success' | 'error' | 'info' | 'warning';
+    onConfirm?: () => void;
+}
+
 interface AuthContextType {
     user: User | null;
     token: string | null;
     isLoading: boolean;
     error: string | null;
+    globalAlert: GlobalAlert;
     login: (token: string, user: User) => void;
     logout: () => void;
     isAuthenticated: boolean;
+    isAdmin: boolean;
     clearError: () => void;
-    refreshUser: () => Promise<void>; // Método para actualizar los datos del usuario
+    refreshUser: () => Promise<void>;
+    showAlert: (alert: Omit<GlobalAlert, 'isOpen'>) => void;
+    hideAlert: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +54,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [globalAlert, setGlobalAlert] = useState<GlobalAlert>({
+        isOpen: false,
+        title: '',
+        message: '',
+        variant: 'info'
+    });
 
     useEffect(() => {
         const initAuth = async () => {
@@ -106,6 +125,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setError(null);
     };
 
+    const showAlert = (alert: Omit<GlobalAlert, 'isOpen'>) => {
+        setGlobalAlert({ ...alert, isOpen: true });
+    };
+
+    const hideAlert = () => {
+        setGlobalAlert(prev => ({ ...prev, isOpen: false }));
+    };
+
     const refreshUser = async () => {
         if (token) {
             try {
@@ -113,6 +140,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setUser(userData);
             } catch (err) {
                 console.error('Failed to refresh user data:', err);
+                if (err instanceof AuthenticationError) {
+                    logout();
+                    showAlert({
+                        title: 'Session Expired',
+                        message: 'Your session has expired. Please sign in again.',
+                        variant: 'warning'
+                    });
+                }
             }
         }
     };
@@ -124,14 +159,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 token,
                 isLoading,
                 error,
+                globalAlert,
                 login,
                 logout,
                 clearError,
                 refreshUser,
-                isAuthenticated: !!token
+                showAlert,
+                hideAlert,
+                isAuthenticated: !!token,
+                isAdmin: user?.role === 'ADMIN'
             }}
         >
             {children}
+            <AlertDialog
+                isOpen={globalAlert.isOpen}
+                onClose={hideAlert}
+                title={globalAlert.title}
+                message={globalAlert.message}
+                variant={globalAlert.variant}
+                buttons={globalAlert.onConfirm ? [
+                    { text: 'Cancel', onPress: hideAlert, style: 'cancel' },
+                    { text: 'Confirm', onPress: () => { globalAlert.onConfirm?.(); hideAlert(); } }
+                ] : undefined}
+            />
         </AuthContext.Provider>
     );
 };

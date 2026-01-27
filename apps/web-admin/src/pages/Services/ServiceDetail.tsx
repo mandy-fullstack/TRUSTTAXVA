@@ -44,7 +44,7 @@ export const ServiceDetailPage = () => {
 
     // Service Editing
     const [serviceFormData, setServiceFormData] = useState({
-        name: '', description: '', category: '', price: '', originalPrice: ''
+        nameEn: '', nameEs: '', descriptionEn: '', descriptionEs: '', category: '', price: '', originalPrice: ''
     });
 
     // Dialog states
@@ -66,9 +66,14 @@ export const ServiceDetailPage = () => {
             setLoading(true);
             const data = await api.getServiceDetails(id);
             setService(data);
+            // Manejar campos i18n
+            const nameI18n = (data as any).nameI18n || {};
+            const descriptionI18n = (data as any).descriptionI18n || {};
             setServiceFormData({
-                name: data.name,
-                description: data.description,
+                nameEn: nameI18n.en || data.name || '',
+                nameEs: nameI18n.es || data.name || '',
+                descriptionEn: descriptionI18n.en || data.description || '',
+                descriptionEs: descriptionI18n.es || data.description || '',
                 category: data.category,
                 price: data.price.toString(),
                 originalPrice: data.originalPrice?.toString() || ''
@@ -83,9 +88,24 @@ export const ServiceDetailPage = () => {
     const handleSaveService = async () => {
         if (!service || !id) return;
         try {
+            if (!serviceFormData.nameEn.trim() || !serviceFormData.nameEs.trim()) {
+                setAlertDialog({ isOpen: true, title: 'Error', message: 'Service name is required in both English and Spanish', variant: 'error' });
+                return;
+            }
+            if (!serviceFormData.descriptionEn.trim() || !serviceFormData.descriptionEs.trim()) {
+                setAlertDialog({ isOpen: true, title: 'Error', message: 'Service description is required in both English and Spanish', variant: 'error' });
+                return;
+            }
+
             await api.updateService(id, {
-                name: serviceFormData.name,
-                description: serviceFormData.description,
+                nameI18n: {
+                    en: serviceFormData.nameEn.trim(),
+                    es: serviceFormData.nameEs.trim(),
+                },
+                descriptionI18n: {
+                    en: serviceFormData.descriptionEn.trim(),
+                    es: serviceFormData.descriptionEs.trim(),
+                },
                 category: serviceFormData.category,
                 price: parseFloat(serviceFormData.price),
                 originalPrice: parseFloat(serviceFormData.originalPrice) || undefined
@@ -222,20 +242,26 @@ export const ServiceDetailPage = () => {
 
                 {activeTab === 'overview' ? (
                     <View style={styles.formSection}>
-                        <Text style={styles.label}>Service Name</Text>
-                        <TextInput style={styles.input} value={serviceFormData.name} onChangeText={t => setServiceFormData({ ...serviceFormData, name: t })} />
+                        <Text style={styles.sectionTitle}>Service Name *</Text>
+                        <Text style={styles.label}>English</Text>
+                        <TextInput style={styles.input} value={serviceFormData.nameEn} onChangeText={t => setServiceFormData({ ...serviceFormData, nameEn: t })} placeholder="Service name (English)" />
+                        <Text style={styles.label}>Spanish</Text>
+                        <TextInput style={styles.input} value={serviceFormData.nameEs} onChangeText={t => setServiceFormData({ ...serviceFormData, nameEs: t })} placeholder="Nombre del servicio (Español)" />
 
-                        <Text style={styles.label}>Category</Text>
-                        <TextInput style={styles.input} value={serviceFormData.category} onChangeText={t => setServiceFormData({ ...serviceFormData, category: t })} />
+                        <Text style={styles.sectionTitle}>Category</Text>
+                        <TextInput style={styles.input} value={serviceFormData.category} onChangeText={t => setServiceFormData({ ...serviceFormData, category: t })} placeholder="e.g., TAX, IMMIGRATION, BUSINESS" />
 
+                        <Text style={styles.sectionTitle}>Pricing</Text>
                         <Text style={styles.label}>Price</Text>
-                        <TextInput style={styles.input} value={serviceFormData.price} onChangeText={t => setServiceFormData({ ...serviceFormData, price: t })} keyboardType="numeric" />
-
+                        <TextInput style={styles.input} value={serviceFormData.price} onChangeText={t => setServiceFormData({ ...serviceFormData, price: t })} keyboardType="numeric" placeholder="0.00" />
                         <Text style={styles.label}>Original Price (Sale View)</Text>
-                        <TextInput style={styles.input} value={serviceFormData.originalPrice} onChangeText={t => setServiceFormData({ ...serviceFormData, originalPrice: t })} keyboardType="numeric" />
+                        <TextInput style={styles.input} value={serviceFormData.originalPrice} onChangeText={t => setServiceFormData({ ...serviceFormData, originalPrice: t })} keyboardType="numeric" placeholder="0.00" />
 
-                        <Text style={styles.label}>Description</Text>
-                        <TextInput style={[styles.input, styles.textArea]} value={serviceFormData.description} onChangeText={t => setServiceFormData({ ...serviceFormData, description: t })} multiline />
+                        <Text style={styles.sectionTitle}>Description *</Text>
+                        <Text style={styles.label}>English</Text>
+                        <TextInput style={[styles.input, styles.textArea]} value={serviceFormData.descriptionEn} onChangeText={t => setServiceFormData({ ...serviceFormData, descriptionEn: t })} multiline placeholder="Describe the service... (English)" />
+                        <Text style={styles.label}>Spanish</Text>
+                        <TextInput style={[styles.input, styles.textArea]} value={serviceFormData.descriptionEs} onChangeText={t => setServiceFormData({ ...serviceFormData, descriptionEs: t })} multiline placeholder="Describe el servicio... (Español)" />
 
                         <TouchableOpacity style={styles.saveButton} onPress={handleSaveService}>
                             <Save size={18} color="#FFF" />
@@ -378,7 +404,8 @@ const styles = StyleSheet.create({
     activeTabText: { color: '#2563EB' },
 
     formSection: { maxWidth: 600 },
-    label: { fontSize: 14, fontWeight: '600', color: '#334155', marginBottom: 8, marginTop: 16 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', marginTop: 16, marginBottom: 12 },
+    label: { fontSize: 14, fontWeight: '600', color: '#334155', marginBottom: 8, marginTop: 8 },
     input: { borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 0, padding: 12, fontSize: 16, color: '#0F172A', backgroundColor: '#FFF' },
     textArea: { minHeight: 100, textAlignVertical: 'top', fontSize: 16 },
     saveButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F172A', padding: 12, borderRadius: 0, marginTop: 24 },

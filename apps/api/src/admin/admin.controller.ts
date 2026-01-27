@@ -59,6 +59,29 @@ export class AdminController {
         }
         return this.adminService.updateOrderStatus(id, body.status, body.notes);
     }
+    @Post('orders/:id/timeline')
+    async addOrderTimelineEntry(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Body() body: { title: string; description: string }
+    ) {
+        if (req.user.role !== 'ADMIN') {
+            throw new Error('Unauthorized');
+        }
+        return this.adminService.addOrderTimelineEntry(id, body.title, body.description);
+    }
+
+    @Post('orders/:id/approvals')
+    async createOrderApproval(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Body() body: { type: string; title: string; description?: string }
+    ) {
+        if (req.user.role !== 'ADMIN') {
+            throw new Error('Unauthorized');
+        }
+        return this.adminService.createOrderApproval(id, body.type, body.title, body.description);
+    }
 
     @Get('dashboard/metrics')
     async getDashboardMetrics(@Request() req: any) {
@@ -87,8 +110,10 @@ export class AdminController {
 
     @Post('services')
     async createService(@Request() req: any, @Body() body: {
-        name: string;
-        description: string;
+        name?: string;
+        description?: string;
+        nameI18n?: { en?: string; es?: string };
+        descriptionI18n?: { en?: string; es?: string };
         category: string;
         price: number;
         originalPrice?: number;
@@ -106,6 +131,8 @@ export class AdminController {
         @Body() body: {
             name?: string;
             description?: string;
+            nameI18n?: { en?: string; es?: string };
+            descriptionI18n?: { en?: string; es?: string };
             category?: string;
             price?: number;
             originalPrice?: number;

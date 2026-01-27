@@ -81,9 +81,11 @@ export const LoginPage = () => {
                                 onChangeText={setPassword}
                                 secureTextEntry
                             />
-                            <TouchableOpacity style={styles.forgotBtn}>
-                                <Text style={styles.forgotText}>{t('auth.forgot_password', 'Forgot password?')}</Text>
-                            </TouchableOpacity>
+                            <Link to="/forgot-password">
+                                <TouchableOpacity style={styles.forgotBtn}>
+                                    <Text style={styles.forgotText}>{t('auth.forgot_password', 'Forgot password?')}</Text>
+                                </TouchableOpacity>
+                            </Link>
                         </View>
 
                         {error ? <Text style={styles.errorText}>{error}</Text> : null}

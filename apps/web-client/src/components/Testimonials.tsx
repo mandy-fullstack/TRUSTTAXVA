@@ -3,6 +3,7 @@ import { View, StyleSheet, useWindowDimensions, Animated, Platform, ActivityIndi
 import { Text, H2 } from '@trusttax/ui';
 import { Star, Quote, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../services/api';
+import { getServiceName } from '../utils/serviceI18n';
 
 export const Testimonials = () => {
     const [reviews, setReviews] = useState<any[]>([]);
@@ -125,8 +126,8 @@ export const Testimonials = () => {
                             <View style={styles.authorSection}>
                                 <View>
                                     <Text style={styles.authorName}>{currentReview.author}</Text>
-                                    {currentReview.service?.name && (
-                                        <Text style={styles.serviceTag}>{currentReview.service.name}</Text>
+                                    {currentReview.service && (
+                                        <Text style={styles.serviceTag}>{getServiceName(currentReview.service)}</Text>
                                     )}
                                 </View>
                             </View>

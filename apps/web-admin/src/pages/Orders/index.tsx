@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   filterTab: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: '#F8FAFC',
     flexDirection: 'row',
     alignItems: 'center',
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   filterBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: 0,
     minWidth: 20,
     alignItems: 'center',
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
 
   tableContainer: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   cardList: { gap: 12, width: '100%' },
   card: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 16,

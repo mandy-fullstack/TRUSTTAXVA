@@ -40,7 +40,7 @@ export const DashboardPendingPayments = ({
                             </View>
                             <View>
                                 <Text style={styles.actionText}>
-                                    {inv.description || 'Service Invoice'}
+                                    {inv.description || t('dashboard.service_invoice', 'Service Invoice')}
                                 </Text>
                                 <Text style={styles.actionSubtext}>
                                     {t('dashboard.amount_due', 'Amount due')}: $

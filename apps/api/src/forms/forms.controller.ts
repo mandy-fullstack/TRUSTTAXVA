@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FormsService } from './forms.service';
 
@@ -20,7 +20,14 @@ export class FormsController {
   @Get(':id')
   async get(@Request() req: any, @Param('id') id: string) {
     this.ensureAdmin(req);
-    return this.formsService.findOne(id);
+    try {
+      return await this.formsService.findOne(id);
+    } catch (error: any) {
+      if (error.message === 'Form not found') {
+        throw new NotFoundException('Form not found');
+      }
+      throw error;
+    }
   }
 
   @Post()

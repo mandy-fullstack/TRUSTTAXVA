@@ -1,4 +1,4 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, LayoutDashboard } from 'lucide-react';
 import { H4, Card, Text, Button, Badge } from '@trusttax/ui';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 interface Order {
     id: string;
+    displayId?: string;
     createdAt: string;
     status: string;
     service?: { name?: string };
@@ -27,8 +28,10 @@ export const DashboardRecentOrders = ({ orders }: DashboardRecentOrdersProps) =>
             <Card padding="none" elevated style={styles.card}>
                 {orders.length > 0 ? (
                     orders.map((order, i) => (
-                        <View
+                        <TouchableOpacity
                             key={order.id}
+                            onPress={() => navigate(`/dashboard/orders/${order.id}`)}
+                            activeOpacity={0.6}
                             style={[
                                 styles.orderItem,
                                 i === orders.length - 1 && styles.noBorder,
@@ -39,16 +42,21 @@ export const DashboardRecentOrders = ({ orders }: DashboardRecentOrdersProps) =>
                                     <LayoutDashboard size={18} color="#2563EB" />
                                 </View>
                                 <View>
-                                    <Text style={styles.orderText}>
-                                        {order.service?.name || 'Tax Service'}
-                                    </Text>
+                                    <View style={styles.orderTitleRow}>
+                                        <Text style={styles.orderText}>
+                                            {order.service?.name || t('dashboard.default_service', 'Tax Service')}
+                                        </Text>
+                                        <Text style={styles.displayId}>
+                                            {order.displayId || `#${order.id.substring(0, 8)}`}
+                                        </Text>
+                                    </View>
                                     <Text style={styles.orderSubtext}>
                                         {new Date(order.createdAt).toLocaleDateString()}
                                     </Text>
                                 </View>
                             </View>
                             <Badge label={order.status} variant="primary" />
-                        </View>
+                        </TouchableOpacity>
                     ))
                 ) : (
                     <View style={styles.emptyState}>
@@ -103,4 +111,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     browseBtn: { marginTop: 16 },
+    orderTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    displayId: { fontSize: 12, color: '#64748B', fontFamily: 'monospace' },
 });

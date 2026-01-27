@@ -1,10 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Role } from '@trusttax/database';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
+import { EmailService } from '../email/email.service';
+import { TwoFactorService } from './two-factor.service';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +16,9 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private encryptionService: EncryptionService,
+        private emailService: EmailService,
+        private twoFactorService: TwoFactorService,
+        private chatGateway: ChatGateway,
     ) { }
 
     async register(data: {
@@ -21,25 +28,64 @@ export class AuthService {
         role?: string;
         [key: string]: any;
     }) {
+        // SECURITY: Check if user already exists
+        // DO NOT throw error - this would reveal if email is registered (enumeration attack)
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email: data.email },
+        });
+
+        if (existingUser) {
+            // IMPORTANT: Return success message WITHOUT creating user
+            // This prevents hackers from discovering which emails are in the database
+            // The user will receive instructions to check email (which they won't get if already registered)
+            console.log(`Registration attempt with existing email: ${data.email}`);
+
+            // Return generic success - don't reveal that user exists
+            return {
+                message: 'Registration successful! Please check your email to verify your account.',
+            };
+        }
+
+        // Email is new - proceed with registration
+        const verificationToken = crypto.randomBytes(32).toString('hex');
         const hashedPassword = await bcrypt.hash(data.password, 10);
+
         const user = await this.prisma.user.create({
             data: {
                 email: data.email,
                 password: hashedPassword,
                 name: data.name,
+                emailVerificationToken: verificationToken,
+                emailVerified: false,
                 ...(data.role && { role: data.role as Role }),
             },
         });
+
+        // Send verification email
+        try {
+            await this.emailService.sendEmailVerification(
+                user.email,
+                verificationToken,
+                user.name || undefined
+            );
+        } catch (error) {
+            console.error('Failed to send verification email:', error);
+            // Don't throw error, user is still created
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ...result } = user;
-        return result;
+
+        return {
+            message: 'Registration successful! Please check your email to verify your account.',
+        };
     }
 
     async validateUser(email: string, pass: string): Promise<any> {
         const user = await this.prisma.user.findUnique({ where: { email } });
         if (user && (await bcrypt.compare(pass, user.password))) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...result } = user;
+            const { password, ...result } = user;
             return result;
         }
         return null;
@@ -81,20 +127,20 @@ export class AuthService {
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ...result } = user;
-        
+
         // Calculate profile completion
         const profileComplete = this.calculateProfileCompletion(user);
-        
+
         // IMPORTANTE: NUNCA descifrar datos solo para mostrar valores enmascarados.
         // Usar los campos Last4 almacenados en la BD (generados al cifrar).
         // Los datos cifrados solo se descifran cuando es absolutamente necesario (p.ej., verificación).
-        const driverLicenseMasked = user.driverLicenseLast4 
-            ? `••••${user.driverLicenseLast4}` 
+        const driverLicenseMasked = user.driverLicenseLast4
+            ? `••••${user.driverLicenseLast4}`
             : null;
-        const passportMasked = user.passportLast4 
-            ? `••••${user.passportLast4}` 
+        const passportMasked = user.passportLast4
+            ? `••••${user.passportLast4}`
             : null;
-        
+
         return {
             ...result,
             profileComplete,
@@ -128,7 +174,7 @@ export class AuthService {
             updateData.ssnEncrypted = this.encryptionService.encrypt(dto.ssn);
             updateData.ssnLast4 = this.encryptionService.extractSSNLast4(dto.ssn);
         }
-        
+
         // Driver License: actualizar solo si hay al menos un campo con valor (evitar sobrescribir con vacío)
         const hasLicenseData =
             (dto.driverLicenseNumber && dto.driverLicenseNumber.trim().length > 0) ||
@@ -185,7 +231,7 @@ export class AuthService {
 
         // Check if profile is now complete
         const profileComplete = this.calculateProfileCompletion(updatedUser);
-        
+
         if (profileComplete && !updatedUser.profileCompleted) {
             await this.prisma.user.update({
                 where: { id: userId },
@@ -194,19 +240,25 @@ export class AuthService {
                     profileCompletedAt: new Date(),
                 },
             });
+
+            // Notify frontend via WebSocket to auto-redirect
+            this.chatGateway.server.to(`user_${userId}`).emit('profile_completed', {
+                userId,
+                completedAt: new Date(),
+            });
         }
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ssnEncrypted, driverLicenseEncrypted, passportDataEncrypted, ...result } = updatedUser;
-        
+
         // IMPORTANTE: Usar campos Last4 almacenados, NO descifrar nunca solo para mostrar
-        const driverLicenseMasked = updatedUser.driverLicenseLast4 
-            ? `••••${updatedUser.driverLicenseLast4}` 
+        const driverLicenseMasked = updatedUser.driverLicenseLast4
+            ? `••••${updatedUser.driverLicenseLast4}`
             : null;
-        const passportMasked = updatedUser.passportLast4 
-            ? `••••${updatedUser.passportLast4}` 
+        const passportMasked = updatedUser.passportLast4
+            ? `••••${updatedUser.passportLast4}`
             : null;
-        
+
         return {
             ...result,
             profileComplete,
@@ -221,15 +273,27 @@ export class AuthService {
      * Required fields: firstName, lastName, dateOfBirth, countryOfBirth, primaryLanguage, ssnEncrypted, termsAcceptedAt
      */
     private calculateProfileCompletion(user: any): boolean {
-        return !!(
-            user.firstName &&
-            user.lastName &&
-            user.dateOfBirth &&
-            user.countryOfBirth &&
-            user.primaryLanguage &&
-            user.ssnEncrypted &&
-            user.termsAcceptedAt
-        );
+        const checks = {
+            firstName: !!user.firstName,
+            lastName: !!user.lastName,
+            dateOfBirth: !!user.dateOfBirth,
+            countryOfBirth: !!user.countryOfBirth,
+            primaryLanguage: !!user.primaryLanguage,
+            ssnEncrypted: !!user.ssnEncrypted,
+            termsAcceptedAt: !!user.termsAcceptedAt,
+        };
+
+        const missing = Object.entries(checks)
+            .filter(([_, exists]) => !exists)
+            .map(([key]) => key);
+
+        if (missing.length > 0) {
+            console.log(`[Profile Completion] User ${user.id} is missing:`, missing.join(', '));
+        } else {
+            console.log(`[Profile Completion] User ${user.id} profile is COMPLETE.`);
+        }
+
+        return missing.length === 0;
     }
 
     /**
@@ -280,7 +344,7 @@ export class AuthService {
         try {
             const decrypted = this.encryptionService.decrypt(user.driverLicenseEncrypted);
             if (!decrypted) return null;
-            
+
             const dlData = JSON.parse(decrypted);
             console.log(`[AUDIT] Driver license decrypted for user ${userId} at ${new Date().toISOString()}`);
             return {
@@ -316,7 +380,7 @@ export class AuthService {
         try {
             const decrypted = this.encryptionService.decrypt(user.passportDataEncrypted);
             if (!decrypted) return null;
-            
+
             const ppData = JSON.parse(decrypted);
             console.log(`[AUDIT] Passport decrypted for user ${userId} at ${new Date().toISOString()}`);
             return {
@@ -328,5 +392,456 @@ export class AuthService {
             console.error('Failed to decrypt passport:', error);
             return null;
         }
+    }
+
+    /**
+     * Request password reset - generates token and sends email
+     */
+    async requestPasswordReset(email: string) {
+        const user = await this.prisma.user.findUnique({ where: { email } });
+
+        // Account doesn't exist - send marketing email
+        if (!user) {
+            try {
+                // Send professional "account not found" email with sales opportunity
+                await this.emailService.sendAccountNotFoundEmail(email);
+                console.log(`📧 Account not found email sent to ${email} (marketing opportunity)`);
+            } catch (error) {
+                console.error('Failed to send account not found email:', error);
+                // Still continue - don't reveal email doesn't exist
+            }
+
+            // Still wait to prevent timing attacks
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Return same message to prevent enumeration
+            return { message: 'If an account exists with this email, you will receive a password reset link.' };
+        }
+
+        // Generate secure random token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
+
+        // Save token to database
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                passwordResetToken: resetToken,
+                passwordResetExpires: resetExpires,
+            },
+        });
+
+        // Send email
+        try {
+            await this.emailService.sendPasswordResetEmail(email, resetToken, user.name || undefined);
+        } catch (error) {
+            console.error('Failed to send password reset email:', error);
+            // Don't throw error to user, still return success message
+        }
+
+        return { message: 'If an account exists with this email, you will receive a password reset link.' };
+    }
+
+    /**
+     * Verify reset token validity
+     */
+    async verifyResetToken(token: string) {
+        const user = await this.prisma.user.findFirst({
+            where: {
+                passwordResetToken: token,
+                passwordResetExpires: {
+                    gte: new Date(), // Token hasn't expired
+                },
+            },
+        });
+
+        if (!user) {
+            throw new BadRequestException('Invalid or expired password reset token');
+        }
+
+        return { valid: true, email: user.email };
+    }
+
+    /**
+     * Reset password with token
+     */
+    async resetPassword(token: string, newPassword: string) {
+        // Find user with valid token
+        const user = await this.prisma.user.findFirst({
+            where: {
+                passwordResetToken: token,
+                passwordResetExpires: {
+                    gte: new Date(),
+                },
+            },
+        });
+
+        if (!user) {
+            throw new BadRequestException('Invalid or expired password reset token');
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // Update password and clear reset token
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                passwordResetToken: null,
+                passwordResetExpires: null,
+            },
+        });
+
+        // Send confirmation email
+        try {
+            await this.emailService.sendPasswordResetConfirmation(user.email, user.name || undefined);
+        } catch (error) {
+            console.error('Failed to send confirmation email:', error);
+            // Don't throw, password was already reset successfully
+        }
+
+        return { message: 'Password has been reset successfully' };
+    }
+
+    /**
+     * Verify email and auto-login
+     */
+    async verifyEmail(token: string) {
+        // Find user with this verification token
+        const user = await this.prisma.user.findFirst({
+            where: {
+                emailVerificationToken: token,
+                emailVerified: false,
+            },
+        });
+
+        if (!user) {
+            throw new BadRequestException('Invalid or already used verification link');
+        }
+
+        // Mark email as verified
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerified: true,
+                emailVerifiedAt: new Date(),
+                emailVerificationToken: null, // Clear token (single-use)
+            },
+        });
+
+        // Auto-login: generate JWT token
+        const payload = { email: user.email, sub: user.id, role: user.role };
+        const access_token = this.jwtService.sign(payload);
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...userWithoutPassword } = user;
+
+        return {
+            access_token,
+            user: { ...userWithoutPassword, emailVerified: true },
+            message: 'Email verified successfully! You are now logged in.',
+        };
+    }
+
+    // ==================== TWO-FACTOR AUTHENTICATION (2FA) METHODS ====================
+
+    /**
+     * Setup 2FA - Generate secret and QR code
+     */
+    async setup2FA(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        // Only allow admins to use 2FA
+        if (user.role !== 'ADMIN') {
+            throw new BadRequestException('2FA is only available for admin users');
+        }
+
+        // Generate secret
+        const { secret, otpauth_url } = this.twoFactorService.generateSecret(user.email);
+
+        // Generate QR code
+        const qrCodeUrl = await this.twoFactorService.generateQRCode(otpauth_url);
+
+        // Store temporary secret (not enabled yet until verified)
+        const encryptedSecret = this.twoFactorService.encryptSecret(secret);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { twoFactorSecret: encryptedSecret },
+        });
+
+        return {
+            secret: secret, // For manual entry in authenticator app
+            qrCode: qrCodeUrl, // Data URL for QR image
+        };
+    }
+
+    /**
+     * Enable 2FA - Verify code and activate
+     */
+    async enable2FA(userId: string, token: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user || !user.twoFactorSecret) {
+            throw new BadRequestException('2FA not set up. Please call setup endpoint first.');
+        }
+
+        if (user.twoFactorEnabled) {
+            throw new BadRequestException('2FA is already enabled');
+        }
+
+        // Decrypt secret
+        const secret = this.twoFactorService.decryptSecret(user.twoFactorSecret);
+
+        // Verify token
+        const isValid = this.twoFactorService.verifyToken(secret, token);
+
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid verification code. Please try again.');
+        }
+
+        // Generate backup codes
+        const backupCodes = this.twoFactorService.generateBackupCodes();
+        const encryptedBackupCodes = this.twoFactorService.encryptSecret(
+            JSON.stringify(backupCodes),
+        );
+
+        // Enable 2FA
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                twoFactorEnabled: true,
+                twoFactorBackupCodes: encryptedBackupCodes,
+            },
+        });
+
+        return {
+            message: '2FA enabled successfully! Save these backup codes in a secure location.',
+            backupCodes: backupCodes, // Show once, user must save securely
+        };
+    }
+
+    /**
+     * Disable 2FA - Verify code before disabling
+     */
+    async disable2FA(userId: string, token: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user || !user.twoFactorEnabled) {
+            throw new BadRequestException('2FA is not enabled');
+        }
+
+        // Verify token before disabling (security measure)
+        const secret = this.twoFactorService.decryptSecret(user.twoFactorSecret!);
+        const isValid = this.twoFactorService.verifyToken(secret, token);
+
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid verification code');
+        }
+
+        // Disable 2FA and remove all related data
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                twoFactorEnabled: false,
+                twoFactorSecret: null,
+                twoFactorBackupCodes: null,
+            },
+        });
+
+        return { message: '2FA disabled successfully' };
+    }
+
+    /**
+     * Verify 2FA code during login (supports both TOTP and backup codes)
+     */
+    async verify2FA(userId: string, token: string): Promise<boolean> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+            return false;
+        }
+
+        // Check if it's a backup code first
+        if (user.twoFactorBackupCodes) {
+            try {
+                const backupCodes = JSON.parse(
+                    this.twoFactorService.decryptSecret(user.twoFactorBackupCodes),
+                );
+
+                const codeIndex = backupCodes.indexOf(token.toUpperCase());
+                if (codeIndex !== -1) {
+                    // Remove used backup code
+                    backupCodes.splice(codeIndex, 1);
+                    const encryptedCodes = this.twoFactorService.encryptSecret(
+                        JSON.stringify(backupCodes),
+                    );
+
+                    await this.prisma.user.update({
+                        where: { id: userId },
+                        data: { twoFactorBackupCodes: encryptedCodes },
+                    });
+
+                    console.log(`Backup code used for user ${userId}`);
+                    return true; // Backup code valid
+                }
+            } catch (error) {
+                console.error('Error checking backup codes:', error);
+            }
+        }
+
+        // Verify TOTP token
+        const secret = this.twoFactorService.decryptSecret(user.twoFactorSecret);
+        return this.twoFactorService.verifyToken(secret, token);
+    }
+
+    /**
+     * Complete login after 2FA verification
+     */
+    async complete2FALogin(tempToken: string, twoFactorCode: string) {
+        try {
+            // Verify temp token
+            const payload = this.jwtService.verify(tempToken);
+
+            if (payload.type !== '2fa_temp') {
+                throw new UnauthorizedException('Invalid token type');
+            }
+
+            const userId = payload.sub;
+
+            // Verify 2FA code
+            const isValid = await this.verify2FA(userId, twoFactorCode);
+
+            if (!isValid) {
+                throw new UnauthorizedException('Invalid 2FA code');
+            }
+
+            // Get user
+            const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+            if (!user) {
+                throw new NotFoundException('User not found');
+            }
+
+            // Generate final access token
+            const finalPayload = { email: user.email, sub: user.id, role: user.role };
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { password, ...userWithoutPassword } = user;
+
+            return {
+                access_token: this.jwtService.sign(finalPayload),
+                user: userWithoutPassword,
+            };
+        } catch (error) {
+            throw new UnauthorizedException('Invalid or expired temp token');
+        }
+    }
+
+    /**
+     * Generate temporary token for 2FA verification step
+     */
+    private generateTempToken(userId: string): string {
+        return this.jwtService.sign(
+            { sub: userId, type: '2fa_temp' },
+            { expiresIn: '5m' }, // Expires in 5 minutes
+        );
+    }
+
+    /**
+     * Updated login method that checks for 2FA
+     */
+    async loginWith2FA(user: any) {
+        // Check if 2FA is enabled for this user
+        if (user.twoFactorEnabled) {
+            // Return special response - frontend will show 2FA input
+            return {
+                requires2FA: true,
+                tempToken: this.generateTempToken(user.id),
+            };
+        }
+
+        // Normal login (2FA not enabled)
+        const payload = { email: user.email, sub: user.id, role: user.role };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...userWithoutPassword } = user;
+
+        return {
+            access_token: this.jwtService.sign(payload),
+            user: userWithoutPassword,
+        };
+    }
+
+    /**
+     * Create a new administrator and send invitation
+     */
+    async createAdminInvitation(email: string, name?: string) {
+        // 1. Check if user already exists
+        const existingUser = await this.prisma.user.findUnique({
+            where: { email },
+        });
+
+        if (existingUser) {
+            // If user exists but has no password (or very short placeholder), it's a pending invitation - resend it
+            // Real bcrypt hashes are always ~60 chars
+            if (!existingUser.password || existingUser.password.length < 10) {
+                const setupToken = crypto.randomBytes(32).toString('hex');
+                const setupExpires = new Date(Date.now() + 86400000);
+
+                await this.prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: {
+                        passwordResetToken: setupToken,
+                        passwordResetExpires: setupExpires,
+                    },
+                });
+
+                await this.emailService.sendAdminInvitationEmail(email, setupToken, existingUser.name || name || undefined);
+                return { message: 'Admin invitation has been resent successfully', email };
+            }
+
+            // Otherwise, just use the reset password flow
+            return this.requestPasswordReset(email);
+        }
+
+        // 2. Generate secure random token for setup
+        const setupToken = crypto.randomBytes(32).toString('hex');
+        const setupExpires = new Date(Date.now() + 86400000); // 24 hours for setup
+
+        // 3. Create user with ADMIN role (no password yet)
+        const user = await this.prisma.user.create({
+            data: {
+                email,
+                name: name || 'Admin User',
+                role: 'ADMIN',
+                password: '', // Empty password initially
+                passwordResetToken: setupToken,
+                passwordResetExpires: setupExpires,
+                emailVerified: true, // Mark as verified since it's an invite
+                emailVerifiedAt: new Date(),
+            },
+        });
+
+        // 4. Send invitation email
+        try {
+            await this.emailService.sendAdminInvitationEmail(email, setupToken, user.name || undefined);
+            console.log(`📧 Admin invitation sent to ${email}`);
+        } catch (error) {
+            console.error('Failed to send admin invitation email:', error);
+            throw new BadRequestException('Failed to send invitation email');
+        }
+
+        return { message: 'Admin invitation has been sent successfully', email };
     }
 }

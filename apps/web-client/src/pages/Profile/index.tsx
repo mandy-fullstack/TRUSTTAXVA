@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Text, H1, H3, Card, Button } from '@trusttax/ui';
 import { Layout } from '../../components/Layout';
-import { AlertDialog } from '../../components/AlertDialog';
 import { User, Shield, FileText, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../services/api';
@@ -17,6 +17,7 @@ import { WhyWeNeedThisSection } from '../../components/profile/WhyWeNeedThisSect
 import { DatePicker } from '../../components/profile/DatePicker';
 import { RequiredLabel } from '../../components/profile/RequiredLabel';
 import { EditableTextInput } from '../../components/profile/EditableTextInput';
+import { socket } from '../../services/socket';
 
 interface ProfileData {
     firstName?: string;
@@ -38,18 +39,13 @@ interface ProfileData {
 }
 
 export const ProfilePage = () => {
-    const { user, token, refreshUser } = useAuth();
+    const { user, token, refreshUser, showAlert } = useAuth();
     const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [showTermsModal, setShowTermsModal] = useState(false);
     const [initialFormData, setInitialFormData] = useState<ProfileData | null>(null);
     const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
-    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning'; buttons?: Array<{ text: string; onPress: () => void }> }>({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        variant: 'info' 
-    });
     const scrollViewRef = useRef<ScrollView>(null);
     const initialSsnRef = useRef<string | null>(null);
     const lastDecryptedLicenseRef = useRef<{ number: string; stateCode: string; stateName: string; expirationDate: string } | null>(null);
@@ -110,13 +106,31 @@ export const ProfilePage = () => {
                     initialSsnRef.current = null;
                     lastDecryptedLicenseRef.current = null;
                     lastDecryptedPassportRef.current = null;
+
+                    // Connect socket and listen for completion
+                    if (!socket.connected) {
+                        socket.auth = { token };
+                        socket.connect();
+                    }
+                    socket.emit('joinRoom', `user_${userData.id}`);
+
+                    const handleProfileCompleted = () => {
+                        refreshUser(); // Update context
+                        navigate('/dashboard');
+                    };
+
+                    socket.on('profile_completed', handleProfileCompleted);
+
+                    return () => {
+                        socket.off('profile_completed', handleProfileCompleted);
+                    };
                 } catch (error) {
                     console.error('Failed to load user data:', error);
                 }
             }
         };
         loadUserData();
-    }, [token, i18n.language]);
+    }, [token, i18n.language, navigate, refreshUser]);
 
     const handleInputChange = (field: keyof ProfileData, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -198,7 +212,7 @@ export const ProfilePage = () => {
                             (_layoutX, layoutY) => {
                                 scrollViewRef.current?.scrollTo({ y: Math.max(0, layoutY - 100), animated: true });
                             },
-                            () => {}
+                            () => { }
                         );
                     }
                 }
@@ -249,7 +263,7 @@ export const ProfilePage = () => {
         // Si hay errores, mostrar visualmente y hacer scroll
         if (errors.size > 0) {
             setValidationErrors(errors);
-            
+
             // Hacer scroll al primer campo con error
             if (firstErrorRef) {
                 setTimeout(() => scrollToField(firstErrorRef!), 100);
@@ -265,8 +279,7 @@ export const ProfilePage = () => {
             if (errors.has('ssn')) errorMessages.push(t('profile.tax_id', 'SSN or ITIN'));
             if (errors.has('acceptTerms')) errorMessages.push(t('profile.terms', 'Terms and Conditions'));
 
-            setAlertDialog({
-                isOpen: true,
+            showAlert({
                 title: t('profile.validation_error', 'Validation Error'),
                 message: t('profile.required_fields_message', 'Please complete the following required fields:') + '\n\n• ' + errorMessages.join('\n• '),
                 variant: 'warning'
@@ -282,9 +295,17 @@ export const ProfilePage = () => {
             const updatePayload: Record<string, unknown> = {};
             const init = initialFormData;
 
-            // Solo incluir campos básicos si cambiaron
-            const basicKeys: (keyof ProfileData)[] = ['firstName', 'middleName', 'lastName', 'dateOfBirth', 'countryOfBirth', 'primaryLanguage'];
-            for (const k of basicKeys) {
+            // Always send required fields to ensure they are saved in DB (especially for first save)
+            // even if they match the defaults showing in the UI
+            if (formData.firstName) (updatePayload as any).firstName = formData.firstName;
+            if (formData.lastName) (updatePayload as any).lastName = formData.lastName;
+            if (formData.dateOfBirth) (updatePayload as any).dateOfBirth = formData.dateOfBirth;
+            if (formData.countryOfBirth) (updatePayload as any).countryOfBirth = formData.countryOfBirth;
+            if (formData.primaryLanguage) (updatePayload as any).primaryLanguage = formData.primaryLanguage;
+
+            // Optional fields only if changed
+            const optionalKeys: (keyof ProfileData)[] = ['middleName'];
+            for (const k of optionalKeys) {
                 const a = String(formData[k] ?? '').trim();
                 const b = String(init?.[k] ?? '').trim();
                 if (a !== b) {
@@ -355,10 +376,10 @@ export const ProfilePage = () => {
             }
 
             await api.updateProfile(updatePayload as any);
-            
+
             // Actualizar el contexto de autenticación para obtener los nuevos valores enmascarados
             await refreshUser();
-            
+
             // Recargar datos del usuario y limpiar sensibles
             let nextForm: ProfileData;
             try {
@@ -401,21 +422,16 @@ export const ProfilePage = () => {
             lastDecryptedLicenseRef.current = null;
             lastDecryptedPassportRef.current = null;
 
-            setAlertDialog({
-                isOpen: true,
+            showAlert({
                 title: t('profile.success', 'Success'),
                 message: t('profile.update_success_detail', 'Your profile has been saved successfully. Personal information, SSN/ITIN, terms acceptance, and any driver\'s license or passport data you provided have been updated and stored securely.'),
                 variant: 'success',
-                buttons: [{
-                    text: t('common.ok', 'OK'),
-                    onPress: () => {
-                        if (typeof window !== 'undefined') window.location.reload();
-                    },
-                }]
+                onConfirm: () => {
+                    if (typeof window !== 'undefined') window.location.reload();
+                }
             });
         } catch (error: any) {
-            setAlertDialog({
-                isOpen: true,
+            showAlert({
                 title: t('profile.error', 'Error'),
                 message: error.message || t('profile.update_error', 'Failed to update profile'),
                 variant: 'error'
@@ -431,321 +447,311 @@ export const ProfilePage = () => {
         <>
             <Layout>
                 <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.content}>
-                <View style={styles.header}>
-                    <H1>{t('profile.title', 'Profile')}</H1>
-                    <Text style={styles.subtitle}>
-                        {t('profile.subtitle', 'Complete your profile to access all services')}
-                    </Text>
-                    {!profileComplete && (
-                        <View style={styles.incompleteBanner}>
-                            <Shield size={16} color="#F59E0B" />
-                            <Text style={styles.incompleteText}>
-                                {t('profile.incomplete_warning', 'Your profile is incomplete. Please complete all required fields.')}
-                            </Text>
-                        </View>
-                    )}
-                </View>
-
-                <View style={styles.sections}>
-                    {/* Personal Information */}
-                    <Card style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.iconBox}>
-                                <User size={20} color="#2563EB" />
-                            </View>
-                            <H3>{t('profile.personal_info', 'Personal Information')}</H3>
-                        </View>
-
-                        <View style={styles.formRow}>
-                            <View ref={firstNameRef} style={styles.formGroup}>
-                                <RequiredLabel required>
-                                    {t('profile.first_name', 'First Name')}
-                                </RequiredLabel>
-                                <EditableTextInput
-                                    value={formData.firstName || ''}
-                                    onChange={(value) => {
-                                        handleInputChange('firstName', value);
-                                        if (validationErrors.has('firstName')) {
-                                            setValidationErrors(prev => {
-                                                const next = new Set(prev);
-                                                next.delete('firstName');
-                                                return next;
-                                            });
-                                        }
-                                    }}
-                                    placeholder={t('profile.first_name_placeholder', 'Enter first name')}
-                                    isSaved={initialFormData?.firstName === formData.firstName && !!formData.firstName}
-                                    hasError={validationErrors.has('firstName')}
-                                    autoUppercase
-                                />
-                            </View>
-
-                            <View style={styles.formGroup}>
-                                <Text style={styles.label}>
-                                    {t('profile.middle_name', 'Middle Name')}
-                                </Text>
-                                <EditableTextInput
-                                    value={formData.middleName || ''}
-                                    onChange={(value) => handleInputChange('middleName', value)}
-                                    placeholder={t('profile.middle_name_placeholder', 'Enter middle name (optional)')}
-                                    isSaved={initialFormData?.middleName === formData.middleName && !!formData.middleName}
-                                    autoUppercase
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.formRow}>
-                            <View ref={lastNameRef} style={[styles.formGroup, styles.fullWidth]}>
-                                <RequiredLabel required>
-                                    {t('profile.last_name', 'Last Name')}
-                                </RequiredLabel>
-                                <EditableTextInput
-                                    value={formData.lastName || ''}
-                                    onChange={(value) => {
-                                        handleInputChange('lastName', value);
-                                        if (validationErrors.has('lastName')) {
-                                            setValidationErrors(prev => {
-                                                const next = new Set(prev);
-                                                next.delete('lastName');
-                                                return next;
-                                            });
-                                        }
-                                    }}
-                                    placeholder={t('profile.last_name_placeholder', 'Enter last name')}
-                                    isSaved={initialFormData?.lastName === formData.lastName && !!formData.lastName}
-                                    hasError={validationErrors.has('lastName')}
-                                    autoUppercase
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.formRow}>
-                            <View ref={dateOfBirthRef} style={[styles.formGroup, styles.fullWidth]}>
-                                <DatePicker
-                                    label={t('profile.date_of_birth', 'Date of Birth')}
-                                    value={formData.dateOfBirth || ''}
-                                    onChange={(value: string) => {
-                                        handleInputChange('dateOfBirth', value);
-                                        if (validationErrors.has('dateOfBirth')) {
-                                            setValidationErrors(prev => {
-                                                const next = new Set(prev);
-                                                next.delete('dateOfBirth');
-                                                return next;
-                                            });
-                                        }
-                                    }}
-                                    placeholder="YYYY-MM-DD"
-                                    required
-                                    maxDate={new Date().toISOString().split('T')[0]} // No fechas futuras
-                                    hasError={validationErrors.has('dateOfBirth')}
-                                />
-                            </View>
-                        </View>
-
-                        <View style={styles.formRow}>
-                            <View ref={countryOfBirthRef} style={[styles.formGroup, { flex: 1, minWidth: 200 }]}>
-                                <CountrySelect
-                                    label={t('profile.country_of_birth', 'Country of Birth')}
-                                    required
-                                    value={formData.countryOfBirth || ''}
-                                    onChange={(code) => {
-                                        handleInputChange('countryOfBirth', (code || '').toUpperCase());
-                                        if (validationErrors.has('countryOfBirth')) {
-                                            setValidationErrors(prev => {
-                                                const next = new Set(prev);
-                                                next.delete('countryOfBirth');
-                                                return next;
-                                            });
-                                        }
-                                    }}
-                                    placeholder={t('profile.select_country', 'Select country')}
-                                    hasError={validationErrors.has('countryOfBirth')}
-                                />
-                            </View>
-                            <View ref={primaryLanguageRef} style={[styles.formGroup, { flex: 1, minWidth: 200 }]}>
-                                <PrimaryLanguageSelect
-                                    label={t('profile.primary_language', 'Primary Language')}
-                                    required
-                                    value={formData.primaryLanguage || 'en'}
-                                    onChange={(code) => {
-                                        handleInputChange('primaryLanguage', code);
-                                        if (validationErrors.has('primaryLanguage')) {
-                                            setValidationErrors(prev => {
-                                                const next = new Set(prev);
-                                                next.delete('primaryLanguage');
-                                                return next;
-                                            });
-                                        }
-                                    }}
-                                    hasError={validationErrors.has('primaryLanguage')}
-                                />
-                            </View>
-                        </View>
-                    </Card>
-
-                    {/* SSN / ITIN */}
-                    <Card style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.iconBox}>
-                                <Lock size={20} color="#2563EB" />
-                            </View>
-                            <H3>{t('profile.tax_id', 'SSN or ITIN')}</H3>
-                        </View>
-                        <Text style={styles.securityNote}>
-                            {t('profile.encryption_note', 'All sensitive information is encrypted using AES-256-GCM encryption before storage.')}
+                    <View style={styles.header}>
+                        <H1>{t('profile.title', 'Profile')}</H1>
+                        <Text style={styles.subtitle}>
+                            {t('profile.subtitle', 'Complete your profile to access all services')}
                         </Text>
-                        <View ref={ssnRef}>
-                            <ProfileSSNOrITIN
-                                taxIdType={formData.taxIdType}
-                                value={formData.ssn || ''}
-                                onChangeType={(t) => handleInputChange('taxIdType', t)}
-                                onChangeValue={(v) => {
-                                    handleInputChange('ssn', v);
-                                    if (validationErrors.has('ssn')) {
-                                        setValidationErrors(prev => {
-                                            const next = new Set(prev);
-                                            next.delete('ssn');
-                                            return next;
-                                        });
-                                    }
-                                }}
-                                ssnMasked={user?.ssnMasked}
-                                onLoadDecrypted={loadDecryptedSSN}
-                                hasError={validationErrors.has('ssn')}
-                            />
-                        </View>
-                    </Card>
-
-                    {/* Driver's License */}
-                    <Card style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.iconBox}>
-                                <Lock size={20} color="#2563EB" />
-                            </View>
-                            <H3>{t('profile.driver_license', 'Driver\'s License')}</H3>
-                        </View>
-                        <ProfileDriverLicense
-                            number={formData.driverLicenseNumber || ''}
-                            stateCode={formData.driverLicenseStateCode || ''}
-                            stateName={formData.driverLicenseStateName || ''}
-                            expirationDate={formData.driverLicenseExpiration || ''}
-                            onNumberChange={(v) => handleInputChange('driverLicenseNumber', (v || '').toUpperCase())}
-                            onStateChange={(code, name) => {
-                                setFormData(prev => ({
-                                    ...prev,
-                                    driverLicenseStateCode: (code || '').toUpperCase(),
-                                    driverLicenseStateName: (name || '').toUpperCase(),
-                                }));
-                            }}
-                            onExpirationChange={(v) => handleInputChange('driverLicenseExpiration', (v || '').toUpperCase())}
-                            driverLicenseMasked={(user as any)?.driverLicenseMasked}
-                            onLoadDecrypted={loadDecryptedDriverLicense}
-                        />
-                    </Card>
-
-                    {/* Passport */}
-                    <Card style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.iconBox}>
-                                <Lock size={20} color="#2563EB" />
-                            </View>
-                            <H3>{t('profile.passport', 'Passport')}</H3>
-                        </View>
-                        <ProfilePassport
-                            number={formData.passportNumber || ''}
-                            countryOfIssue={formData.passportCountryOfIssue || ''}
-                            expirationDate={formData.passportExpiration || ''}
-                            onNumberChange={(v) => handleInputChange('passportNumber', (v || '').toUpperCase())}
-                            onCountryChange={(code) => handleInputChange('passportCountryOfIssue', (code || '').toUpperCase())}
-                            onExpirationChange={(v) => handleInputChange('passportExpiration', (v || '').toUpperCase())}
-                            passportMasked={user?.passportMasked}
-                            onLoadDecrypted={loadDecryptedPassport}
-                        />
-                    </Card>
-
-                    {/* Terms and Conditions */}
-                    <Card style={styles.card}>
-                        <View style={styles.cardHeader}>
-                            <View style={styles.iconBox}>
-                                <FileText size={20} color="#2563EB" />
-                            </View>
-                            <H3>{t('profile.terms_conditions', 'Terms and Conditions')}</H3>
-                        </View>
-
-                        <View ref={termsRef}>
-                            <TouchableOpacity
-                                style={[
-                                    styles.termsCheckbox,
-                                    validationErrors.has('acceptTerms') && styles.termsCheckboxError
-                                ]}
-                                onPress={() => setShowTermsModal(true)}
-                                activeOpacity={0.7}
-                            >
-                            <View style={[styles.checkbox, formData.acceptTerms && styles.checkboxChecked]}>
-                                {formData.acceptTerms && (
-                                    <Text style={styles.checkmark}>✓</Text>
-                                )}
-                            </View>
-                            <View style={styles.termsText}>
-                                <Text style={styles.termsLabel}>
-                                    {t('profile.accept_terms', 'I accept the Terms and Conditions')}
-                                    <Text style={styles.requiredAsterisk}> *</Text>
+                        {!profileComplete && (
+                            <View style={styles.incompleteBanner}>
+                                <Shield size={16} color="#F59E0B" />
+                                <Text style={styles.incompleteText}>
+                                    {t('profile.incomplete_warning', 'Your profile is incomplete. Please complete all required fields.')}
                                 </Text>
+                            </View>
+                        )}
+                    </View>
+
+                    <View style={styles.sections}>
+                        {/* Personal Information */}
+                        <Card style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <View style={styles.iconBox}>
+                                    <User size={20} color="#2563EB" />
+                                </View>
+                                <H3>{t('profile.personal_info', 'Personal Information')}</H3>
+                            </View>
+
+                            <View style={styles.formRow}>
+                                <View ref={firstNameRef} style={styles.formGroup}>
+                                    <RequiredLabel required>
+                                        {t('profile.first_name', 'First Name')}
+                                    </RequiredLabel>
+                                    <EditableTextInput
+                                        value={formData.firstName || ''}
+                                        onChange={(value) => {
+                                            handleInputChange('firstName', value);
+                                            if (validationErrors.has('firstName')) {
+                                                setValidationErrors(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete('firstName');
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        placeholder={t('profile.first_name_placeholder', 'Enter first name')}
+                                        isSaved={initialFormData?.firstName === formData.firstName && !!formData.firstName}
+                                        hasError={validationErrors.has('firstName')}
+                                        autoUppercase
+                                    />
+                                </View>
+
+                                <View style={styles.formGroup}>
+                                    <Text style={styles.label}>
+                                        {t('profile.middle_name', 'Middle Name')}
+                                    </Text>
+                                    <EditableTextInput
+                                        value={formData.middleName || ''}
+                                        onChange={(value) => handleInputChange('middleName', value)}
+                                        placeholder={t('profile.middle_name_placeholder', 'Enter middle name (optional)')}
+                                        isSaved={initialFormData?.middleName === formData.middleName && !!formData.middleName}
+                                        autoUppercase
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.formRow}>
+                                <View ref={lastNameRef} style={[styles.formGroup, styles.fullWidth]}>
+                                    <RequiredLabel required>
+                                        {t('profile.last_name', 'Last Name')}
+                                    </RequiredLabel>
+                                    <EditableTextInput
+                                        value={formData.lastName || ''}
+                                        onChange={(value) => {
+                                            handleInputChange('lastName', value);
+                                            if (validationErrors.has('lastName')) {
+                                                setValidationErrors(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete('lastName');
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        placeholder={t('profile.last_name_placeholder', 'Enter last name')}
+                                        isSaved={initialFormData?.lastName === formData.lastName && !!formData.lastName}
+                                        hasError={validationErrors.has('lastName')}
+                                        autoUppercase
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.formRow}>
+                                <View ref={dateOfBirthRef} style={[styles.formGroup, styles.fullWidth]}>
+                                    <DatePicker
+                                        label={t('profile.date_of_birth', 'Date of Birth')}
+                                        value={formData.dateOfBirth || ''}
+                                        onChange={(value: string) => {
+                                            handleInputChange('dateOfBirth', value);
+                                            if (validationErrors.has('dateOfBirth')) {
+                                                setValidationErrors(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete('dateOfBirth');
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        placeholder="YYYY-MM-DD"
+                                        required
+                                        maxDate={new Date().toISOString().split('T')[0]} // No fechas futuras
+                                        hasError={validationErrors.has('dateOfBirth')}
+                                    />
+                                </View>
+                            </View>
+
+                            <View style={styles.formRow}>
+                                <View ref={countryOfBirthRef} style={[styles.formGroup, { flex: 1, minWidth: 200 }]}>
+                                    <CountrySelect
+                                        label={t('profile.country_of_birth', 'Country of Birth')}
+                                        required
+                                        value={formData.countryOfBirth || ''}
+                                        onChange={(code) => {
+                                            handleInputChange('countryOfBirth', (code || '').toUpperCase());
+                                            if (validationErrors.has('countryOfBirth')) {
+                                                setValidationErrors(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete('countryOfBirth');
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        placeholder={t('profile.select_country', 'Select country')}
+                                        hasError={validationErrors.has('countryOfBirth')}
+                                    />
+                                </View>
+                                <View ref={primaryLanguageRef} style={[styles.formGroup, { flex: 1, minWidth: 200 }]}>
+                                    <PrimaryLanguageSelect
+                                        label={t('profile.primary_language', 'Primary Language')}
+                                        required
+                                        value={formData.primaryLanguage || 'en'}
+                                        onChange={(code) => {
+                                            handleInputChange('primaryLanguage', code);
+                                            if (validationErrors.has('primaryLanguage')) {
+                                                setValidationErrors(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete('primaryLanguage');
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        hasError={validationErrors.has('primaryLanguage')}
+                                    />
+                                </View>
+                            </View>
+                        </Card>
+
+                        {/* SSN / ITIN */}
+                        <Card style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <View style={styles.iconBox}>
+                                    <Lock size={20} color="#2563EB" />
+                                </View>
+                                <H3>{t('profile.tax_id', 'SSN or ITIN')}</H3>
+                            </View>
+                            <Text style={styles.securityNote}>
+                                {t('profile.encryption_note', 'All sensitive information is encrypted using AES-256-GCM encryption before storage.')}
+                            </Text>
+                            <View ref={ssnRef}>
+                                <ProfileSSNOrITIN
+                                    taxIdType={formData.taxIdType}
+                                    value={formData.ssn || ''}
+                                    onChangeType={(t) => handleInputChange('taxIdType', t)}
+                                    onChangeValue={(v) => {
+                                        handleInputChange('ssn', v);
+                                        if (validationErrors.has('ssn')) {
+                                            setValidationErrors(prev => {
+                                                const next = new Set(prev);
+                                                next.delete('ssn');
+                                                return next;
+                                            });
+                                        }
+                                    }}
+                                    ssnMasked={user?.ssnMasked}
+                                    onLoadDecrypted={loadDecryptedSSN}
+                                    hasError={validationErrors.has('ssn')}
+                                />
+                            </View>
+                        </Card>
+
+                        {/* Driver's License */}
+                        <Card style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <View style={styles.iconBox}>
+                                    <Lock size={20} color="#2563EB" />
+                                </View>
+                                <H3>{t('profile.driver_license', 'Driver\'s License')}</H3>
+                            </View>
+                            <ProfileDriverLicense
+                                number={formData.driverLicenseNumber || ''}
+                                stateCode={formData.driverLicenseStateCode || ''}
+                                stateName={formData.driverLicenseStateName || ''}
+                                expirationDate={formData.driverLicenseExpiration || ''}
+                                onNumberChange={(v) => handleInputChange('driverLicenseNumber', (v || '').toUpperCase())}
+                                onStateChange={(code, name) => {
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        driverLicenseStateCode: (code || '').toUpperCase(),
+                                        driverLicenseStateName: (name || '').toUpperCase(),
+                                    }));
+                                }}
+                                onExpirationChange={(v) => handleInputChange('driverLicenseExpiration', (v || '').toUpperCase())}
+                                driverLicenseMasked={(user as any)?.driverLicenseMasked}
+                                onLoadDecrypted={loadDecryptedDriverLicense}
+                            />
+                        </Card>
+
+                        {/* Passport */}
+                        <Card style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <View style={styles.iconBox}>
+                                    <Lock size={20} color="#2563EB" />
+                                </View>
+                                <H3>{t('profile.passport', 'Passport')}</H3>
+                            </View>
+                            <ProfilePassport
+                                number={formData.passportNumber || ''}
+                                countryOfIssue={formData.passportCountryOfIssue || ''}
+                                expirationDate={formData.passportExpiration || ''}
+                                onNumberChange={(v) => handleInputChange('passportNumber', (v || '').toUpperCase())}
+                                onCountryChange={(code) => handleInputChange('passportCountryOfIssue', (code || '').toUpperCase())}
+                                onExpirationChange={(v) => handleInputChange('passportExpiration', (v || '').toUpperCase())}
+                                passportMasked={user?.passportMasked}
+                                onLoadDecrypted={loadDecryptedPassport}
+                            />
+                        </Card>
+
+                        {/* Terms and Conditions */}
+                        <Card style={styles.card}>
+                            <View style={styles.cardHeader}>
+                                <View style={styles.iconBox}>
+                                    <FileText size={20} color="#2563EB" />
+                                </View>
+                                <H3>{t('profile.terms_conditions', 'Terms and Conditions')}</H3>
+                            </View>
+
+                            <View ref={termsRef}>
                                 <TouchableOpacity
+                                    style={[
+                                        styles.termsCheckbox,
+                                        validationErrors.has('acceptTerms') && styles.termsCheckboxError
+                                    ]}
                                     onPress={() => setShowTermsModal(true)}
                                     activeOpacity={0.7}
                                 >
-                                    <Text style={styles.termsLink}>
-                                        {t('profile.read_terms', 'Read Terms')}
-                                    </Text>
+                                    <View style={[styles.checkbox, formData.acceptTerms && styles.checkboxChecked]}>
+                                        {formData.acceptTerms && (
+                                            <Text style={styles.checkmark}>✓</Text>
+                                        )}
+                                    </View>
+                                    <View style={styles.termsText}>
+                                        <Text style={styles.termsLabel}>
+                                            {t('profile.accept_terms', 'I accept the Terms and Conditions')}
+                                            <Text style={styles.requiredAsterisk}> *</Text>
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => setShowTermsModal(true)}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Text style={styles.termsLink}>
+                                                {t('profile.read_terms', 'Read Terms')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
-                        </View>
 
-                        <Text style={styles.termsNote}>
-                            {t('profile.terms_note', 'By accepting, you acknowledge that your SSN/ITIN, driver\'s license, and passport data will be encrypted and protected according to our security standards.')}
-                        </Text>
-                    </Card>
+                            <Text style={styles.termsNote}>
+                                {t('profile.terms_note', 'By accepting, you acknowledge that your SSN/ITIN, driver\'s license, and passport data will be encrypted and protected according to our security standards.')}
+                            </Text>
+                        </Card>
 
-                    <WhyWeNeedThisSection />
+                        <WhyWeNeedThisSection />
 
-                    {/* Submit Button - solo cuando hay cambios; deshabilitado hasta aceptar términos */}
-                    {isDirty && (
-                        <View style={styles.actions}>
-                            <Button
-                                title={t('profile.save', 'Save')}
-                                onPress={handleSubmit}
-                                loading={isLoading}
-                                variant="primary"
-                                style={[styles.saveButton, !formData.acceptTerms && styles.saveButtonDisabled]}
-                                disabled={!formData.acceptTerms}
-                            />
-                            {!formData.acceptTerms && (
-                                <Text style={styles.saveHint}>
-                                    {t('profile.save_disabled_terms', 'Accept the Terms and Conditions to save.')}
-                                </Text>
-                            )}
-                        </View>
-                    )}
-                </View>
-            </ScrollView>
+                        {/* Submit Button - solo cuando hay cambios; deshabilitado hasta aceptar términos */}
+                        {isDirty && (
+                            <View style={styles.actions}>
+                                <Button
+                                    title={t('profile.save', 'Save')}
+                                    onPress={handleSubmit}
+                                    loading={isLoading}
+                                    variant="primary"
+                                    style={[styles.saveButton, !formData.acceptTerms && styles.saveButtonDisabled]}
+                                    disabled={!formData.acceptTerms}
+                                />
+                                {!formData.acceptTerms && (
+                                    <Text style={styles.saveHint}>
+                                        {t('profile.save_disabled_terms', 'Accept the Terms and Conditions to save.')}
+                                    </Text>
+                                )}
+                            </View>
+                        )}
+                    </View>
+                </ScrollView>
             </Layout>
             {/* TermsModal fuera del Layout para mejor posicionamiento como modal flotante */}
             <TermsModal
                 isOpen={showTermsModal}
                 onClose={() => setShowTermsModal(false)}
                 onAccept={handleAcceptTerms}
-            />
-
-            {/* Alert Dialog */}
-            <AlertDialog
-                isOpen={alertDialog.isOpen}
-                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
-                title={alertDialog.title}
-                message={alertDialog.message}
-                variant={alertDialog.variant}
-                buttons={alertDialog.buttons}
             />
         </>
     );

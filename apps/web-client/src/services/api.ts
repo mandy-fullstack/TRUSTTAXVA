@@ -82,6 +82,28 @@ class ApiService {
         });
     }
 
+    async requestPasswordReset(email: string): Promise<{ message: string }> {
+        return this.request<{ message: string }>('/auth/forgot-password', {
+            method: 'POST',
+            body: JSON.stringify({ email }),
+        });
+    }
+
+    async verifyResetToken(token: string): Promise<{ valid: boolean; email: string }> {
+        return this.request<{ valid: boolean; email: string }>(`/auth/verify-reset-token/${token}`);
+    }
+
+    async resetPassword(token: string, password: string): Promise<{ message: string }> {
+        return this.request<{ message: string }>('/auth/reset-password', {
+            method: 'POST',
+            body: JSON.stringify({ token, password }),
+        });
+    }
+
+    async verifyEmail(token: string): Promise<{ access_token: string; user: any; message: string }> {
+        return this.request<{ access_token: string; user: any; message: string }>(`/auth/verify-email/${token}`);
+    }
+
     // --- Services ---
     async getServices(): Promise<Service[]> {
         return this.request<Service[]>('/services');
@@ -124,6 +146,41 @@ class ApiService {
                 Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({ serviceId, metadata }),
+        });
+    }
+
+    async getOrderById(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any>(`/orders/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getOrders(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any[]>('/orders', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async respondToApproval(approvalId: string, status: 'APPROVED' | 'REJECTED', clientNote?: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any>(`/orders/approvals/${approvalId}`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status, clientNote }),
         });
     }
 
@@ -180,12 +237,14 @@ class ApiService {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
 
-        const response = await this.request<{ driverLicense: {
-            number: string;
-            stateCode: string;
-            stateName: string;
-            expirationDate: string;
-        } | null }>('/auth/profile/decrypt-driver-license', {
+        const response = await this.request<{
+            driverLicense: {
+                number: string;
+                stateCode: string;
+                stateName: string;
+                expirationDate: string;
+            } | null
+        }>('/auth/profile/decrypt-driver-license', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -201,16 +260,121 @@ class ApiService {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
 
-        const response = await this.request<{ passport: {
-            number: string;
-            countryOfIssue: string;
-            expirationDate: string;
-        } | null }>('/auth/profile/decrypt-passport', {
+        const response = await this.request<{
+            passport: {
+                number: string;
+                countryOfIssue: string;
+                expirationDate: string;
+            } | null
+        }>('/auth/profile/decrypt-passport', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
         return response.passport;
+    }
+
+    // --- Admin ---
+    async adminGetOrders(): Promise<any[]> {
+        const token = getToken();
+        return this.request<any[]>('/admin/orders', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async adminGetOrderById(id: string): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async adminUpdateOrderStatus(id: string, status: string, notes?: string): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/status`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status, notes }),
+        });
+    }
+
+    async adminAddOrderTimelineEntry(id: string, title: string, description: string): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/timeline`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title, description }),
+        });
+    }
+
+    async adminCreateOrderApproval(id: string, type: string, title: string, description?: string): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/approvals`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ type, title, description }),
+        });
+    }
+
+    // --- Chat ---
+    async getConversations(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+        return this.request<any[]>('/chat/conversations', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    async getConversation(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+        return this.request<any>(`/chat/conversations/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    async createConversation(subject?: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+        return this.request<any>('/chat/conversations', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ subject })
+        });
+    }
+
+    async sendMessage(conversationId: string, content: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+        return this.request<any>(`/chat/conversations/${conversationId}/messages`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ content })
+        });
+    }
+
+    async deleteConversation(id: string): Promise<void> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+        return this.request<void>(`/chat/conversations/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    // --- FAQs ---
+    async getFAQs(): Promise<any[]> {
+        return this.request<any[]>('/faq');
     }
 
     // Add future modules here (Orders, Appointments, etc.)

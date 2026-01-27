@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { Layout } from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
+import { useNotification } from '../../context/NotificationContext';
+import { Text, Button } from '@trusttax/ui';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardOverview } from './DashboardOverview';
 import { DashboardRecentOrders } from './DashboardRecentOrders';
@@ -38,7 +41,17 @@ export const DashboardPage = () => {
         isLoading: authLoading,
         error: authError,
         clearError,
+        refreshUser,
+        isAuthenticated,
     } = useAuth();
+    const { permission, requestPermission } = useNotification();
+
+    // Refrescar user al montar para tener profileComplete actualizado (p. ej. tras completar perfil)
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            refreshUser();
+        }
+    }, [authLoading, isAuthenticated, refreshUser]);
 
     if (authLoading) {
         return (
@@ -77,14 +90,23 @@ export const DashboardPage = () => {
             <View style={styles.headerSection}>
                 <DashboardHeader userName={userName} />
             </View>
-            
+
             {/* Contenido principal del dashboard */}
             <ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                <ProfileIncompleteBanner profileComplete={userData?.profileComplete ?? false} />
-                
+                {userData?.profileComplete !== true && (
+                    <ProfileIncompleteBanner profileComplete={false} />
+                )}
+
+                {permission === 'default' && (
+                    <View style={styles.notificationBanner}>
+                        <Text style={styles.notificationText}>Enable notifications to stay updated on your orders.</Text>
+                        <Button title="Enable Notifications" onPress={requestPermission} size="sm" />
+                    </View>
+                )}
+
                 <View style={styles.grid}>
                     <DashboardOverview
                         totalOrders={orders.length}
@@ -106,8 +128,10 @@ const styles = StyleSheet.create({
         borderBottomColor: '#E2E8F0',
         paddingTop: 24,
         paddingBottom: 0,
+        zIndex: 9999, // Ensure header sits on top of scroll content
+        position: 'relative'
     },
-    scrollContent: { 
+    scrollContent: {
         paddingTop: 32,
         paddingBottom: 40,
     },
@@ -116,4 +140,18 @@ const styles = StyleSheet.create({
         gap: 32,
         flexWrap: 'wrap',
     },
+    notificationBanner: {
+        backgroundColor: '#EFF6FF',
+        padding: 16,
+        marginBottom: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderLeftWidth: 4,
+        borderLeftColor: '#2563EB',
+    },
+    notificationText: {
+        color: '#1E3A8A',
+        fontWeight: '500',
+    }
 });

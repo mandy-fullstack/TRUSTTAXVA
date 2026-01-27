@@ -89,6 +89,13 @@ export function LoginPage() {
             style={styles.inputWrap}
           />
 
+          <Text
+            style={styles.forgotPasswordLink}
+            onPress={() => navigate('/forgot-password')}
+          >
+            Forgot Password?
+          </Text>
+
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <Button
@@ -195,5 +202,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#94A3B8',
     fontSize: 12,
+  },
+  forgotPasswordLink: {
+    color: '#0F172A',
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginBottom: 16,
+    marginTop: -8,
+    textDecorationLine: 'underline',
+    cursor: 'pointer',
   },
 });

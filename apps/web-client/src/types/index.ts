@@ -69,8 +69,10 @@ export interface ServiceDocType {
 
 export interface Service {
     id: string;
-    name: string;
-    description: string;
+    name: string; // Legacy field, kept for backward compatibility
+    description: string; // Legacy field, kept for backward compatibility
+    nameI18n?: { en?: string; es?: string };
+    descriptionI18n?: { en?: string; es?: string };
     price: number | string;
     originalPrice?: number | string;
     category: ServiceCategory;

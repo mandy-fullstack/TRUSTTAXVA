@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - TrustTax</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #0f172a;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0"
+                    style="background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 0;">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #0f172a; padding: 32px 40px; text-align: left;">
+                            <div
+                                style="color: #ffffff; font-size: 20px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;">
+                                TrustTax Services
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 600; color: #0f172a;">Confirm
+                                Your Email</h1>
+
+                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 24px; color: #334155;">
+                                Hello {{userName}},
+                            </p>
+
+                            <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 24px; color: #334155;">
+                                Thank you for choosing TrustTax. To complete your account setup and access our
+                                professional tax management services, please verify your email address by clicking the
+                                button below:
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td>
+                                        <a href="{{verifyUrl}}"
+                                            style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 14px 28px; text-decoration: none; font-weight: 500; font-size: 16px; border-radius: 0;">
+                                            Verify Email Address
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div
+                                style="margin-top: 32px; padding: 20px; border-left: 2px solid #0f172a; background-color: #f1f5f9;">
+                                <p style="margin: 0; font-size: 14px; line-height: 20px; color: #475569;">
+                                    Verify your email address to ensure you receive important updates regarding your tax
+                                    filings and documents.
+                                </p>
+                            </div>
+
+                            <p style="margin: 32px 0 8px 0; font-size: 14px; color: #64748b;">
+                                If you are having trouble with the button above, copy and paste the URL below into your
+                                web browser:
+                            </p>
+                            <p style="margin: 0; font-size: 13px; color: #3b82f6; word-break: break-all;">
+                                {{verifyUrl}}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="padding: 32px 40px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #475569;">
+                                TrustTax LLC
+                            </p>
+                            <p style="margin: 0 0 16px 0; font-size: 12px; color: #94a3b8;">
+                                Professional Tax Management Solutions
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                &copy; {{year}} TrustTax LLC. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

@@ -1,8 +1,8 @@
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { H1, Subtitle, Text } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
 import { useCompany } from '../../context/CompanyContext';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 interface DashboardHeaderProps {
     userName: string;
@@ -20,16 +20,14 @@ export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
     const { profile } = useCompany();
     const primaryColor = profile?.primaryColor || '#2563EB';
     const secondaryColor = profile?.secondaryColor || '#0F172A';
-    
-    const greeting = t(
-        `dashboard.${getGreetingKey()}`,
-        getGreetingKey() === 'greeting_morning' ? 'Good morning' : getGreetingKey() === 'greeting_afternoon' ? 'Good afternoon' : 'Good evening'
-    );
+
+    const greetingKey = getGreetingKey();
+    const greeting = t(`dashboard.${greetingKey}`);
 
     return (
         <View style={styles.wrapper}>
             <View style={styles.headerContent}>
-                <View style={styles.textSection}>
+                <View style={[styles.textSection, { flex: 1 }]}>
                     <View style={styles.greetingRow}>
                         <Sparkles size={16} color={primaryColor} />
                         <Text style={[styles.greeting, { color: primaryColor }]}>
@@ -41,9 +39,8 @@ export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
                         {t('dashboard.subtitle', 'Your professional tax workspace')}
                     </Subtitle>
                 </View>
-                <View style={[styles.iconBox, { backgroundColor: `${primaryColor}15` }]}>
-                    <TrendingUp size={24} color={primaryColor} />
-                </View>
+
+
             </View>
         </View>
     );
@@ -64,7 +61,7 @@ const styles = StyleSheet.create({
         gap: 24,
     },
     textSection: {
-        flex: 1,
+        // flex: 1, // handled inline
     },
     greetingRow: {
         flexDirection: 'row',
@@ -91,14 +88,4 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         fontWeight: '400',
     },
-    iconBox: {
-        width: 64,
-        height: 64,
-        borderRadius: 0,
-        ...(Platform.OS === 'web' ? {
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        } : {}),
-        alignItems: 'center',
-        justifyContent: 'center',
-    } as any,
 });

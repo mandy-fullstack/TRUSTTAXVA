@@ -119,7 +119,12 @@ export function FormDetailPage() {
     if (!id) return;
     try {
       setLoading(true);
+      setError('');
       const data = await api.getForm(id);
+      if (!data) {
+        setError('Form not found');
+        return;
+      }
       setForm(data);
       const ni = data.nameI18n as { en?: string; es?: string } | undefined;
       const di = data.descriptionI18n as { en?: string; es?: string } | undefined;
@@ -134,7 +139,13 @@ export function FormDetailPage() {
         active: !!data.active,
       });
     } catch (e: any) {
-      setError(e?.message || 'Failed to load form');
+      console.error('Error loading form:', e);
+      const errorMessage = e?.message || e?.toString() || 'Failed to load form';
+      setError(errorMessage);
+      if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+        // Redirect to forms list if form doesn't exist
+        setTimeout(() => navigate('/forms'), 2000);
+      }
     } finally {
       setLoading(false);
     }

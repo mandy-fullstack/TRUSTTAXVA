@@ -13,6 +13,7 @@ interface UserMenuPopoverProps {
     isOpen: boolean;
     onClose: () => void;
     onLogout: () => void;
+    isAdmin?: boolean;
 }
 
 export const UserMenuPopover = forwardRef<View, UserMenuPopoverProps>(({
@@ -21,6 +22,7 @@ export const UserMenuPopover = forwardRef<View, UserMenuPopoverProps>(({
     isOpen,
     onClose,
     onLogout,
+    isAdmin,
 }, ref) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -60,13 +62,13 @@ export const UserMenuPopover = forwardRef<View, UserMenuPopoverProps>(({
 
     return (
         <>
-        <View 
-            ref={ref}
-            style={styles.popover} 
-            {...(Platform.OS === 'web' ? { 
-                'data-user-popover': true,
-            } : {})}
-        >
+            <View
+                ref={ref}
+                style={styles.popover}
+                {...(Platform.OS === 'web' ? {
+                    'data-user-popover': true,
+                } : {})}
+            >
                 {/* Header del popover */}
                 <View style={styles.popoverHeader}>
                     <View style={styles.userInfo}>
@@ -97,6 +99,38 @@ export const UserMenuPopover = forwardRef<View, UserMenuPopoverProps>(({
                             {t('header.profile', 'Profile')}
                         </Text>
                     </TouchableOpacity>
+
+                    {isAdmin && (
+                        <>
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    onClose();
+                                    navigate('/admin/orders');
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Settings size={18} color="#2563EB" />
+                                <Text style={[styles.menuItemText, { color: '#2563EB', fontWeight: 'bold' }]}>
+                                    {t('header.admin_orders', 'Administration')}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    onClose();
+                                    navigate('/admin/services');
+                                }}
+                                activeOpacity={0.7}
+                            >
+                                <Settings size={18} color="#2563EB" />
+                                <Text style={[styles.menuItemText, { color: '#2563EB', fontWeight: 'bold' }]}>
+                                    {t('header.admin_services', 'Manage Services')}
+                                </Text>
+                            </TouchableOpacity>
+                        </>
+                    )}
 
                     <View style={styles.menuItemLang}>
                         <Text style={styles.menuItemLabel}>

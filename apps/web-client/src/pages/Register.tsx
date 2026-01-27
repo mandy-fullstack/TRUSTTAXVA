@@ -1,31 +1,36 @@
 import { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { Card, Button, Input, H1, Subtitle, Text } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from '../components/TrustTaxLogo';
-import { AlertDialog } from '../components/AlertDialog';
 
 export const RegisterPage = () => {
     const { t } = useTranslation();
+    const { showAlert } = useAuth();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning'; buttons?: Array<{ text: string; onPress: () => void }> }>({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        variant: 'info' 
-    });
-
     const navigate = useNavigate();
 
     const handleRegister = async () => {
-        if (!name || !email || !password) {
+        if (!name || !email || !password || !confirmPassword) {
             setError(t('auth.error_fill_all', 'Please fill in all fields'));
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setError(t('auth.passwords_dont_match', 'Passwords don\'t match'));
+            return;
+        }
+
+        if (password.length < 6) {
+            setError(t('auth.password_too_short', 'Password must be at least 6 characters'));
             return;
         }
 
@@ -33,16 +38,26 @@ export const RegisterPage = () => {
         setError('');
 
         try {
-            await api.register({ name, email, password });
-            setAlertDialog({
-                isOpen: true,
+            const response = await api.register({ name, email, password });
+
+            // Show success message and redirect to login
+            showAlert({
                 title: t('auth.success', 'Success'),
-                message: t('auth.reg_success', 'Registration successful! Please sign in.'),
+                message: t('auth.reg_success_verify', 'Registration successful! Please check your email to verify your account.'),
                 variant: 'success',
-                buttons: [{ text: t('common.ok', 'OK'), onPress: () => navigate('/login') }]
+                onConfirm: () => navigate('/login')
             });
         } catch (err: any) {
-            setError(err.message || t('auth.error_unexpected', 'Something went wrong. Please try again.'));
+            const errorMessage = err.message || t('auth.error_unexpected', 'Something went wrong. Please try again.');
+
+            // Show specific error messages
+            if (errorMessage.toLowerCase().includes('already exists') || errorMessage.toLowerCase().includes('already registered')) {
+                setError(t('auth.email_already_registered', 'This email is already registered. Please log in or use a different email.'));
+            } else if (errorMessage.toLowerCase().includes('too many')) {
+                setError(t('auth.rate_limit_exceeded', 'Too many attempts. Please wait a few minutes and try again.'));
+            } else {
+                setError(errorMessage);
+            }
         } finally {
             setIsLoading(false);
         }
@@ -80,6 +95,13 @@ export const RegisterPage = () => {
                             onChangeText={setPassword}
                             secureTextEntry
                         />
+                        <Input
+                            label={t('auth.confirm_password_label', 'Confirm Password')}
+                            placeholder="••••••••"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                        />
 
                         {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
@@ -98,16 +120,6 @@ export const RegisterPage = () => {
                     </View>
                 </Card>
             </View>
-
-            {/* Alert Dialog */}
-            <AlertDialog
-                isOpen={alertDialog.isOpen}
-                onClose={() => setAlertDialog({ isOpen: false, title: '', message: '', variant: 'info' })}
-                title={alertDialog.title}
-                message={alertDialog.message}
-                variant={alertDialog.variant}
-                buttons={alertDialog.buttons}
-            />
         </View>
     );
 };

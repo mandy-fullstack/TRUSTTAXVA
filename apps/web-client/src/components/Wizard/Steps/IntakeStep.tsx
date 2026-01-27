@@ -171,6 +171,7 @@ export function IntakeStep({ step, data, onChange }: IntakeStepProps) {
 }
 
 function FormField({ field, value, onChange, locale = 'en' }: { field: FormFieldType; value: any; onChange: (v: any) => void; locale?: string }) {
+  const { t } = useTranslation();
   const opts = field.options as Array<{ value: string; label: string; labelI18n?: I18n }> | undefined;
   const required = field.required ?? false;
   const labelStr = resolveLabel(field, locale) || field.label;
@@ -301,7 +302,7 @@ function FormField({ field, value, onChange, locale = 'en' }: { field: FormField
       return (
         <View style={styles.field}>
           {label}
-          <Text style={styles.unsupported}>Upload / signature not yet supported for this field.</Text>
+          <Text style={styles.unsupported}>{t('form.upload_not_supported', 'Upload / signature not yet supported for this field.')}</Text>
         </View>
       );
 

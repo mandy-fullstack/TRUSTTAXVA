@@ -86,7 +86,7 @@ export const BrandForm = ({ data, themeOptions, onChange, onThemeChange }: Brand
 };
 
 const styles = StyleSheet.create({
-    card: { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', padding: 24 },
+    card: { backgroundColor: '#FFF', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', padding: 24 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 12 },
 
     row: { flexDirection: 'row', gap: 16, marginBottom: 16 },
@@ -95,9 +95,9 @@ const styles = StyleSheet.create({
     label: { fontSize: 12, fontWeight: '600', color: '#64748B', marginBottom: 4 },
     sectionLabel: { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 12 },
 
-    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 8, fontSize: 16, color: '#0F172A', backgroundColor: '#F8FAFC' },
+    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 0, padding: 8, fontSize: 16, color: '#0F172A', backgroundColor: '#F8FAFC' },
 
-    logoPreview: { width: '100%', height: 40, marginTop: 8, backgroundColor: '#F1F5F9', borderRadius: 4 },
+    logoPreview: { width: '100%', height: 40, marginTop: 8, backgroundColor: '#F1F5F9', borderRadius: 0 },
     divider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 20 },
 
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },

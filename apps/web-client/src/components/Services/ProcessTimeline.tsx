@@ -1,4 +1,5 @@
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { FileText, Shield, Users, CheckCircle, Award, type LucideIcon } from 'lucide-react';
 import { Card, H2, H4, Text } from '@trusttax/ui';
 
@@ -13,40 +14,44 @@ interface ProcessTimelineProps {
     steps?: Array<{ title: string; description: string; }>;
 }
 
-const defaultSteps: ProcessStep[] = [
-    {
-        title: 'Submit Your Information',
-        description: 'Complete our secure online questionnaire with your details.',
-        icon: FileText,
-        color: '#2563EB'
-    },
-    {
-        title: 'Document Upload',
-        description: 'Upload required documents through our encrypted portal.',
-        icon: Shield,
-        color: '#10B981'
-    },
-    {
-        title: 'Expert Review',
-        description: 'Our certified professionals review your submission.',
-        icon: Users,
-        color: '#F59E0B'
-    },
-    {
-        title: 'Quality Check',
-        description: 'Double verification ensures accuracy and compliance.',
-        icon: CheckCircle,
-        color: '#8B5CF6'
-    },
-    {
-        title: 'Delivery & Support',
-        description: 'Receive your completed service with ongoing support.',
-        icon: Award,
-        color: '#EF4444'
-    },
-];
+function getDefaultSteps(t: (key: string) => string): ProcessStep[] {
+    return [
+        {
+            title: t('services.process.step1_title', 'Submit Your Information'),
+            description: t('services.process.step1_desc', 'Complete our secure online questionnaire with your details.'),
+            icon: FileText,
+            color: '#2563EB'
+        },
+        {
+            title: t('services.process.step2_title', 'Document Upload'),
+            description: t('services.process.step2_desc', 'Upload required documents through our encrypted portal.'),
+            icon: Shield,
+            color: '#10B981'
+        },
+        {
+            title: t('services.process.step3_title', 'Expert Review'),
+            description: t('services.process.step3_desc', 'Our certified professionals review your submission.'),
+            icon: Users,
+            color: '#F59E0B'
+        },
+        {
+            title: t('services.process.step4_title', 'Quality Check'),
+            description: t('services.process.step4_desc', 'Double verification ensures accuracy and compliance.'),
+            icon: CheckCircle,
+            color: '#8B5CF6'
+        },
+        {
+            title: t('services.process.step5_title', 'Delivery & Support'),
+            description: t('services.process.step5_desc', 'Receive your completed service with ongoing support.'),
+            icon: Award,
+            color: '#EF4444'
+        },
+    ];
+}
 
 export const ProcessTimeline = ({ steps }: ProcessTimelineProps) => {
+    const { t } = useTranslation();
+    const defaultSteps = getDefaultSteps(t);
     const displaySteps = steps && steps.length > 0
         ? steps.map((s, i) => ({
             ...s,
@@ -57,8 +62,8 @@ export const ProcessTimeline = ({ steps }: ProcessTimelineProps) => {
 
     return (
         <View style={styles.section}>
-            <H2 style={styles.sectionTitle}>Our Professional Process</H2>
-            <Text style={styles.sectionSubtitle}>We follow a proven {displaySteps.length}-step process to ensure quality and accuracy</Text>
+            <H2 style={styles.sectionTitle}>{t('services.process.title', 'Our Professional Process')}</H2>
+            <Text style={styles.sectionSubtitle}>{t('services.process.subtitle', { count: displaySteps.length, defaultValue: `We follow a proven ${displaySteps.length}-step process to ensure quality and accuracy` })}</Text>
             <View style={styles.processTimeline}>
                 {displaySteps.map((step, i) => {
                     const IconComponent = step.icon || FileText;

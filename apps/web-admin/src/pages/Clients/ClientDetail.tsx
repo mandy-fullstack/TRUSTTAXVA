@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   sectionTitle: { marginBottom: 0, color: '#334155' },
   card: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 20,

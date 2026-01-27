@@ -71,11 +71,11 @@ export const CompanySettingsPage = () => {
     };
 
     const [confirmReset, setConfirmReset] = useState(false);
-    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning' }>({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        variant: 'info' 
+    const [alertDialog, setAlertDialog] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' | 'warning' }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        variant: 'info'
     });
 
     const handleReset = () => {
@@ -139,7 +139,7 @@ export const CompanySettingsPage = () => {
 
     return (
         <Layout>
-            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
+            <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 150 }}>
                 <View style={styles.headerRow}>
                     <View>
                         <H1>Company Settings</H1>
@@ -221,12 +221,12 @@ const styles = StyleSheet.create({
     headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
     subtitle: { color: '#64748B', fontSize: 16, marginTop: 8 },
 
-    resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
+    resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#F8FAFC' },
     resetText: { fontSize: 13, fontWeight: '600', color: '#64748B' },
 
     grid: { flexDirection: 'row', gap: 24, flexWrap: 'wrap' },
     col: { flex: 1, minWidth: 400, gap: 24 },
 
-    fab: { position: 'absolute', bottom: 32, right: 32, backgroundColor: '#0F172A', flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 50, gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
+    fab: { position: 'absolute', bottom: 32, right: 32, backgroundColor: '#0F172A', flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 32, borderRadius: 0, gap: 12, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 5 },
     fabText: { color: '#FFF', fontWeight: '700', fontSize: 16 }
 });

@@ -1,4 +1,5 @@
 import { View, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Text, H1, H2 } from '@trusttax/ui';
 import { PublicLayout } from '../../components/PublicLayout';
 import { Mail, Phone, MapPin } from 'lucide-react';
@@ -6,29 +7,30 @@ import { useCompany } from '../../context/CompanyContext';
 import { PageMeta } from '../../components/PageMeta';
 
 export const ContactPage = () => {
+    const { t } = useTranslation();
     const { profile } = useCompany();
 
     return (
         <PublicLayout>
             <PageMeta
-                title="Contact Us | TrustTax"
-                description="Have questions? We're here to help. Get in touch with TrustTax for expert tax preparation, immigration services, and business consulting."
+                title={t('contact.title', 'Contact Us | TrustTax')}
+                description={t('contact.description', 'Have questions? We\'re here to help. Get in touch with TrustTax for expert tax preparation, immigration services, and business consulting.')}
             />
             <View style={styles.header}>
-                <H1 style={styles.title}>Contact Us</H1>
-                <Text style={styles.subtitle}>Have questions? We're here to help.</Text>
+                <H1 style={styles.title}>{t('contact.page_title', 'Contact Us')}</H1>
+                <Text style={styles.subtitle}>{t('contact.subtitle', 'Have questions? We\'re here to help.')}</Text>
             </View>
 
             <View style={styles.container}>
                 <View style={styles.grid}>
                     <View style={styles.infoCol}>
-                        <H2 style={styles.colTitle}>Get in Touch</H2>
-                        <Text style={styles.desc}>Fill out the form or reach us directly at the contact points below.</Text>
+                        <H2 style={styles.colTitle}>{t('contact.get_in_touch', 'Get in Touch')}</H2>
+                        <Text style={styles.desc}>{t('contact.description_form', 'Fill out the form or reach us directly at the contact points below.')}</Text>
 
                         <View style={styles.contactItem}>
                             <View style={styles.iconBox}><Phone size={20} color="var(--primary-color)" /></View>
                             <View>
-                                <Text style={styles.contactLabel}>Phone</Text>
+                                <Text style={styles.contactLabel}>{t('contact.phone', 'Phone')}</Text>
                                 <Text style={styles.contactValue}>{profile?.phone || '(555) 123-4567'}</Text>
                             </View>
                         </View>
@@ -36,7 +38,7 @@ export const ContactPage = () => {
                         <View style={styles.contactItem}>
                             <View style={styles.iconBox}><Mail size={20} color="var(--primary-color)" /></View>
                             <View>
-                                <Text style={styles.contactLabel}>Email</Text>
+                                <Text style={styles.contactLabel}>{t('contact.email', 'Email')}</Text>
                                 <Text style={styles.contactValue}>{profile?.email || 'contact@trusttax.com'}</Text>
                             </View>
                         </View>
@@ -44,7 +46,7 @@ export const ContactPage = () => {
                         <View style={styles.contactItem}>
                             <View style={styles.iconBox}><MapPin size={20} color="var(--primary-color)" /></View>
                             <View>
-                                <Text style={styles.contactLabel}>Office</Text>
+                                <Text style={styles.contactLabel}>{t('contact.office', 'Office')}</Text>
                                 <Text style={styles.contactValue}>{profile?.address || '123 Business Ave, VA 22030'}</Text>
                             </View>
                         </View>
@@ -53,19 +55,19 @@ export const ContactPage = () => {
                     <View style={styles.formCol}>
                         <View style={styles.formCard}>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Name</Text>
-                                <TextInput style={styles.input} placeholder="Your name" placeholderTextColor="#94A3B8" />
+                                <Text style={styles.label}>{t('contact.form_name', 'Name')}</Text>
+                                <TextInput style={styles.input} placeholder={t('contact.form_name_placeholder', 'Your name')} placeholderTextColor="#94A3B8" />
                             </View>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Email</Text>
-                                <TextInput style={styles.input} placeholder="your@email.com" placeholderTextColor="#94A3B8" />
+                                <Text style={styles.label}>{t('contact.form_email', 'Email')}</Text>
+                                <TextInput style={styles.input} placeholder={t('contact.form_email_placeholder', 'your@email.com')} placeholderTextColor="#94A3B8" />
                             </View>
                             <View style={styles.inputGroup}>
-                                <Text style={styles.label}>Message</Text>
-                                <TextInput style={[styles.input, styles.textArea]} placeholder="How can we help?" placeholderTextColor="#94A3B8" multiline numberOfLines={4} />
+                                <Text style={styles.label}>{t('contact.form_message', 'Message')}</Text>
+                                <TextInput style={[styles.input, styles.textArea]} placeholder={t('contact.form_message_placeholder', 'How can we help?')} placeholderTextColor="#94A3B8" multiline numberOfLines={4} />
                             </View>
                             <TouchableOpacity style={styles.submitButton}>
-                                <Text style={styles.submitText}>Send Message</Text>
+                                <Text style={styles.submitText}>{t('contact.send_message', 'Send Message')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

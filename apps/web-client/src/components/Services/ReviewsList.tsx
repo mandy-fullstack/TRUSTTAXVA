@@ -1,4 +1,5 @@
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { Card, H1, H2, Text } from '@trusttax/ui';
 
@@ -16,6 +17,7 @@ interface ReviewsListProps {
 }
 
 export const ReviewsList = ({ reviews, avgRating }: ReviewsListProps) => {
+    const { t } = useTranslation();
     const calculatedAvg = avgRating || (reviews.length > 0
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
         : 5.0);
@@ -28,8 +30,8 @@ export const ReviewsList = ({ reviews, avgRating }: ReviewsListProps) => {
         <View style={styles.section}>
             <View style={styles.reviewHeader}>
                 <View>
-                    <H2 style={styles.sectionTitle}>Customer Reviews</H2>
-                    <Text style={styles.sectionSubtitle}>See what our clients are saying</Text>
+                    <H2 style={styles.sectionTitle}>{t('services.reviews.title', 'Customer Reviews')}</H2>
+                    <Text style={styles.sectionSubtitle}>{t('services.reviews.subtitle', 'See what our clients are saying')}</Text>
                 </View>
                 <View style={styles.ratingBig}>
                     <H1 style={{ marginBottom: 0 }}>{calculatedAvg.toFixed(1)}</H1>
@@ -43,7 +45,7 @@ export const ReviewsList = ({ reviews, avgRating }: ReviewsListProps) => {
                             />
                         ))}
                     </View>
-                    <Text style={{ color: '#64748B', fontSize: 12 }}>{reviews.length} reviews</Text>
+                    <Text style={{ color: '#64748B', fontSize: 12 }}>{t('services.reviews.review_count', { count: reviews.length, defaultValue: `${reviews.length} reviews` })}</Text>
                 </View>
             </View>
             <View style={styles.reviewsGrid}>

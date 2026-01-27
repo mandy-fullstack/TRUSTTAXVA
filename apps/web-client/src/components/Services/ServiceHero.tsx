@@ -1,6 +1,8 @@
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { DollarSign, Clock, Calendar, Shield, Award, Star } from 'lucide-react';
 import { Card, H1, Subtitle, Text, Button, Badge } from '@trusttax/ui';
+import { getServiceName, getServiceDescription } from '../../utils/serviceI18n';
 import type { Service } from '../../types';
 
 interface ServiceHeroProps {
@@ -11,17 +13,18 @@ interface ServiceHeroProps {
 }
 
 export const ServiceHero = ({ service, avgRating = 5.0, reviewCount = 0, onStartService }: ServiceHeroProps) => {
+    const { t } = useTranslation();
     return (
         <View style={styles.hero}>
             <View style={styles.heroContent}>
                 <Badge label={service.category} variant="primary" />
-                <H1 style={styles.serviceTitle}>{service.name}</H1>
-                <Subtitle>{service.description}</Subtitle>
+                <H1 style={styles.serviceTitle}>{getServiceName(service)}</H1>
+                <Subtitle>{getServiceDescription(service)}</Subtitle>
 
                 {service.originalPrice && Number(service.originalPrice) > 0 && Number(service.originalPrice) > Number(service.price) && (
                     <View style={styles.promoBadge}>
                         <Badge
-                            label={`SAVE $${(Number(service.originalPrice) - Number(service.price)).toFixed(0)} TODAY`}
+                            label={t('services.hero.save_today', { amount: (Number(service.originalPrice) - Number(service.price)).toFixed(0), defaultValue: `SAVE $${(Number(service.originalPrice) - Number(service.price)).toFixed(0)} TODAY` })}
                             variant="success"
                         />
                     </View>
@@ -40,7 +43,7 @@ export const ServiceHero = ({ service, avgRating = 5.0, reviewCount = 0, onStart
                                 />
                             ))}
                         </View>
-                        <Text style={styles.ratingText}>{avgRating.toFixed(1)} ({reviewCount} reviews)</Text>
+                        <Text style={styles.ratingText}>{t('services.hero.rating_reviews', { rating: avgRating.toFixed(1), count: reviewCount, defaultValue: `${avgRating.toFixed(1)} (${reviewCount} reviews)` })}</Text>
                     </View>
                 )}
 
@@ -48,11 +51,11 @@ export const ServiceHero = ({ service, avgRating = 5.0, reviewCount = 0, onStart
                 <View style={styles.trustBadges}>
                     <View style={styles.trustBadge}>
                         <Shield size={16} color="#10B981" />
-                        <Text style={styles.trustText}>Secure & Confidential</Text>
+                        <Text style={styles.trustText}>{t('services.hero.secure_confidential', 'Secure & Confidential')}</Text>
                     </View>
                     <View style={styles.trustBadge}>
                         <Award size={16} color="#2563EB" />
-                        <Text style={styles.trustText}>Certified Professionals</Text>
+                        <Text style={styles.trustText}>{t('services.hero.certified_professionals', 'Certified Professionals')}</Text>
                     </View>
                 </View>
             </View>
@@ -60,7 +63,7 @@ export const ServiceHero = ({ service, avgRating = 5.0, reviewCount = 0, onStart
             <Card style={styles.priceCard} elevated>
                 <View style={styles.priceHeader}>
                     <DollarSign size={20} color="#10B981" />
-                    <Text style={styles.priceLabel}>Service Fee</Text>
+                    <Text style={styles.priceLabel}>{t('services.hero.service_fee', 'Service Fee')}</Text>
                 </View>
                 <View style={styles.priceContainer}>
                     {service.originalPrice && Number(service.originalPrice) > 0 && Number(service.originalPrice) > Number(service.price) && (
@@ -70,19 +73,19 @@ export const ServiceHero = ({ service, avgRating = 5.0, reviewCount = 0, onStart
                 </View>
                 <View style={styles.durationRow}>
                     <Clock size={16} color="#64748B" />
-                    <Text style={styles.durationText}>2-4 business days</Text>
+                    <Text style={styles.durationText}>{t('services.hero.business_days', '2-4 business days')}</Text>
                 </View>
                 <View style={styles.durationRow}>
                     <Calendar size={16} color="#64748B" />
-                    <Text style={styles.durationText}>Available year-round</Text>
+                    <Text style={styles.durationText}>{t('services.hero.available_year_round', 'Available year-round')}</Text>
                 </View>
                 <Button
-                    title="Start This Service"
+                    title={t('services.hero.start_service', 'Start This Service')}
                     variant="primary"
                     onPress={onStartService}
                     style={{ marginTop: 20 }}
                 />
-                <Text style={styles.guarantee}>100% Satisfaction Guaranteed</Text>
+                <Text style={styles.guarantee}>{t('services.hero.satisfaction_guaranteed', '100% Satisfaction Guaranteed')}</Text>
             </Card>
         </View>
     );

@@ -81,6 +81,22 @@ export const api = {
     return request<any>('/auth/me', { headers: { Authorization: `Bearer ${token}` } });
   },
 
+  forgotPassword(email: string) {
+    return request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuth: true,
+    });
+  },
+
+  resetPassword(token: string, password: string) {
+    return request<{ message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+      skipAuth: true,
+    });
+  },
+
   getClients: () => request<any[]>('/admin/clients'),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
   getClientSensitive: (id: string) =>
@@ -97,14 +113,31 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status, notes }),
     }),
+  addOrderTimelineEntry: (id: string, title: string, description: string) =>
+    request<any>(`/admin/orders/${id}/timeline`, {
+      method: 'POST',
+      body: JSON.stringify({ title, description }),
+    }),
+  createOrderApproval: (id: string, data: { type: string; title: string; description?: string }) =>
+    request<any>(`/admin/orders/${id}/approvals`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Chat
+  getConversations: () => request<any[]>('/chat/conversations'),
+  getConversation: (id: string) => request<any>(`/chat/conversations/${id}`),
+  createConversation: (subject?: string) => request<any>('/chat/conversations', { method: 'POST', body: JSON.stringify({ subject }) }),
+  sendMessage: (conversationId: string, content: string) => request<any>(`/chat/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  deleteConversation: (id: string) => request<void>(`/chat/conversations/${id}`, { method: 'DELETE' }),
 
   getDashboardMetrics: () => request<any>('/admin/dashboard/metrics'),
 
   getServices: () => request<any[]>('/admin/services'),
   getServiceDetails: (id: string) => request<any>(`/admin/services/${id}`),
-  createService: (data: { name: string; description: string; category: string; price: number; originalPrice?: number }) =>
+  createService: (data: { nameI18n?: { en?: string; es?: string }; descriptionI18n?: { en?: string; es?: string }; category: string; price: number; originalPrice?: number }) =>
     request<any>('/admin/services', { method: 'POST', body: JSON.stringify(data) }),
-  updateService: (id: string, data: { name?: string; description?: string; category?: string; price?: number; originalPrice?: number }) =>
+  updateService: (id: string, data: { nameI18n?: { en?: string; es?: string }; descriptionI18n?: { en?: string; es?: string }; category?: string; price?: number; originalPrice?: number }) =>
     request<any>(`/admin/services/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteService: (id: string) => request<any>(`/admin/services/${id}`, { method: 'DELETE' }),
 

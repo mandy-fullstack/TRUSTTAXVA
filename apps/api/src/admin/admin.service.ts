@@ -2,11 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
 
+import { ChatGateway } from '../chat/chat.gateway';
+
 @Injectable()
 export class AdminService {
     constructor(
         private prisma: PrismaService,
         private encryptionService: EncryptionService,
+        private chatGateway: ChatGateway
     ) { }
 
     async getAllClients() {
@@ -171,12 +174,23 @@ export class AdminService {
             where: { id: orderId },
             include: {
                 service: true,
+                progress: {
+                    orderBy: {
+                        stepIndex: 'asc'
+                    }
+                },
+                documents: true,
                 user: {
                     select: {
                         id: true,
                         name: true,
                         email: true,
                         createdAt: true
+                    }
+                },
+                timeline: {
+                    orderBy: {
+                        createdAt: 'desc'
                     }
                 }
             }
@@ -190,13 +204,14 @@ export class AdminService {
         return { ...order, total };
     }
 
-    async updateOrderStatus(orderId: string, status: string, _notes?: string) {
+    async updateOrderStatus(orderId: string, status: string, notes?: string) {
         const order = await this.prisma.order.update({
             where: { id: orderId },
             data: {
                 status,
+                notes: notes || undefined,
                 updatedAt: new Date()
-            },
+            } as any,
             include: {
                 service: true,
                 user: {
@@ -205,12 +220,82 @@ export class AdminService {
                         name: true,
                         email: true
                     }
+                },
+                timeline: {
+                    orderBy: {
+                        createdAt: 'desc'
+                    }
                 }
             }
         });
 
+        // Add automatic timeline entry for status change
+        await this.prisma.orderTimeline.create({
+            data: {
+                orderId,
+                title: `Estado actualizado: ${status}`,
+                description: notes || `El estado de la orden ha sido cambiado a ${status.toLowerCase().replace('_', ' ')}.`
+            }
+        });
+
+        // Emit notification to user
+        this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
+            type: 'order',
+            title: 'Actualización de Estado',
+            body: `Tu orden ha cambiado a estado: ${status}`,
+            link: `/dashboard/orders/${orderId}`
+        });
+
         const total = Number((order.service as { price?: unknown }).price ?? 0);
         return { ...order, total };
+    }
+
+    async addOrderTimelineEntry(orderId: string, title: string, description: string) {
+        return this.prisma.orderTimeline.create({
+            data: {
+                orderId,
+                title,
+                description
+            }
+        });
+    }
+
+    async createOrderApproval(orderId: string, type: string, title: string, description?: string) {
+        const approval = await this.prisma.orderApproval.create({
+            data: {
+                orderId,
+                type,
+                title,
+                description
+            }
+        });
+
+        // Touch the order timestamp so client picks up the change
+        await this.prisma.order.update({
+            where: { id: orderId },
+            data: { updatedAt: new Date() }
+        });
+
+        // Add to timeline too
+        await this.prisma.orderTimeline.create({
+            data: {
+                orderId,
+                title: `Solicitud de Aprobación: ${title}`,
+                description: `Se ha requerido tu aprobación para: ${description || title}`
+            }
+        });
+
+        const order = await this.prisma.order.findUnique({ where: { id: orderId }, select: { userId: true } });
+        if (order) {
+            this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
+                type: 'order',
+                title: 'Acción Requerida',
+                body: `Se requiere tu aprobación: ${title}`,
+                link: `/dashboard/orders/${orderId}`
+            });
+        }
+
+        return approval;
     }
 
     async getDashboardMetrics() {
@@ -304,16 +389,28 @@ export class AdminService {
     }
 
     async createService(data: {
-        name: string;
-        description: string;
+        name?: string;
+        description?: string;
+        nameI18n?: { en?: string; es?: string };
+        descriptionI18n?: { en?: string; es?: string };
         category: string;
         price: number;
         originalPrice?: number;
     }) {
+        // Si se proporciona nameI18n, usarlo; si no, usar name como fallback para ambos idiomas
+        const nameI18n = data.nameI18n || (data.name ? { en: data.name, es: data.name } : undefined);
+        const descriptionI18n = data.descriptionI18n || (data.description ? { en: data.description, es: data.description } : undefined);
+
+        // Mantener name y description para compatibilidad hacia atrás
+        const name = data.name || nameI18n?.en || nameI18n?.es || '';
+        const description = data.description || descriptionI18n?.en || descriptionI18n?.es || '';
+
         const service = await this.prisma.client.service.create({
             data: {
-                name: data.name,
-                description: data.description,
+                name,
+                description,
+                nameI18n: nameI18n ? JSON.parse(JSON.stringify(nameI18n)) : null,
+                descriptionI18n: descriptionI18n ? JSON.parse(JSON.stringify(descriptionI18n)) : null,
                 category: data.category,
                 price: data.price,
                 ...(data.originalPrice !== undefined && { originalPrice: data.originalPrice }),
@@ -326,19 +423,48 @@ export class AdminService {
     async updateService(serviceId: string, data: {
         name?: string;
         description?: string;
+        nameI18n?: { en?: string; es?: string };
+        descriptionI18n?: { en?: string; es?: string };
         category?: string;
         price?: number;
         originalPrice?: number;
     }) {
+        const updateData: any = {};
+
+        // Manejar nameI18n
+        if (data.nameI18n !== undefined) {
+            updateData.nameI18n = JSON.parse(JSON.stringify(data.nameI18n));
+            // Actualizar name legacy con el valor en inglés o español como fallback
+            updateData.name = data.nameI18n.en || data.nameI18n.es || data.name || '';
+        } else if (data.name !== undefined) {
+            updateData.name = data.name;
+            // Si no hay nameI18n pero hay name, actualizar ambos idiomas
+            if (!updateData.nameI18n) {
+                updateData.nameI18n = { en: data.name, es: data.name };
+            }
+        }
+
+        // Manejar descriptionI18n
+        if (data.descriptionI18n !== undefined) {
+            updateData.descriptionI18n = JSON.parse(JSON.stringify(data.descriptionI18n));
+            // Actualizar description legacy con el valor en inglés o español como fallback
+            updateData.description = data.descriptionI18n.en || data.descriptionI18n.es || data.description || '';
+        } else if (data.description !== undefined) {
+            updateData.description = data.description;
+            // Si no hay descriptionI18n pero hay description, actualizar ambos idiomas
+            if (!updateData.descriptionI18n) {
+                updateData.descriptionI18n = { en: data.description, es: data.description };
+            }
+        }
+
+        // Otros campos
+        if (data.category !== undefined) updateData.category = data.category;
+        if (data.price !== undefined) updateData.price = data.price;
+        if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice;
+
         const service = await this.prisma.client.service.update({
             where: { id: serviceId },
-            data: {
-                ...(data.name && { name: data.name }),
-                ...(data.description && { description: data.description }),
-                ...(data.category && { category: data.category }),
-                ...(data.price !== undefined && { price: data.price }),
-                ...(data.originalPrice !== undefined && { originalPrice: data.originalPrice }),
-            }
+            data: updateData
         });
 
         return service;

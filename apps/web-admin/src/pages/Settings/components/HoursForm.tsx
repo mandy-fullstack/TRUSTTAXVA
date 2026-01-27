@@ -77,19 +77,19 @@ export const HoursForm = ({ hours, onChange }: HoursFormProps) => {
 };
 
 const styles = StyleSheet.create({
-    card: { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', padding: 24 },
+    card: { backgroundColor: '#FFF', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', padding: 24 },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 12 },
     helperText: { fontSize: 13, color: '#64748B', marginBottom: 16 },
 
     list: { gap: 12, marginBottom: 16 },
-    row: { flexDirection: 'row', gap: 12, alignItems: 'flex-end', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' },
+    row: { flexDirection: 'row', gap: 12, alignItems: 'flex-end', backgroundColor: '#F8FAFC', padding: 12, borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0' },
     fieldCol: { flex: 1 },
 
     label: { fontSize: 12, fontWeight: '600', color: '#475569', marginBottom: 4 },
-    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, padding: 8, fontSize: 16, backgroundColor: '#FFF', color: '#0F172A' },
+    input: { borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 0, padding: 8, fontSize: 16, backgroundColor: '#FFF', color: '#0F172A' },
 
-    deleteBtn: { padding: 10, backgroundColor: '#FEF2F2', borderRadius: 6, borderWidth: 1, borderColor: '#FECACA' },
+    deleteBtn: { padding: 10, backgroundColor: '#FEF2F2', borderRadius: 0, borderWidth: 1, borderColor: '#FECACA' },
 
-    addBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#EFF6FF', borderRadius: 6, borderWidth: 1, borderColor: '#BFDBFE' },
+    addBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#EFF6FF', borderRadius: 0, borderWidth: 1, borderColor: '#BFDBFE' },
     addBtnText: { fontSize: 14, fontWeight: '600', color: '#2563EB' }
 });

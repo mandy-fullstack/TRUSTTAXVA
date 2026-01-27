@@ -5,6 +5,7 @@ import { Layout } from '../../components/Layout';
 import { ShoppingBag, ChevronRight, Clock, ShieldCheck, Briefcase, Scale, Search } from 'lucide-react';
 import { Card, H1, H3, H4, Subtitle, Text, Button, Badge, Input } from '@trusttax/ui';
 import { api } from '../../services/api';
+import { getServiceName, getServiceDescription } from '../../utils/serviceI18n';
 import type { Service } from '../../types';
 import { useTranslation } from 'react-i18next';
 
@@ -52,8 +53,10 @@ export const ServicesPage = () => {
 
     const filteredServices = services.filter(service => {
         const matchesCategory = activeCategory === 'ALL' || service.category === activeCategory;
-        const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            service.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const serviceName = getServiceName(service);
+        const serviceDesc = getServiceDescription(service);
+        const matchesSearch = serviceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            serviceDesc.toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
@@ -137,9 +140,9 @@ export const ServicesPage = () => {
                                         <Text style={styles.durationText}>{t('common.days_estimated', '2-4 Days')}</Text>
                                     </View>
                                 </View>
-                                <H3 style={styles.serviceTitle}>{service.name}</H3>
+                                <H3 style={styles.serviceTitle}>{getServiceName(service)}</H3>
                                 <Text style={styles.serviceDesc} numberOfLines={2}>
-                                    {service.description}
+                                    {getServiceDescription(service)}
                                 </Text>
 
                                 <View style={styles.priceRow}>

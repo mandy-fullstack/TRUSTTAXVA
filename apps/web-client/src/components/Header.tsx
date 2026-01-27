@@ -19,6 +19,7 @@ export const Header = () => {
     const { t } = useTranslation();
     const { isAuthenticated } = useAuth();
     const menuButtonRef = useRef<any>(null);
+    const { logout, user } = useAuth();
     const mobileMenuRef = useRef<any>(null);
 
     const isMobile = width < MOBILE_BREAKPOINT;
@@ -146,7 +147,7 @@ export const Header = () => {
                                             key={item.path}
                                             to={item.path}
                                             className={Platform.OS === 'web' ? 'nav-link' : undefined}
-                                            style={Platform.OS === 'web' 
+                                            style={Platform.OS === 'web'
                                                 ? isRegister
                                                     ? { padding: '0 24px', height: 44, borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: secondaryColor }
                                                     : { height: 44, padding: '0 16px', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }
@@ -165,6 +166,33 @@ export const Header = () => {
                                                 {t(item.i18nKey, item.path)}
                                             </Text>
                                         </Link>
+                                    );
+                                }
+                                if (item.type === 'user') {
+                                    return (
+                                        <Link
+                                            key="user-profile"
+                                            to="/dashboard"
+                                            className={Platform.OS === 'web' ? 'nav-link' : undefined}
+                                            style={Platform.OS === 'web' ? { display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8 } : { flexDirection: 'row', alignItems: 'center', gap: 8 } as any}
+                                        >
+                                            <Text style={{ color: primaryColor, fontWeight: '600', fontSize: 14 }}>
+                                                {user?.name || user?.email || t(item.i18nKey)}
+                                            </Text>
+                                        </Link>
+                                    );
+                                }
+                                if (item.type === 'logout') {
+                                    return (
+                                        <TouchableOpacity
+                                            key="logout-btn"
+                                            onPress={logout}
+                                            style={{ paddingHorizontal: 12, paddingVertical: 8 }}
+                                        >
+                                            <Text style={{ color: '#64748B', fontSize: 14, fontWeight: '500' }}>
+                                                {t(item.i18nKey)}
+                                            </Text>
+                                        </TouchableOpacity>
                                     );
                                 }
                                 return null;
@@ -247,6 +275,33 @@ export const Header = () => {
                                             {t(item.i18nKey, item.path)}
                                         </Text>
                                     </Link>
+                                );
+                            }
+                            if (item.type === 'user') {
+                                return (
+                                    <Link
+                                        key="user-profile-mobile"
+                                        to="/dashboard"
+                                        onClick={handleMenuClose}
+                                        style={{ height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        <Text style={{ color: primaryColor, fontWeight: '600' }}>
+                                            {user?.name || t(item.i18nKey)}
+                                        </Text>
+                                    </Link>
+                                );
+                            }
+                            if (item.type === 'logout') {
+                                return (
+                                    <TouchableOpacity
+                                        key="logout-btn-mobile"
+                                        onPress={() => { logout(); handleMenuClose(); }}
+                                        style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                        <Text style={{ color: '#EF4444', fontWeight: '500' }}>
+                                            {t(item.i18nKey)}
+                                        </Text>
+                                    </TouchableOpacity>
                                 );
                             }
                             return null;

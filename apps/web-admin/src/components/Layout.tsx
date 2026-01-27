@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, ScrollView } from 'react-native';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { H4, Text, spacing } from '@trusttax/ui';
-import { LayoutDashboard, Users, FileText, LogOut, Briefcase, Settings, Menu, X, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Briefcase, Settings, Menu, X, ClipboardList, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { ChatWidget } from './Chat/ChatWidget';
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -57,6 +58,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { width } = useWindowDimensions();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const isMobile = width < MOBILE_BREAKPOINT;
 
@@ -142,7 +144,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </>
       )}
 
-      <View style={[styles.main, isMobile && styles.mainMobile]}>{children}</View>
+      <View style={[styles.main, isMobile && styles.mainMobile]}>
+        <View style={styles.contentRow}>
+          <ScrollView
+            style={[styles.contentScroll, isChatOpen && !isMobile && { marginRight: 0 }]}
+            contentContainerStyle={styles.contentInner}
+          >
+            {children}
+          </ScrollView>
+
+          {/* Chat Panel */}
+          {isChatOpen && (
+            <View style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}>
+              <ChatWidget onClose={() => setIsChatOpen(false)} />
+            </View>
+          )}
+        </View>
+
+        {/* Floating Chat Button */}
+        {!isChatOpen && (
+          <TouchableOpacity
+            style={styles.floatingChatBtn}
+            onPress={() => setIsChatOpen(true)}
+            activeOpacity={0.9}
+          >
+            <MessageCircle size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -186,23 +215,23 @@ const styles = StyleSheet.create({
   overlay: {
     ...(Platform.OS === 'web'
       ? {
-          position: 'fixed' as any,
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          zIndex: 200,
-        }
+        position: 'fixed' as any,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 200,
+      }
       : {
-          position: 'absolute' as any,
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.4)',
-          zIndex: 200,
-        }),
+        position: 'absolute' as any,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        zIndex: 200,
+      }),
   } as any,
   sidebar: {
     width: 280,
@@ -267,4 +296,51 @@ const styles = StyleSheet.create({
   mainMobile: {
     paddingTop: 56,
   },
+  contentRow: {
+    flexDirection: 'row',
+    flex: 1,
+    height: '100%',
+    overflow: 'hidden' as any
+  },
+  contentScroll: {
+    flex: 1,
+    height: '100%'
+  },
+  contentInner: {
+    minHeight: '100%',
+    padding: spacing[6],
+  },
+  chatPanel: {
+    width: 400,
+    borderLeftWidth: 1,
+    borderLeftColor: '#E2E8F0',
+    backgroundColor: '#FFF',
+    height: '100%',
+  },
+  chatPanelMobile: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: '100%',
+    zIndex: 900
+  } as any,
+  floatingChatBtn: {
+    position: 'absolute',
+    bottom: 32,
+    right: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 0, // Round
+    backgroundColor: '#0F172A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 50
+  }
 });

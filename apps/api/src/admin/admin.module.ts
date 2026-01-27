@@ -4,7 +4,10 @@ import { AdminService } from './admin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
 
+import { ChatModule } from '../chat/chat.module';
+
 @Module({
+    imports: [ChatModule],
     controllers: [AdminController],
     providers: [AdminService, PrismaService, EncryptionService],
 })

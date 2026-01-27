@@ -111,28 +111,49 @@ export const Badge = ({ label, variant = 'neutral', style }: any) => {
 };
 
 // --- BUTTON ---
-export const Button = ({ title, onPress, variant = 'primary', loading, disabled, icon, iconPosition = 'left', style, textStyle }: any) => (
-    <RNTouchableOpacity
-        onPress={onPress}
-        disabled={loading || disabled}
-        activeOpacity={0.7}
-        style={[styles.button, variant === 'primary' ? styles.btnPrimary : styles.btnOutline, style]}
-    >
-        {loading ? (
-            <ActivityIndicator color={variant === 'primary' ? '#FFF' : theme.colors.primary} />
-        ) : (
-            <View style={[styles.btnContent, { gap: spacing[3] }]}>
-                {icon && iconPosition === 'left' && icon}
-                <RNText style={[
-                    styles.btnText,
-                    variant === 'primary' ? styles.btnTextPrimary : styles.btnTextOutline,
-                    textStyle
-                ]}>{title}</RNText>
-                {icon && iconPosition === 'right' && icon}
-            </View>
-        )}
-    </RNTouchableOpacity>
-);
+export const Button = ({ title, onPress, variant = 'primary', loading, disabled, icon, iconPosition = 'left', style, textStyle }: any) => {
+    const getButtonStyle = () => {
+        if (variant === 'primary') return styles.btnPrimary;
+        if (variant === 'ghost') return styles.btnGhost;
+        return styles.btnOutline;
+    };
+
+    const getTextStyle = () => {
+        if (variant === 'primary') return styles.btnTextPrimary;
+        if (variant === 'ghost') return styles.btnTextGhost;
+        return styles.btnTextOutline;
+    };
+
+    const getActivityIndicatorColor = () => {
+        if (variant === 'primary') return '#FFF';
+        return theme.colors.primary;
+    };
+
+    return (
+        <RNTouchableOpacity
+            onPress={onPress}
+            disabled={loading || disabled}
+            activeOpacity={0.7}
+            style={[styles.button, getButtonStyle(), style]}
+        >
+            {loading ? (
+                <ActivityIndicator color={getActivityIndicatorColor()} />
+            ) : (
+                <View style={[styles.btnContent, { gap: spacing[3] }]}>
+                    {icon && iconPosition === 'left' && icon}
+                    <RNText
+                        style={[
+                            styles.btnText,
+                            getTextStyle(),
+                            textStyle
+                        ]}
+                    >{title}</RNText>
+                    {icon && iconPosition === 'right' && icon}
+                </View>
+            )}
+        </RNTouchableOpacity>
+    );
+};
 
 // --- TABLE ---
 export const Table = ({ headers, data, renderRow, style }: any) => (
@@ -173,7 +194,7 @@ export const Tabs = ({ tabs, activeTab, onTabChange, style }: any) => (
 );
 
 // --- STATS CARD ---
-export const StatsCard = ({ label, value, trend, trendValue, trendColor, style }: any) => (
+export const StatsCard = ({ label, value, trend, trendValue, trendColor, trendLabel, style }: any) => (
     <Card style={[styles.statsCard, style]}>
         <RNText style={styles.statsLabel}>{label}</RNText>
         <RNText style={styles.statsValue}>{value}</RNText>
@@ -182,7 +203,7 @@ export const StatsCard = ({ label, value, trend, trendValue, trendColor, style }
                 <RNText style={[styles.trendValue, { color: trendColor || theme.colors.success }]}>
                     {trendValue}
                 </RNText>
-                <RNText style={styles.trendText}> vs last month</RNText>
+                {trendLabel && <RNText style={styles.trendText}>{trendLabel}</RNText>}
             </View>
         )}
     </Card>
@@ -196,20 +217,22 @@ const styles = StyleSheet.create({
     h4: { fontSize: 18, fontWeight: '600', color: theme.colors.slate[900] },
     subtitle: { fontSize: 16, color: theme.colors.slate[500], lineHeight: 24 },
     text: { fontSize: 14, color: theme.colors.slate[600], lineHeight: 22 },
-    card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.colors.slate[200], overflow: 'hidden' },
+    card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.colors.slate[200], overflow: 'hidden', borderRadius: 0 },
     elevated: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
-    badge: { paddingHorizontal: 10, paddingVertical: s[1], alignSelf: 'flex-start' },
+    badge: { paddingHorizontal: 10, paddingVertical: s[1], alignSelf: 'flex-start', borderRadius: 0 },
     badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-    button: { height: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: s[8] },
+    button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: s[8], minWidth: 120, flexShrink: 0, borderRadius: 0 },
     btnPrimary: { backgroundColor: theme.colors.primary },
     btnOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
-    btnContent: { flexDirection: 'row', alignItems: 'center' },
-    btnText: { fontSize: 13, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1.5 },
+    btnGhost: { backgroundColor: 'transparent', borderWidth: 0 },
+    btnContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
+    btnText: { fontSize: 13, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1.5, flexShrink: 0 },
     btnTextPrimary: { color: '#FFFFFF' },
     btnTextOutline: { color: theme.colors.primary },
+    btnTextGhost: { color: theme.colors.slate[700] },
     inputGroup: { marginBottom: s[4], width: '100%' },
     inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: s[2] },
-    inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: s[4], backgroundColor: '#FFFFFF', justifyContent: 'center' },
+    inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: s[4], backgroundColor: '#FFFFFF', justifyContent: 'center', borderRadius: 0 },
     inputWrapperFocused: { borderColor: theme.colors.primary },
     inputText: { flex: 1, fontSize: 16, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none' } as any,
 

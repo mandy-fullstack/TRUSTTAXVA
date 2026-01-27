@@ -46,8 +46,10 @@ export const ServicesPage = () => {
 
     // Form state
     const [formData, setFormData] = useState({
-        name: '',
-        description: '',
+        nameEn: '',
+        nameEs: '',
+        descriptionEn: '',
+        descriptionEs: '',
         category: '',
         price: 0,
         originalPrice: 0,
@@ -73,8 +75,10 @@ export const ServicesPage = () => {
     const handleCreate = () => {
         setEditingService(null);
         setFormData({
-            name: '',
-            description: '',
+            nameEn: '',
+            nameEs: '',
+            descriptionEn: '',
+            descriptionEs: '',
             category: '',
             price: 0,
             originalPrice: 0,
@@ -88,9 +92,24 @@ export const ServicesPage = () => {
 
     const handleSave = async () => {
         try {
+            if (!formData.nameEn.trim() || !formData.nameEs.trim()) {
+                setAlertDialog({ isOpen: true, title: 'Error', message: 'Service name is required in both English and Spanish', variant: 'error' });
+                return;
+            }
+            if (!formData.descriptionEn.trim() || !formData.descriptionEs.trim()) {
+                setAlertDialog({ isOpen: true, title: 'Error', message: 'Service description is required in both English and Spanish', variant: 'error' });
+                return;
+            }
+
             const data = {
-                name: formData.name,
-                description: formData.description,
+                nameI18n: {
+                    en: formData.nameEn.trim(),
+                    es: formData.nameEs.trim(),
+                },
+                descriptionI18n: {
+                    en: formData.descriptionEn.trim(),
+                    es: formData.descriptionEs.trim(),
+                },
                 category: formData.category,
                 price: Number(formData.price),
                 originalPrice: Number(formData.originalPrice) || undefined,
@@ -261,22 +280,31 @@ export const ServicesPage = () => {
                             </View>
 
                             <ScrollView style={styles.modalForm}>
-                                <Text style={styles.label}>Name *</Text>
+                                <Text style={styles.sectionTitle}>Service Name *</Text>
+                                <Text style={styles.label}>English</Text>
                                 <TextInput
                                     style={styles.input}
-                                    value={formData.name}
-                                    onChangeText={(text) => setFormData({ ...formData, name: text })}
-                                    placeholder="Service name"
+                                    value={formData.nameEn}
+                                    onChangeText={(text) => setFormData({ ...formData, nameEn: text })}
+                                    placeholder="Service name (English)"
+                                />
+                                <Text style={styles.label}>Spanish</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={formData.nameEs}
+                                    onChangeText={(text) => setFormData({ ...formData, nameEs: text })}
+                                    placeholder="Nombre del servicio (Español)"
                                 />
 
-                                <Text style={styles.label}>Category *</Text>
+                                <Text style={styles.sectionTitle}>Category *</Text>
                                 <TextInput
                                     style={styles.input}
                                     value={formData.category}
                                     onChangeText={(text) => setFormData({ ...formData, category: text })}
-                                    placeholder="e.g., Tax, Immigration, Legal"
+                                    placeholder="e.g., TAX, IMMIGRATION, BUSINESS"
                                 />
 
+                                <Text style={styles.sectionTitle}>Pricing</Text>
                                 <Text style={styles.label}>Price *</Text>
                                 <TextInput
                                     style={styles.input}
@@ -295,12 +323,22 @@ export const ServicesPage = () => {
                                     keyboardType="numeric"
                                 />
 
-                                <Text style={styles.label}>Description *</Text>
+                                <Text style={styles.sectionTitle}>Description *</Text>
+                                <Text style={styles.label}>English</Text>
                                 <TextInput
                                     style={[styles.input, styles.textArea]}
-                                    value={formData.description}
-                                    onChangeText={(text) => setFormData({ ...formData, description: text })}
-                                    placeholder="Describe the service..."
+                                    value={formData.descriptionEn}
+                                    onChangeText={(text) => setFormData({ ...formData, descriptionEn: text })}
+                                    placeholder="Describe the service... (English)"
+                                    multiline
+                                    numberOfLines={4}
+                                />
+                                <Text style={styles.label}>Spanish</Text>
+                                <TextInput
+                                    style={[styles.input, styles.textArea]}
+                                    value={formData.descriptionEs}
+                                    onChangeText={(text) => setFormData({ ...formData, descriptionEs: text })}
+                                    placeholder="Describe el servicio... (Español)"
                                     multiline
                                     numberOfLines={4}
                                 />
@@ -410,7 +448,8 @@ const styles = StyleSheet.create({
     modalContent: { backgroundColor: '#FFF', width: '100%', maxWidth: 600, maxHeight: '90%', borderRadius: 0 },
     modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
     modalForm: { padding: 24, maxHeight: 500 },
-    label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 8, marginTop: 16 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#0F172A', marginTop: 16, marginBottom: 12 },
+    label: { fontSize: 14, fontWeight: '600', color: '#1E293B', marginBottom: 8, marginTop: 8 },
     input: { borderWidth: 1, borderColor: '#E2E8F0', padding: 12, fontSize: 16, color: '#0F172A' },
     textArea: { minHeight: 100, textAlignVertical: 'top', fontSize: 16 },
     modalActions: { flexDirection: 'row', gap: 12, padding: 24, borderTopWidth: 1, borderTopColor: '#E2E8F0' },

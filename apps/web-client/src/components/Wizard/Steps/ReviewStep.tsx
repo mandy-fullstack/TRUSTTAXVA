@@ -1,4 +1,5 @@
 import { View, StyleSheet, ScrollView } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { H3, Text, Card, spacing, Spacer, Stack } from '@trusttax/ui';
 import { CheckCircle2, FileText } from 'lucide-react';
 
@@ -9,25 +10,26 @@ interface ReviewStepProps {
 }
 
 export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) => {
+    const { t } = useTranslation();
     return (
         <Stack gap="xl">
             <View>
-                <H3>Review & Submit</H3>
+                <H3>{t('wizard.review_submit')}</H3>
                 <Spacer size="sm" />
-                <Text style={styles.desc}>Please review the information below before creating your order.</Text>
+                <Text style={styles.desc}>{t('wizard.review_description')}</Text>
             </View>
             <ScrollView style={styles.reviewList}>
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Service Details</Text>
+                    <Text style={styles.sectionTitle}>{t('wizard.service_details')}</Text>
                     <Spacer size="sm" />
                     <Card style={styles.card}>
-                        <Text style={styles.label}>Service Type</Text>
+                        <Text style={styles.label}>{t('wizard.service_type')}</Text>
                         <Text style={styles.value}>{serviceName}</Text>
                     </Card>
                 </View>
                 <Spacer size="lg" />
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Intake Information</Text>
+                    <Text style={styles.sectionTitle}>{t('wizard.intake_information')}</Text>
                     <Spacer size="sm" />
                     <Card style={styles.card}>
                         {Object.keys(formData).length > 0 ? (
@@ -38,14 +40,14 @@ export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) 
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.empty}>No information provided</Text>
+                            <Text style={styles.empty}>{t('wizard.no_information')}</Text>
                         )}
                     </Card>
                 </View>
 
                 <Spacer size="lg" />
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Documents</Text>
+                    <Text style={styles.sectionTitle}>{t('wizard.documents')}</Text>
                     <Spacer size="sm" />
                     <Card style={styles.card}>
                         {Object.keys(docData).length > 0 ? (
@@ -57,19 +59,19 @@ export const ReviewStep = ({ formData, docData, serviceName }: ReviewStepProps) 
                                     </View>
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                         <CheckCircle2 size={14} color="#10B981" />
-                                        <Text style={{ color: '#10B981', fontSize: 13 }}>Attached</Text>
+                                        <Text style={{ color: '#10B981', fontSize: 13 }}>{t('wizard.attached')}</Text>
                                     </View>
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.empty}>No documents uploaded</Text>
+                            <Text style={styles.empty}>{t('wizard.no_documents')}</Text>
                         )}
                     </Card>
                 </View>
                 <Spacer size="xl" />
                 <View style={styles.policies}>
                     <Text style={styles.policyText}>
-                        By submitting this order, you agree to our Terms of Service. A TrustTax professional will review your data and create an invoice for the initial deposit.
+                        {t('wizard.policy_text')}
                     </Text>
                 </View>
             </ScrollView>

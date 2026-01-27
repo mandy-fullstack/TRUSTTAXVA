@@ -1,4 +1,5 @@
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { H3, Text, Button, spacing, Spacer, Stack } from '@trusttax/ui';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';
 import type { ServiceDocType } from '../../../types';
@@ -10,6 +11,7 @@ interface DocumentsStepProps {
 }
 
 export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) => {
+    const { t } = useTranslation();
     const handleUploadMock = (docType: string) => {
         // Mock upload — random only when user clicks, not during render
         // eslint-disable-next-line react-hooks/purity -- used in event handler only
@@ -29,9 +31,9 @@ export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) 
     return (
         <Stack gap="xl">
             <View>
-                <H3>Required Documents</H3>
+                <H3>{t('wizard.required_documents')}</H3>
                 <Spacer size="sm" />
-                <Text style={styles.desc}>Please upload the following documents to proceed with your application. All files are securely encrypted.</Text>
+                <Text style={styles.desc}>{t('wizard.documents_description')}</Text>
             </View>
             <View style={styles.list}>
                 {docTypes.map((doc) => {
@@ -49,7 +51,7 @@ export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) 
                                     {file ? (
                                         <Text style={styles.fileName}>{file.fileName}</Text>
                                     ) : (
-                                        <Text style={styles.docStatus}>Pending upload</Text>
+                                        <Text style={styles.docStatus}>{t('wizard.pending_upload')}</Text>
                                     )}
                                 </View>
                             </View>
@@ -60,7 +62,7 @@ export const DocumentsStep = ({ docTypes, data, onChange }: DocumentsStepProps) 
                                 </TouchableOpacity>
                             ) : (
                                 <Button
-                                    title="Upload"
+                                    title={t('wizard.upload')}
                                     variant="outline"
                                     onPress={() => handleUploadMock(doc.docType)}
                                     style={styles.uploadBtn}

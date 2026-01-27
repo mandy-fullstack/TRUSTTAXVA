@@ -5,6 +5,7 @@ import { api } from '../services/api';
 interface CompanyProfile {
     id: string;
     companyName: string;
+    dba: string | null;
     email: string;
     phone: string;
     address: string;

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Layout } from '../Layout';
 import { H3, Text, Card, spacing, Spacer } from '@trusttax/ui';
 import { Check } from 'lucide-react';
@@ -13,6 +14,7 @@ interface WizardLayoutProps {
 }
 
 export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }: WizardLayoutProps) => {
+    const { t } = useTranslation();
     return (
         <Layout>
             <View style={styles.container}>
@@ -20,7 +22,7 @@ export const WizardLayout = ({ title, currentStep, totalSteps, steps, children }
                     <Card elevated style={styles.progressCard}>
                         <H3 style={styles.sidebarTitle}>{title}</H3>
                         <Spacer size="sm" />
-                        <Text style={styles.stepCounter}>Step {currentStep + 1} of {totalSteps}</Text>
+                        <Text style={styles.stepCounter}>{t('wizard.step_counter', { current: currentStep + 1, total: totalSteps })}</Text>
                         <Spacer size="lg" />
                         <View style={styles.stepsList}>
                             {steps.map((step, index) => {

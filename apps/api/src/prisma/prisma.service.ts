@@ -27,8 +27,32 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
         return this.client.taxReturn;
     }
 
+    get orderStepProgress() {
+        return (this.client as any).orderStepProgress;
+    }
+
+    get orderTimeline() {
+        return (this.client as any).orderTimeline;
+    }
+
+    get orderApproval() {
+        return (this.client as any).orderApproval;
+    }
+
+    get conversation() {
+        return (this.client as any).conversation;
+    }
+
+    get message() {
+        return (this.client as any).message;
+    }
+
     get serviceReview() {
         return (this.client as any).serviceReview;
+    }
+
+    get fAQ() {
+        return (this.client as any).fAQ;
     }
 
     async onModuleInit() {

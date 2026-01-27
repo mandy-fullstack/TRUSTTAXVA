@@ -14,7 +14,7 @@ export const Footer = () => {
 
     const navItems = getPublicNav();
 
-    const companyName = profile?.companyName || 'TrustTax';
+    const companyName = profile?.dba || profile?.companyName || 'TrustTax';
     const companyPhone = profile?.phone || '(540) 876-9748';
     const companyEmail = profile?.email || 'contact@trusttax.com';
     const companyAddress = profile?.address || '123 Business Ave, VA';

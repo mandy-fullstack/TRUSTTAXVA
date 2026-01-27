@@ -20,33 +20,33 @@ export const AlertDialog = ({
     variant = 'info',
 }: AlertDialogProps) => {
     const variantConfig = {
-        success: { 
-            icon: CheckCircle, 
-            iconColor: '#10B981', 
-            bg: '#F0FDF4', 
-            border: '#BBF7D0', 
-            buttonBg: '#10B981' 
+        success: {
+            icon: CheckCircle,
+            iconColor: '#10B981',
+            bg: '#F0FDF4',
+            border: '#BBF7D0',
+            buttonBg: '#10B981'
         },
-        error: { 
-            icon: XCircle, 
-            iconColor: '#EF4444', 
-            bg: '#FEF2F2', 
-            border: '#FECACA', 
-            buttonBg: '#EF4444' 
+        error: {
+            icon: XCircle,
+            iconColor: '#EF4444',
+            bg: '#FEF2F2',
+            border: '#FECACA',
+            buttonBg: '#EF4444'
         },
-        warning: { 
-            icon: AlertCircle, 
-            iconColor: '#F59E0B', 
-            bg: '#FFFBEB', 
-            border: '#FDE68A', 
-            buttonBg: '#F59E0B' 
+        warning: {
+            icon: AlertCircle,
+            iconColor: '#F59E0B',
+            bg: '#FFFBEB',
+            border: '#FDE68A',
+            buttonBg: '#F59E0B'
         },
-        info: { 
-            icon: Info, 
-            iconColor: '#2563EB', 
-            bg: '#EFF6FF', 
-            border: '#BFDBFE', 
-            buttonBg: '#2563EB' 
+        info: {
+            icon: Info,
+            iconColor: '#2563EB',
+            bg: '#EFF6FF',
+            border: '#BFDBFE',
+            buttonBg: '#2563EB'
         },
     };
 
@@ -105,6 +105,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+        zIndex: 9999,
+        elevation: 9999,
     },
     dialog: {
         width: '100%',
