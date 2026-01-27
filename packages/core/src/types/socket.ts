@@ -19,6 +19,7 @@ export interface ServerToClientEvents {
     newMessage: (message: any) => void;
     userTyping: (data: { userId: string; userName?: string; isTyping: boolean; conversationId: string }) => void;
     messagesRead: (data: { conversationId: string; userId: string }) => void;
+    messagesDelivered: (data: { conversationId: string; userId: string }) => void;
     error: (error: { message: string }) => void;
     notification: (notification: any) => void; // TODO: Define strict Notification payload
     profile_completed: (data: { userId: string; completedAt: Date }) => void;
@@ -30,4 +31,5 @@ export interface ClientToServerEvents {
     sendMessage: (payload: SendMessagePayload) => void;
     typing: (payload: TypingPayload) => void;
     markAsRead: (payload: { conversationId: string }) => void;
+    markAsDelivered: (payload: { conversationId: string }) => void;
 }

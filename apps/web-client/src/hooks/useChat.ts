@@ -39,6 +39,7 @@ export const useChat = (conversationId: string | null | undefined) => {
     const markAsRead = useCallback(() => {
         if (conversationId && isConnected) {
             socket.emit('markAsRead', { conversationId });
+            socket.emit('markAsDelivered', { conversationId });
         }
     }, [conversationId, isConnected, socket]);
 
@@ -88,7 +89,17 @@ export const useChat = (conversationId: string | null | undefined) => {
             if (data.conversationId === conversationId) {
                 setMessages(prev => prev.map(msg => ({
                     ...msg,
-                    isRead: msg.senderId === data.userId ? true : msg.isRead
+                    isRead: msg.senderId !== data.userId ? true : msg.isRead,
+                    isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
+                })));
+            }
+        };
+
+        const handleMessagesDelivered = (data: any) => {
+            if (data.conversationId === conversationId) {
+                setMessages(prev => prev.map(msg => ({
+                    ...msg,
+                    isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
                 })));
             }
         };
@@ -96,11 +107,13 @@ export const useChat = (conversationId: string | null | undefined) => {
         socket.on('newMessage', handleNewMessage);
         socket.on('userTyping', handleUserTyping);
         socket.on('messagesRead', handleMessagesRead);
+        socket.on('messagesDelivered', handleMessagesDelivered);
 
         return () => {
             socket.off('newMessage', handleNewMessage);
             socket.off('userTyping', handleUserTyping);
             socket.off('messagesRead', handleMessagesRead);
+            socket.off('messagesDelivered', handleMessagesDelivered);
         };
     }, [conversationId, isConnected, socket, user?.id, fetchMessages, markAsRead]);
 

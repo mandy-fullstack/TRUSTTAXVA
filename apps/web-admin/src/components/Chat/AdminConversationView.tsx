@@ -74,8 +74,10 @@ export const AdminConversationView = ({
                                         </Text>
                                         {isMine && (
                                             msg.isRead ?
-                                                <CheckCheck size={14} color="rgba(255,255,255,0.9)" /> :
-                                                <Check size={14} color="rgba(255,255,255,0.6)" />
+                                                <CheckCheck size={14} color="#22C55E" /> :
+                                                msg.isDelivered ?
+                                                    <CheckCheck size={14} color="rgba(255,255,255,0.6)" /> :
+                                                    <Check size={14} color="rgba(255,255,255,0.6)" />
                                         )}
                                     </View>
                                 </View>

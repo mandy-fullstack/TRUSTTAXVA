@@ -176,7 +176,22 @@ export class ChatService {
                 isRead: false
             },
             data: {
-                isRead: true
+                isRead: true,
+                isDelivered: true // If read, it's definitely delivered
+            }
+        });
+    }
+
+    async markMessagesAsDelivered(conversationId: string, userId: string) {
+        // Mark all messages in this conversation where the sender IS NOT the current user as delivered
+        return this.prisma.message.updateMany({
+            where: {
+                conversationId,
+                senderId: { not: userId },
+                isDelivered: false
+            },
+            data: {
+                isDelivered: true
             }
         });
     }

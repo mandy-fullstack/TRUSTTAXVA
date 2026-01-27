@@ -115,4 +115,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             userId: user.sub
         });
     }
+
+    @SubscribeMessage('markAsDelivered')
+    async handleMarkAsDelivered(
+        @ConnectedSocket() client: Socket,
+        @MessageBody() payload: { conversationId: string }
+    ) {
+        const user = client.data.user;
+        if (!user) return;
+
+        // Mark messages as delivered in database
+        await this.chatService.markMessagesAsDelivered(payload.conversationId, user.sub);
+
+        // Emit to conversation room that messages were delivered
+        this.server.to(`conversation_${payload.conversationId}`).emit('messagesDelivered', {
+            conversationId: payload.conversationId,
+            userId: user.sub
+        });
+    }
 }

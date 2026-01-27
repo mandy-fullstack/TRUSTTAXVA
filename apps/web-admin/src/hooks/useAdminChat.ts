@@ -29,6 +29,7 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
 
             // Mark as read when entering
             socket.emit('markAsRead', { conversationId });
+            socket.emit('markAsDelivered', { conversationId });
 
             const handleNewMessage = (msg: any) => {
                 if (msg.conversationId === conversationId) {
@@ -36,8 +37,9 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
                         if (prev.some(m => m.id === msg.id)) return prev;
                         return [...prev, msg];
                     });
-                    // Auto-mark as read
+                    // Auto-mark as read and delivered
                     socket.emit('markAsRead', { conversationId });
+                    socket.emit('markAsDelivered', { conversationId });
                 }
             };
 
@@ -47,7 +49,19 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
                 if (data.conversationId === conversationId) {
                     setMessages(prev => prev.map(msg => ({
                         ...msg,
-                        isRead: msg.senderId === data.userId ? true : msg.isRead
+                        // If messages were read by the OTHER user, mark my sent messages as read
+                        isRead: msg.senderId !== data.userId ? true : msg.isRead,
+                        isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
+                    })));
+                }
+            });
+
+            socket.on('messagesDelivered', (data: any) => {
+                if (data.conversationId === conversationId) {
+                    setMessages(prev => prev.map(msg => ({
+                        ...msg,
+                        // If messages were delivered to the OTHER user, mark my sent messages as delivered
+                        isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
                     })));
                 }
             });
@@ -55,6 +69,7 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
             return () => {
                 socket.off('newMessage', handleNewMessage);
                 socket.off('messagesRead');
+                socket.off('messagesDelivered');
             };
         } else {
             setMessages([]);
