@@ -1,70 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import { api } from '../../services/api';
 import { H4, Text } from '@trusttax/ui';
-import { MessageCircle, Send, Search, ArrowLeft, User, Trash2, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Search, ArrowLeft, Trash2 } from 'lucide-react';
 
-import { useSocket } from '../../hooks/useSocket';
+import { useAuth } from '../../context/AuthContext';
 import { getCategoryColor, getCategoryLabel } from '../../utils/conversationColors';
+import { useAdminChat } from '../../hooks/useAdminChat';
+import { AdminConversationView } from '../../components/Chat/AdminConversationView';
 
 export const AdminChatPage = () => {
     const { id: paramId } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [messages, setMessages] = useState<any[]>([]);
-    const [loadingMessages, setLoadingMessages] = useState(false);
-    const [inputText, setInputText] = useState('');
-    const [sending, setSending] = useState(false);
-    const messagesEndRef = useRef<any>(null);
-    const [user, setUser] = useState<any>(null);
-    const [isTyping, setIsTyping] = useState(false);
-    const [isOtherTyping, setIsOtherTyping] = useState(false);
-    const typingTimeoutRef = useRef<any>(null);
 
-    // Use Professional Socket Hook
-    const { socket, isConnected: socketConnected } = useSocket(paramId ? `conversation_${paramId}` : undefined);
+    const {
+        messages,
+        loading: loadingMessages,
+        sendMessage,
+        handleTyping,
+        isOtherTyping,
+        setIsOtherTyping,
+        socket
+    } = useAdminChat(paramId);
 
     useEffect(() => {
         fetchConversations();
-        api.getMe().then(setUser).catch(console.error);
     }, []);
 
-    // Load messages when paramId changes
+    // Sync other typing state via socket
     useEffect(() => {
-        if (paramId) {
-            fetchMessages(paramId);
+        if (!socket || !paramId) return;
 
-            // Listen for new messages
-            const handleNewMessage = (msg: any) => {
-                if (msg.conversationId === paramId) {
-                    setMessages(prev => {
-                        if (prev.some(m => m.id === msg.id)) return prev;
-                        return [...prev, msg];
-                    });
-                    scrollToBottom();
-                }
-            };
+        socket.on('userTyping', (data: any) => {
+            if (data.conversationId === paramId && data.userId !== user?.id) {
+                setIsOtherTyping(data.isTyping);
+            }
+        });
 
-            const handleUserTyping = (data: any) => {
-                if (data.conversationId === paramId && data.userId !== user?.id) {
-                    setIsOtherTyping(data.isTyping);
-                }
-            };
-
-            socket.on('newMessage', handleNewMessage);
-            socket.on('userTyping', handleUserTyping);
-
-            return () => {
-                socket.off('newMessage', handleNewMessage);
-                socket.off('userTyping', handleUserTyping);
-            };
-        } else {
-            setMessages([]);
-        }
-    }, [paramId, user, socket]);
+        return () => {
+            socket.off('userTyping');
+        };
+    }, [socket, paramId, user, setIsOtherTyping]);
 
     const fetchConversations = async () => {
         try {
@@ -78,19 +59,6 @@ export const AdminChatPage = () => {
         }
     };
 
-    const fetchMessages = async (id: string) => {
-        try {
-            setLoadingMessages(true);
-            const data = await api.getConversation(id);
-            setMessages(data.messages || []);
-            scrollToBottom();
-        } catch (error) {
-            console.error('Failed to fetch messages:', error);
-        } finally {
-            setLoadingMessages(false);
-        }
-    };
-
     const handleDeleteConversation = async (id: string, e: any) => {
         e.stopPropagation();
         if (window.confirm("Are you sure you want to delete this conversation?")) {
@@ -99,41 +67,9 @@ export const AdminChatPage = () => {
                 setConversations(conversations.filter(c => c.id !== id));
                 if (paramId === id) navigate('/chat');
             } catch (error) {
-                console.error("Failed to delete conversation:", error);
+                console.error('Failed to delete conversation:', error);
             }
         }
-    };
-
-    const handleSend = async () => {
-        if (!paramId || !inputText.trim()) return;
-        try {
-            setSending(true);
-            const sentMsg = await api.sendMessage(paramId, inputText);
-            setInputText('');
-
-            // Optimistic Update
-            setMessages(prev => {
-                if (prev.some(m => m.id === sentMsg.id)) return prev;
-                return [...prev, sentMsg];
-            });
-            scrollToBottom();
-
-            fetchConversations();
-            fetchConversations();
-        } catch (error) {
-            console.error('Failed to send message:', error);
-            setInputText(inputText); // Restore text so user can try again
-        } finally {
-            setSending(false);
-        }
-    };
-
-    const scrollToBottom = () => {
-        setTimeout(() => {
-            if (messagesEndRef.current) {
-                messagesEndRef.current.scrollToEnd({ animated: true });
-            }
-        }, 100);
     };
 
     const currentConversation = conversations.find(c => c.id === paramId);
@@ -141,12 +77,12 @@ export const AdminChatPage = () => {
     return (
         <Layout>
             <View style={styles.container}>
-                {/* Sidebar List */}
-                <View style={[styles.sidebar, paramId && styles.sidebarHiddenOnMobile]}>
+                {/* Conversations Sidebar */}
+                <View style={[styles.sidebar, paramId ? styles.sidebarHiddenOnMobile : null]}>
                     <View style={styles.sidebarHeader}>
                         <H4>Inbox</H4>
-                        {/* Admin typically doesn't start generic chat? Or maybe they do. */}
                     </View>
+
                     <View style={styles.searchContainer}>
                         <Search size={16} color="#94A3B8" />
                         <TextInput
@@ -155,54 +91,41 @@ export const AdminChatPage = () => {
                             placeholderTextColor="#94A3B8"
                         />
                     </View>
+
                     <ScrollView style={styles.conversationList}>
-                        {loading ? (
+                        {loading && conversations.length === 0 ? (
                             <ActivityIndicator color="#0F172A" style={{ marginTop: 20 }} />
                         ) : (
-                            conversations.map(conv => {
-                                const colors = getCategoryColor(conv.category);
-                                return (
-                                    <TouchableOpacity
-                                        key={conv.id}
-                                        style={[
-                                            styles.convItem,
-                                            paramId === conv.id && styles.convItemActive,
-                                            {
-                                                backgroundColor: colors.bg,
-                                                borderLeftWidth: 4,
-                                                borderLeftColor: colors.border
-                                            }
-                                        ]}
-                                        onPress={() => {
-                                            navigate(`/chat/${conv.id}`);
-                                        }}
-                                    >
-                                        <View style={styles.avatar}>
-                                            <Text style={styles.avatarText}>{(conv.client?.name || 'C')[0]}</Text>
+                            conversations.map((conv) => (
+                                <TouchableOpacity
+                                    key={conv.id}
+                                    style={[styles.convItem, paramId === conv.id && styles.convItemActive]}
+                                    onPress={() => navigate(`/chat/${conv.id}`)}
+                                >
+                                    <View style={styles.avatar}>
+                                        <Text style={styles.avatarText}>{(conv.client?.name || 'C')[0]}</Text>
+                                    </View>
+                                    <View style={styles.convInfo}>
+                                        <View style={styles.convHeader}>
+                                            <Text style={styles.convName} numberOfLines={1}>{conv.client?.name || 'Unknown'}</Text>
+                                            <Text style={styles.convTime}>{new Date(conv.updatedAt).toLocaleDateString()}</Text>
                                         </View>
-                                        <View style={styles.convInfo}>
-                                            <View style={styles.convHeader}>
-                                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                                                    <View style={[styles.categoryBadge, { backgroundColor: colors.border }]}>
-                                                        <Text style={styles.categoryText}>{getCategoryLabel(conv.category)}</Text>
-                                                    </View>
-                                                    <Text style={[styles.convName, { color: colors.text }]} numberOfLines={1}>
-                                                        {conv.client?.name || 'Unknown Client'}
-                                                    </Text>
-                                                </View>
-                                                <Text style={styles.convTime}>{new Date(conv.updatedAt).toLocaleDateString()}</Text>
+                                        <Text style={styles.convSubject} numberOfLines={1}>{conv.subject}</Text>
+                                        <Text style={styles.convPreview} numberOfLines={1}>
+                                            {conv.messages?.[0]?.content || 'No messages'}
+                                        </Text>
+
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+                                            <View style={[styles.categoryBadge, { backgroundColor: getCategoryColor(conv.category).border }]}>
+                                                <Text style={styles.categoryText}>{getCategoryLabel(conv.category)}</Text>
                                             </View>
-                                            <Text style={styles.convSubject} numberOfLines={1}>{conv.subject}</Text>
-                                            <Text style={styles.convPreview} numberOfLines={1}>
-                                                {conv.messages?.[0]?.content || 'No messages'}
-                                            </Text>
+                                            <TouchableOpacity onPress={(e) => handleDeleteConversation(conv.id, e)}>
+                                                <Trash2 size={14} color="#94A3B8" />
+                                            </TouchableOpacity>
                                         </View>
-                                        <TouchableOpacity onPress={(e) => handleDeleteConversation(conv.id, e)} style={{ padding: 8 }}>
-                                            <Trash2 size={16} color="#94A3B8" />
-                                        </TouchableOpacity>
-                                    </TouchableOpacity>
-                                );
-                            })
+                                    </View>
+                                </TouchableOpacity>
+                            ))
                         )}
                         {!loading && conversations.length === 0 && (
                             <View style={styles.emptyState}>
@@ -213,109 +136,35 @@ export const AdminChatPage = () => {
                     </ScrollView>
                 </View>
 
-                {/* Chat Details Area */}
-                <View style={[styles.chatArea, !paramId && styles.chatAreaHiddenOnMobile]}>
+                {/* Chat Area */}
+                <View style={[styles.chatArea, !paramId ? styles.chatAreaHiddenOnMobile : null]}>
                     {paramId ? (
                         <>
                             <View style={styles.chatHeader}>
-                                <TouchableOpacity style={styles.mobileBackBtn} onPress={() => navigate('/chat')}>
-                                    <ArrowLeft size={20} color="#64748B" />
-                                </TouchableOpacity>
+                                {Platform.OS === 'web' && (
+                                    <TouchableOpacity style={styles.mobileBackBtn} onPress={() => navigate('/chat')}>
+                                        <ArrowLeft size={20} color="#64748B" />
+                                    </TouchableOpacity>
+                                )}
                                 <View style={styles.avatarSmall}>
-                                    <User size={16} color="#FFF" />
+                                    <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>
+                                        {(currentConversation?.client?.name || 'C')[0]}
+                                    </Text>
                                 </View>
                                 <View>
                                     <Text style={styles.chatHeaderTitle}>{currentConversation?.client?.name || 'Client'}</Text>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: socketConnected ? '#22C55E' : '#EF4444' }} />
-                                        <Text style={styles.chatHeaderSubtitle}>{socketConnected ? 'Online' : 'Reconnecting...'}</Text>
-                                    </View>
+                                    <Text style={styles.chatHeaderSubtitle}>{currentConversation?.subject}</Text>
                                 </View>
                             </View>
 
-                            <ScrollView
-                                style={styles.messagesList}
-                                contentContainerStyle={{ padding: 16, gap: 16 }}
-                                ref={messagesEndRef}
-                            >
-                                {loadingMessages ? (
-                                    <ActivityIndicator color="#0F172A" style={{ marginTop: 20 }} />
-                                ) : (
-                                    messages.map((msg) => {
-                                        const isMine = msg.sender?.id === user?.id || msg.sender?.role !== 'CLIENT';
-
-                                        return (
-                                            <View key={msg.id} style={[styles.messageRow, isMine ? styles.rowRight : styles.rowLeft]}>
-                                                {!isMine && (
-                                                    <View style={styles.msgAvatar}>
-                                                        <Text style={{ fontSize: 10, color: '#FFF' }}>C</Text>
-                                                    </View>
-                                                )}
-                                                <View style={[styles.messageBubble, isMine ? styles.bubbleRight : styles.bubbleLeft]}>
-                                                    <Text style={[styles.messageText, isMine ? styles.textWhite : styles.textDark]}>{msg.content}</Text>
-                                                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4, gap: 4 }}>
-                                                        <Text style={[styles.messageTime, isMine ? styles.timeWhite : styles.timeDark, { marginTop: 0 }]}>
-                                                            {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </Text>
-                                                        {isMine && (
-                                                            msg.isRead ?
-                                                                <CheckCheck size={14} color="#FFF" /> :
-                                                                <Check size={14} color="rgba(255,255,255,0.7)" />
-                                                        )}
-                                                    </View>
-                                                </View>
-                                            </View>
-                                        );
-                                    })
-                                )}
-                                {isOtherTyping && (
-                                    <View style={[styles.messageRow, styles.rowLeft]}>
-                                        <View style={[styles.msgAvatar, { backgroundColor: 'transparent' }]} />
-                                        <View style={[styles.messageBubble, styles.bubbleLeft, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 14 }]}>
-                                            <View style={[styles.dot, { opacity: 0.6 }]} />
-                                            <View style={[styles.dot, { opacity: 0.6 }]} />
-                                            <View style={[styles.dot, { opacity: 0.6 }]} />
-                                        </View>
-                                    </View>
-                                )}
-                            </ScrollView>
-
-                            <View style={styles.inputArea}>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Type a message..."
-                                    value={inputText}
-                                    onChangeText={(text) => {
-                                        setInputText(text);
-
-                                        if (!isTyping && paramId) {
-                                            setIsTyping(true);
-                                            socket.emit('typing', { conversationId: paramId, isTyping: true });
-                                        }
-
-                                        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-                                        typingTimeoutRef.current = setTimeout(() => {
-                                            setIsTyping(false);
-                                            if (paramId) socket.emit('typing', { conversationId: paramId, isTyping: false });
-                                        }, 1500);
-                                    }}
-                                    multiline
-                                    onKeyPress={(e: any) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSend();
-                                        }
-                                    }}
-                                />
-                                <TouchableOpacity
-                                    style={[styles.sendBtn, (!inputText.trim() || sending) && styles.sendBtnDisabled]}
-                                    onPress={handleSend}
-                                    disabled={!inputText.trim() || sending}
-                                >
-                                    {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Send size={20} color="#FFF" />}
-                                </TouchableOpacity>
-                            </View>
+                            <AdminConversationView
+                                messages={messages}
+                                loading={loadingMessages}
+                                onSendMessage={sendMessage}
+                                onTyping={handleTyping}
+                                isOtherTyping={isOtherTyping}
+                                user={user}
+                            />
                         </>
                     ) : (
                         <View style={styles.noChatSelected}>
@@ -331,14 +180,11 @@ export const AdminChatPage = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' as any : '100%', backgroundColor: '#F8FAFC' },
-
-    // Sidebar
     sidebar: { width: 360, borderRightWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', display: 'flex', flexDirection: 'column', height: '100%' },
     sidebarHiddenOnMobile: {
-        display: 'none',
-        '@media (min-width: 768px)': { display: 'flex' }
+        display: Platform.OS === 'web' ? 'none' : 'flex',
+        '@media (max-width: 768px)': { display: 'none' }
     } as any,
-
     sidebarHeader: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
     searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', margin: 16, paddingHorizontal: 12, borderRadius: 8, height: 40, borderWidth: 1, borderColor: '#E2E8F0' },
     searchInput: { flex: 1, marginLeft: 8, fontSize: 14, outlineStyle: 'none' } as any,
@@ -353,53 +199,17 @@ const styles = StyleSheet.create({
     convTime: { fontSize: 11, color: '#94A3B8' },
     convSubject: { fontSize: 13, color: '#475569', fontWeight: '500', marginBottom: 2 },
     convPreview: { fontSize: 13, color: '#64748B' },
-    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
-    emptyText: { color: '#94A3B8', fontSize: 14 },
-
-    // Chat Area
     chatArea: { flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC', height: '100%' },
-    chatAreaHiddenOnMobile: {
-        display: 'none',
-    } as any,
-
+    chatAreaHiddenOnMobile: { display: Platform.OS === 'web' ? 'none' : 'flex', '@media (max-width: 768px)': { display: 'none' } } as any,
     chatHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
     mobileBackBtn: { marginRight: 12, padding: 4 },
     avatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     chatHeaderTitle: { fontWeight: '700', color: '#0F172A', fontSize: 15 },
     chatHeaderSubtitle: { fontSize: 12, color: '#64748B' },
-
-    messagesList: { flex: 1 },
-    messageRow: { flexDirection: 'row', marginBottom: 4, maxWidth: '80%' },
-    rowLeft: { alignSelf: 'flex-start' },
-    rowRight: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-    msgAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#94A3B8', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 'auto' },
-    messageBubble: { padding: 12, borderRadius: 16, maxWidth: '100%' },
-    bubbleLeft: { backgroundColor: '#FFF', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: '#E2E8F0' },
-    bubbleRight: { backgroundColor: '#0F172A', borderBottomRightRadius: 4 },
-    messageText: { fontSize: 14, lineHeight: 20 },
-    textWhite: { color: '#FFF' },
-    textDark: { color: '#1E293B' },
-    messageTime: { fontSize: 10, marginTop: 4, alignSelf: 'flex-end' },
-    timeWhite: { color: 'rgba(255,255,255,0.7)' },
-    timeDark: { color: '#94A3B8' },
-
-    inputArea: { padding: 16, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 12, minHeight: 72 },
-    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
-    sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
-    sendBtnDisabled: { backgroundColor: '#94A3B8' },
-
     noChatSelected: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
     selectChatText: { color: '#64748B', fontSize: 16, fontWeight: '500' },
-    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8' },
-    categoryBadge: {
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        borderRadius: 3
-    },
-    categoryText: {
-        fontSize: 10,
-        fontWeight: '600',
-        color: '#FFF',
-        textTransform: 'uppercase'
-    }
+    categoryBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
+    categoryText: { fontSize: 10, fontWeight: '600', color: '#FFF', textTransform: 'uppercase' },
+    emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 16 },
+    emptyText: { color: '#94A3B8', fontSize: 14 },
 });

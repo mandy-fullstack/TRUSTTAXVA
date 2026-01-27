@@ -61,6 +61,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const isMobile = width < MOBILE_BREAKPOINT;
+  const isChatRoute = location.pathname.startsWith('/chat');
+
+  // Close chat widget if navigating to full chat page
+  useEffect(() => {
+    if (isChatRoute && isChatOpen) {
+      setIsChatOpen(false);
+    }
+  }, [isChatRoute, isChatOpen]);
 
   const isActive = (item: typeof navItems[number]) => {
     if (item.match === 'startsWith') return location.pathname.startsWith(item.path);
@@ -147,14 +155,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <View style={[styles.main, isMobile && styles.mainMobile]}>
         <View style={styles.contentRow}>
           <ScrollView
-            style={[styles.contentScroll, isChatOpen && !isMobile && { marginRight: 0 }]}
+            style={[styles.contentScroll]}
             contentContainerStyle={styles.contentInner}
           >
             {children}
           </ScrollView>
 
           {/* Chat Panel */}
-          {isChatOpen && (
+          {!isChatRoute && isChatOpen && (
             <View style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}>
               <ChatWidget onClose={() => setIsChatOpen(false)} />
             </View>
@@ -162,7 +170,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </View>
 
         {/* Floating Chat Button */}
-        {!isChatOpen && (
+        {!isChatRoute && !isChatOpen && (
           <TouchableOpacity
             style={styles.floatingChatBtn}
             onPress={() => setIsChatOpen(true)}
@@ -332,7 +340,7 @@ const styles = StyleSheet.create({
     right: 32,
     width: 56,
     height: 56,
-    borderRadius: 0, // Round
+    borderRadius: 28,
     backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',

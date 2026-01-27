@@ -51,6 +51,14 @@ export const Layout = ({ children }: LayoutProps) => {
     const isActive = (path: string) => location.pathname === path;
     const navItems = getDashboardNav(location);
 
+    const isChatPage = location.pathname.startsWith('/dashboard/chat');
+
+    // Automatically close floating chat when navigating to full chat page
+    useEffect(() => {
+        if (isChatPage && isChatOpen) {
+            setIsChatOpen(false);
+        }
+    }, [isChatPage, isChatOpen]);
     // ... (existing effects remain same) ...
     // Note: Since I am replacing the whole function body or parts, I need to be careful with "..."
     // I will use multi-replace or careful single replace.
@@ -546,7 +554,7 @@ export const Layout = ({ children }: LayoutProps) => {
                     </ScrollView>
 
                     {/* Chat Panel - Desktop */}
-                    {isAuthenticated && isChatOpen && (
+                    {isAuthenticated && isChatOpen && !isChatPage && (
                         <View style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}>
                             <ChatWidget onClose={() => setIsChatOpen(false)} />
                         </View>
@@ -554,7 +562,7 @@ export const Layout = ({ children }: LayoutProps) => {
                 </View>
 
                 {/* Floating Chat Button */}
-                {isAuthenticated && !isChatOpen && (
+                {isAuthenticated && !isChatOpen && !isChatPage && (
                     <TouchableOpacity
                         style={styles.floatingChatBtn}
                         onPress={() => setIsChatOpen(true)}
