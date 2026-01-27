@@ -22,10 +22,11 @@ const iconMap: Record<string, LucideIcon> = {
 
 interface LayoutProps {
     children: React.ReactNode;
+    noScroll?: boolean;
 }
 
 
-export const Layout = ({ children }: LayoutProps) => {
+export const Layout = ({ children, noScroll = false }: LayoutProps) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { width } = useWindowDimensions();
@@ -539,19 +540,25 @@ export const Layout = ({ children }: LayoutProps) => {
                 )}
 
                 <View style={[styles.contentRow, { flex: 1 }]}>
-                    <ScrollView style={[styles.contentScroll, isChatOpen && !isMobile && { marginRight: 0 }]} contentContainerStyle={styles.contentInner}>
-                        <View
-                            id="main-content"
-                            style={styles.mainContent}
-                            tabIndex={-1}
-                            {...(Platform.OS === 'web' ? {
-                                // @ts-ignore - web-specific props
-                                onFocus: (e: any) => e.target.style.outline = 'none',
-                            } : {})}
-                        >
+                    {noScroll ? (
+                        <View id="main-content" style={[styles.mainContent, { flex: 1 }]}>
                             {children}
                         </View>
-                    </ScrollView>
+                    ) : (
+                        <ScrollView style={[styles.contentScroll, isChatOpen && !isMobile && { marginRight: 0 }]} contentContainerStyle={styles.contentInner}>
+                            <View
+                                id="main-content"
+                                style={styles.mainContent}
+                                tabIndex={-1}
+                                {...(Platform.OS === 'web' ? {
+                                    // @ts-ignore - web-specific props
+                                    onFocus: (e: any) => e.target.style.outline = 'none',
+                                } : {})}
+                            >
+                                {children}
+                            </View>
+                        </ScrollView>
+                    )}
 
                     {/* Chat Panel - Desktop */}
                     {isAuthenticated && isChatOpen && !isChatPage && (

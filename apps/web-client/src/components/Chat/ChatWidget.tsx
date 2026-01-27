@@ -321,11 +321,11 @@ const styles = StyleSheet.create({
     // Misc
     // Misc
     sectionTitle: { fontSize: 12, fontWeight: '600', color: '#64748B', marginBottom: 8, paddingHorizontal: 4 },
-    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8' },
+    dot: { width: 6, height: 6, borderRadius: 0, backgroundColor: '#94A3B8' },
     categoryBadge: {
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 3
+        borderRadius: 0
     },
     categoryText: {
         fontSize: 10,

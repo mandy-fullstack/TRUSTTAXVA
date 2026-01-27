@@ -65,7 +65,6 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
         if (!conversationId) return;
         try {
             const newMessage = await api.sendMessage(conversationId, content);
-            setMessages(prev => [...prev, newMessage]);
             return newMessage;
         } catch (error) {
             console.error('Failed to send message', error);

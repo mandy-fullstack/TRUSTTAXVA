@@ -52,7 +52,7 @@ function NavItem({
   );
 }
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export function Layout({ children, noScroll = false }: { children: React.ReactNode, noScroll?: boolean }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -154,12 +154,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <View style={[styles.main, isMobile && styles.mainMobile]}>
         <View style={styles.contentRow}>
-          <ScrollView
-            style={[styles.contentScroll]}
-            contentContainerStyle={styles.contentInner}
-          >
-            {children}
-          </ScrollView>
+          {noScroll ? (
+            <View style={{ flex: 1 }}>{children}</View>
+          ) : (
+            <ScrollView
+              style={[styles.contentScroll]}
+              contentContainerStyle={styles.contentInner}
+            >
+              {children}
+            </ScrollView>
+          )}
 
           {/* Chat Panel */}
           {!isChatRoute && isChatOpen && (
@@ -340,7 +344,7 @@ const styles = StyleSheet.create({
     right: 32,
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: 0,
     backgroundColor: '#0F172A',
     alignItems: 'center',
     justifyContent: 'center',

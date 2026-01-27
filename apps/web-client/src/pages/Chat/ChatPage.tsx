@@ -60,7 +60,7 @@ export const ChatPage = () => {
     const currentConversation = conversations.find(c => c.id === paramId);
 
     return (
-        <Layout>
+        <Layout noScroll={true}>
             <View style={styles.container}>
                 {/* Sidebar List */}
                 <View style={[styles.sidebar, paramId && styles.sidebarHiddenOnMobile]}>
@@ -164,23 +164,22 @@ export const ChatPage = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' as any : '100%', backgroundColor: '#F8FAFC' },
+    container: { flex: 1, flexDirection: 'row', backgroundColor: '#F8FAFC' },
 
     // Sidebar
     sidebar: { width: 360, borderRightWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', display: 'flex', flexDirection: 'column', height: '100%' },
     sidebarHiddenOnMobile: {
         display: 'none',
-        // '@media (min-width: 768px)': { display: 'flex' }
     } as any,
 
     sidebarHeader: { padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-    iconBtn: { padding: 8, borderRadius: 20, backgroundColor: '#F1F5F9' },
-    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', margin: 16, paddingHorizontal: 12, borderRadius: 8, height: 40, borderWidth: 1, borderColor: '#E2E8F0' },
+    iconBtn: { padding: 8, borderRadius: 0, backgroundColor: '#F1F5F9' },
+    searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', margin: 16, paddingHorizontal: 12, borderRadius: 0, height: 40, borderWidth: 1, borderColor: '#E2E8F0' },
     searchInput: { flex: 1, marginLeft: 8, fontSize: 14, outlineStyle: 'none' } as any,
     conversationList: { flex: 1 },
     convItem: { flexDirection: 'row', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
     convItemActive: { backgroundColor: '#EFF6FF', borderLeftWidth: 3, borderLeftColor: '#2563EB' },
-    avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    avatar: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     avatarText: { color: '#4F46E5', fontWeight: 'bold' },
     convInfo: { flex: 1 },
     convHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
@@ -198,7 +197,7 @@ const styles = StyleSheet.create({
 
     chatHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
     mobileBackBtn: { marginRight: 12, padding: 4 },
-    avatarSmall: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    avatarSmall: { width: 32, height: 32, borderRadius: 0, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
     chatHeaderTitle: { fontWeight: '700', color: '#0F172A', fontSize: 15 },
     chatHeaderSubtitle: { fontSize: 12, color: '#64748B' },
 
@@ -206,10 +205,10 @@ const styles = StyleSheet.create({
     messageRow: { flexDirection: 'row', marginBottom: 4, maxWidth: '80%' },
     rowLeft: { alignSelf: 'flex-start' },
     rowRight: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-    msgAvatar: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#94A3B8', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 'auto' },
-    messageBubble: { padding: 12, borderRadius: 16, maxWidth: '100%' },
-    bubbleLeft: { backgroundColor: '#FFF', borderBottomLeftRadius: 4 },
-    bubbleRight: { backgroundColor: '#2563EB', borderBottomRightRadius: 4 },
+    msgAvatar: { width: 24, height: 24, borderRadius: 0, backgroundColor: '#94A3B8', alignItems: 'center', justifyContent: 'center', marginRight: 8, marginTop: 'auto' },
+    messageBubble: { padding: 12, borderRadius: 0, maxWidth: '100%' },
+    bubbleLeft: { backgroundColor: '#FFF', borderBottomLeftRadius: 0 },
+    bubbleRight: { backgroundColor: '#2563EB', borderBottomRightRadius: 0 },
     messageText: { fontSize: 14, lineHeight: 20 },
     textWhite: { color: '#FFF' },
     textDark: { color: '#1E293B' },
@@ -218,11 +217,11 @@ const styles = StyleSheet.create({
     timeDark: { color: '#94A3B8' },
 
     inputArea: { padding: 16, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 12, minHeight: 72 },
-    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
-    sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center' },
+    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
+    sendBtn: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center' },
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
 
     noChatSelected: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
     selectChatText: { color: '#64748B', fontSize: 16, fontWeight: '500' },
-    dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#94A3B8' }
+    dot: { width: 6, height: 6, borderRadius: 0, backgroundColor: '#94A3B8' }
 });
