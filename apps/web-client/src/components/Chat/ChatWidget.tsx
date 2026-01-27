@@ -70,10 +70,10 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
 
             const handleMessagesRead = (data: any) => {
                 if (data.conversationId === selectedId) {
-                    // Update messages to mark them as read
+                    // ONLY mark messages as read if they were sent by the user who read them
                     setMessages(prev => prev.map(msg => ({
                         ...msg,
-                        isRead: msg.sender?.id !== user?.id ? msg.isRead : true
+                        isRead: msg.senderId === data.userId ? true : msg.isRead
                     })));
                 }
             };

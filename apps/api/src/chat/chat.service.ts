@@ -178,4 +178,20 @@ export class ChatService {
             }
         });
     }
+
+    async getUnreadMessageCount(userId: string) {
+        const count = await this.prisma.message.count({
+            where: {
+                senderId: { not: userId },
+                isRead: false,
+                conversation: {
+                    OR: [
+                        { clientId: userId },
+                        { preparerId: userId }
+                    ]
+                }
+            }
+        });
+        return { count };
+    }
 }

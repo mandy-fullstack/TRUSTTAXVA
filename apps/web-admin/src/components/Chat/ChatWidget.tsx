@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { api } from '../../services/api';
 import { Text } from '@trusttax/ui';
-import { MessageCircle, Send, Search, ArrowLeft, X } from 'lucide-react';
+import { MessageCircle, Send, Search, ArrowLeft, X, Check, CheckCheck } from 'lucide-react';
 import { socket } from '../../services/socket';
 
 interface ChatWidgetProps {
@@ -18,10 +18,15 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<any>(null);
+    const [user, setUser] = useState<any>(null);
+    const [isTyping, setIsTyping] = useState(false);
+    const [isOtherTyping, setIsOtherTyping] = useState(false);
+    const typingTimeoutRef = useRef<any>(null);
 
     // Initial load
     useEffect(() => {
         fetchConversations();
+        api.getMe().then(setUser).catch(() => { });
     }, []);
 
     // Load messages when selectedId changes
@@ -44,10 +49,10 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
 
             const handleMessagesRead = (data: any) => {
                 if (data.conversationId === selectedId) {
-                    // Update messages to mark them as read
+                    // ONLY mark messages as read if they were sent by the user who read them
                     setMessages(prev => prev.map(msg => ({
                         ...msg,
-                        isRead: msg.sender?.role === 'CLIENT' ? msg.isRead : true
+                        isRead: msg.senderId === data.userId ? true : msg.isRead
                     })));
                 }
             };
@@ -55,10 +60,17 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
             socket.on('newMessage', handleNewMessage);
             socket.on('messagesRead', handleMessagesRead);
 
+            socket.on('userTyping', (data: any) => {
+                if (data.conversationId === selectedId && data.userId !== user?.id) {
+                    setIsOtherTyping(data.isTyping);
+                }
+            });
+
             return () => {
                 socket.emit('leaveRoom', `conversation_${selectedId}`);
                 socket.off('newMessage', handleNewMessage);
                 socket.off('messagesRead', handleMessagesRead);
+                socket.off('userTyping');
             };
         }
     }, [selectedId]);
@@ -158,13 +170,29 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                                     <View key={msg.id} style={[styles.messageRow, isMine ? styles.rowRight : styles.rowLeft]}>
                                         <View style={[styles.messageBubble, isMine ? styles.bubbleRight : styles.bubbleLeft]}>
                                             <Text style={[styles.messageText, isMine ? styles.textWhite : styles.textDark]}>{msg.content}</Text>
-                                            <Text style={[styles.messageTime, isMine ? styles.timeWhite : styles.timeDark]}>
-                                                {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4, gap: 4 }}>
+                                                <Text style={[styles.messageTime, isMine ? styles.timeWhite : styles.timeDark, { marginTop: 0 }]}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </Text>
+                                                {isMine && (
+                                                    msg.isRead ?
+                                                        <CheckCheck size={14} color="rgba(255,255,255,0.9)" /> :
+                                                        <Check size={14} color="rgba(255,255,255,0.6)" />
+                                                )}
+                                            </View>
                                         </View>
                                     </View>
                                 );
                             })
+                        )}
+                        {isOtherTyping && (
+                            <View style={[styles.messageRow, styles.rowLeft]}>
+                                <View style={[styles.messageBubble, styles.bubbleLeft, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 14 }]}>
+                                    <View style={[styles.dot, { opacity: 0.6 }]} />
+                                    <View style={[styles.dot, { opacity: 0.6 }]} />
+                                    <View style={[styles.dot, { opacity: 0.6 }]} />
+                                </View>
+                            </View>
                         )}
                     </ScrollView>
                     <View style={styles.inputArea}>
@@ -172,7 +200,22 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                             style={styles.input}
                             placeholder="Type a message..."
                             value={inputText}
-                            onChangeText={setInputText}
+                            onChangeText={(text) => {
+                                setInputText(text);
+
+                                // Emit typing event
+                                if (!isTyping && selectedId) {
+                                    setIsTyping(true);
+                                    socket.emit('typing', { conversationId: selectedId, isTyping: true });
+                                }
+
+                                // Debounce stop typing
+                                if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                typingTimeoutRef.current = setTimeout(() => {
+                                    setIsTyping(false);
+                                    if (selectedId) socket.emit('typing', { conversationId: selectedId, isTyping: false });
+                                }, 1500);
+                            }}
                             multiline
                             onKeyPress={(e: any) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -290,4 +333,10 @@ const styles = StyleSheet.create({
     input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
     sendBtn: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#94A3B8',
+    },
 });

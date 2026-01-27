@@ -17,6 +17,11 @@ export class ChatController {
         return this.chatService.getConversations(req.user.userId, req.user.role);
     }
 
+    @Get('unread-count')
+    async getUnreadCount(@Request() req: any) {
+        return this.chatService.getUnreadMessageCount(req.user.userId);
+    }
+
     @Post('conversations')
     async createConversation(@Request() req: any, @Body() body: { subject?: string }) {
         return this.chatService.createConversation(req.user.userId, body.subject);
