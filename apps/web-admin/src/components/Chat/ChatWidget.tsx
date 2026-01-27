@@ -77,7 +77,7 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
             setSending(true);
             await api.sendMessage(selectedId, inputText);
             setInputText('');
-            fetchConversations();
+            // Socket.IO will automatically add the message via 'newMessage' event
         } catch (error) {
             console.error('Failed to send message:', error);
         } finally {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     timeDark: { color: '#94A3B8' },
 
     inputArea: { padding: 12, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
-    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
+    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
     sendBtn: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
 });

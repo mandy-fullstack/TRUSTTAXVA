@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { ErrorInterceptor } from './common/interceptors/error.interceptor';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +19,10 @@ async function bootstrap() {
     },
   }));
 
+  // SECURITY: Apply Prisma exception filter to prevent database schema exposure
+  app.useGlobalFilters(new PrismaExceptionFilter());
   app.useGlobalInterceptors(new ErrorInterceptor());
+
   const port = parseInt(process.env.PORT ?? '4000', 10);
   await app.listen(port, '0.0.0.0');
 }

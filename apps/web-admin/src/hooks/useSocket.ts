@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useSocketContext } from '../context/SocketContext';
-import { Socket } from 'socket.io-client';
 
 export const useSocket = (roomId?: string) => {
     const { socket, isConnected } = useSocketContext();

@@ -330,10 +330,10 @@ export const AdminChatPage = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? 'calc(100vh - 64px)' as any : '100%', backgroundColor: '#F8FAFC' },
+    container: { flex: 1, flexDirection: 'row', height: Platform.OS === 'web' ? '100vh' as any : '100%', backgroundColor: '#F8FAFC' },
 
     // Sidebar
-    sidebar: { width: 320, borderRightWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', display: 'flex' },
+    sidebar: { width: 360, borderRightWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFF', display: 'flex', flexDirection: 'column', height: '100%' },
     sidebarHiddenOnMobile: {
         display: 'none',
         '@media (min-width: 768px)': { display: 'flex' }
@@ -357,7 +357,7 @@ const styles = StyleSheet.create({
     emptyText: { color: '#94A3B8', fontSize: 14 },
 
     // Chat Area
-    chatArea: { flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC' },
+    chatArea: { flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC', height: '100%' },
     chatAreaHiddenOnMobile: {
         display: 'none',
     } as any,
@@ -383,8 +383,8 @@ const styles = StyleSheet.create({
     timeWhite: { color: 'rgba(255,255,255,0.7)' },
     timeDark: { color: '#94A3B8' },
 
-    inputArea: { padding: 16, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10, fontSize: 14, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
+    inputArea: { padding: 16, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 12, minHeight: 72 },
+    input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
     sendBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
 
