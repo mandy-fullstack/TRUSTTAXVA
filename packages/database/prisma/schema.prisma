@@ -32,6 +32,14 @@ model User {
   termsVersion           String?
   driverLicenseLast4     String?
   passportLast4          String?
+  passwordResetExpires   DateTime?
+  passwordResetToken     String?
+  emailVerificationToken String?
+  emailVerified          Boolean           @default(false)
+  emailVerifiedAt        DateTime?
+  twoFactorBackupCodes   String?
+  twoFactorEnabled       Boolean           @default(false)
+  twoFactorSecret        String?
   clientAppointments     Appointment[]     @relation("ClientAppointments")
   preparedAppointments   Appointment[]     @relation("PreparerAppointments")
   auditLogs              AuditLog[]
@@ -44,20 +52,6 @@ model User {
   orders                 Order[]
   clientTaxReturns       TaxReturn[]       @relation("ClientReturns")
   preparedTaxReturns     TaxReturn[]       @relation("PreparerReturns")
-  
-  // Password reset fields
-  passwordResetToken     String?
-  passwordResetExpires   DateTime?
-  
-  // Email verification fields
-  emailVerified          Boolean   @default(false)
-  emailVerificationToken String?
-  emailVerifiedAt        DateTime?
-  
-  // Two-Factor Authentication (2FA) fields
-  twoFactorSecret        String?   // Encrypted TOTP secret
-  twoFactorEnabled       Boolean   @default(false)
-  twoFactorBackupCodes   String?   // Encrypted JSON array of backup codes
 }
 
 model TaxReturn {
@@ -150,24 +144,17 @@ model AuditLog {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-enum ConversationCategory {
-  GENERAL
-  TECHNICAL
-  BILLING
-  URGENT
-}
-
 model Conversation {
-  id             String               @id @default(uuid())
-  subject        String
-  category       ConversationCategory @default(GENERAL)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  clientId       String
-  preparerId     String?
-  client         User                 @relation("ClientConversations", fields: [clientId], references: [id])
-  preparer       User?                @relation("PreparerConversations", fields: [preparerId], references: [id])
-  messages       Message[]
+  id         String               @id @default(uuid())
+  subject    String
+  category   ConversationCategory @default(GENERAL)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  clientId   String
+  preparerId String?
+  client     User                 @relation("ClientConversations", fields: [clientId], references: [id])
+  preparer   User?                @relation("PreparerConversations", fields: [preparerId], references: [id])
+  messages   Message[]
 
   @@index([clientId])
   @@index([updatedAt])
@@ -177,10 +164,10 @@ model Message {
   id             String       @id @default(uuid())
   content        String
   isRead         Boolean      @default(false)
-  isDelivered    Boolean      @default(false)
   createdAt      DateTime     @default(now())
   conversationId String
   senderId       String
+  isDelivered    Boolean      @default(false)
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User         @relation(fields: [senderId], references: [id])
 }
@@ -330,9 +317,9 @@ model Order {
   documents Document[]
   service   Service             @relation(fields: [serviceId], references: [id])
   user      User                @relation(fields: [userId], references: [id])
+  approvals OrderApproval[]
   progress  OrderStepProgress[]
   timeline  OrderTimeline[]
-  approvals OrderApproval[]
 }
 
 model OrderTimeline {
@@ -395,6 +382,25 @@ model CompanyProfile {
   themeOptions   Json?
 }
 
+model FAQ {
+  id           String   @id @default(uuid())
+  question     String
+  answer       String
+  questionI18n Json?
+  answerI18n   Json?
+  order        Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+enum ConversationCategory {
+  GENERAL
+  TECHNICAL
+  BILLING
+  URGENT
+}
+
 enum Role {
   ADMIN
   CLIENT
@@ -439,16 +445,4 @@ enum AppointmentStatus {
   COMPLETED
   CANCELLED
   NO_SHOW
-}
-
-model FAQ {
-  id          String   @id @default(uuid())
-  question    String
-  answer      String
-  questionI18n Json?
-  answerI18n   Json?
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 }

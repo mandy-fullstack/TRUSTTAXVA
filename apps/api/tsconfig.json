@@ -17,6 +17,9 @@
     "paths": {
       "@trusttax/database": [
         "../../packages/database/src"
+      ],
+      "@trusttax/core": [
+        "../../packages/core/src"
       ]
     },
     "incremental": true,
