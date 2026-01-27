@@ -104,6 +104,18 @@ class ApiService {
         return this.request<{ access_token: string; user: any; message: string }>(`/auth/verify-email/${token}`);
     }
 
+    async updateFcmToken(fcmToken: string): Promise<any> {
+        const token = getToken();
+        if (!token) return; // Silent skip if not logged in
+        return this.request<any>('/auth/fcm-token', {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ fcmToken }),
+        });
+    }
+
     // --- Services ---
     async getServices(): Promise<Service[]> {
         return this.request<Service[]>('/services');

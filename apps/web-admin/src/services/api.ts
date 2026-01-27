@@ -97,6 +97,13 @@ export const api = {
     });
   },
 
+  updateFcmToken(fcmToken: string) {
+    return request<any>('/auth/fcm-token', {
+      method: 'PATCH',
+      body: JSON.stringify({ fcmToken }),
+    });
+  },
+
   getClients: () => request<any[]>('/admin/clients'),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
   getClientSensitive: (id: string) =>
