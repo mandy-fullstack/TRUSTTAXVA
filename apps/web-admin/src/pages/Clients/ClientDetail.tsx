@@ -23,6 +23,7 @@ import {
   Clock,
   Bell,
   CheckCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -135,6 +136,20 @@ export function ClientDetailPage() {
     setSensitiveData(null);
   };
 
+  const refreshClient = async () => {
+    if (!id || loading) return;
+    try {
+      setLoading(true);
+      const data = await api.getClientDetails(id);
+      setClient(data);
+      setPushStatus('idle');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to refresh client data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTestPush = async () => {
     if (!id || pushLoading) return;
     setPushLoading(true);
@@ -185,10 +200,17 @@ export function ClientDetailPage() {
         contentContainerStyle={[styles.container, isMobile && styles.containerMobile]}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity style={styles.backButton} onPress={() => navigate('/clients')} activeOpacity={0.7}>
-          <ArrowLeft size={20} color="#64748B" />
-          <Text style={styles.backText}>Back to Clients</Text>
-        </TouchableOpacity>
+        <View style={styles.topActions}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigate('/clients')} activeOpacity={0.7}>
+            <ArrowLeft size={20} color="#64748B" />
+            <Text style={styles.backText}>Back to Clients</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.refreshButton} onPress={refreshClient} activeOpacity={0.7}>
+            <RefreshCw size={18} color="#64748B" />
+            <Text style={styles.refreshText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.header}>
           <View style={styles.avatar}>
@@ -313,14 +335,20 @@ export function ClientDetailPage() {
               <H4 style={styles.sectionTitle}>Push Notifications</H4>
             </View>
             <View style={styles.card}>
-              <Row
-                label="Status"
-                value={client.fcmToken ? '✅ Registered' : '❌ Not Registered'}
-              />
+              <View style={styles.statusRow}>
+                <Text style={styles.rowLabel}>Push Registration Status</Text>
+                <View style={[styles.statusBadge, { backgroundColor: client.fcmToken ? '#ECFDF5' : '#FEF2F2' }]}>
+                  <View style={[styles.statusDot, { backgroundColor: client.fcmToken ? '#10B981' : '#EF4444' }]} />
+                  <Text style={[styles.statusBadgeText, { color: client.fcmToken ? '#065F46' : '#991B1B' }]}>
+                    {client.fcmToken ? 'Registered' : 'Not Registered'}
+                  </Text>
+                </View>
+              </View>
+
               <Text style={styles.notifHint}>
                 {client.fcmToken
-                  ? 'The user has enabled notifications on at least one device.'
-                  : 'The user has not granted notification permissions yet.'}
+                  ? 'The user has enabled notifications and can receive push alerts on their device.'
+                  : 'This user has not granted permission or registered a device yet.'}
               </Text>
 
               <TouchableOpacity
@@ -469,6 +497,9 @@ const styles = StyleSheet.create({
   backText: { color: '#64748B', fontSize: 14, fontWeight: '500' },
 
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 32 },
+  topActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  refreshButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#F8FAFC', borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' },
+  refreshText: { fontSize: 13, color: '#64748B', fontWeight: '500' },
   avatar: {
     width: 64,
     height: 64,
@@ -500,6 +531,10 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1, minWidth: 0 },
   rowLabel: { fontSize: 12, color: '#64748B', marginBottom: 2, textTransform: 'uppercase', fontWeight: '600' },
   rowValue: { fontSize: 15, color: '#0F172A' },
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusBadgeText: { fontSize: 12, fontWeight: '600' },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
 
   sensitiveActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' },
   countdown: { flexDirection: 'row', alignItems: 'center', gap: 6 },

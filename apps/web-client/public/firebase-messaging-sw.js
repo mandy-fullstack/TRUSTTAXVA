@@ -60,16 +60,19 @@ self.addEventListener('push', (event) => {
 // Notification click behavior
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
-    const urlToOpen = event.notification.data || '/';
+    const urlToOpen = new URL(event.notification.data || '/', self.location.origin).href;
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
+                // Check if the client is at the same URL
                 if (client.url === urlToOpen && 'focus' in client) {
                     return client.focus();
                 }
             }
+            // If no exact match, check if any client belongs to the app and could be navigated?
+            // For now, if no exact match, open a new window
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }

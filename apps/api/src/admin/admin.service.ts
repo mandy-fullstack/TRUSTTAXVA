@@ -46,7 +46,7 @@ export class AdminService {
     }
 
     async getClientDetails(clientId: string) {
-        const client = await this.prisma.user.findUnique({
+        const client = await (this.prisma.user as any).findUnique({
             where: { id: clientId },
             include: {
                 orders: {
@@ -70,7 +70,11 @@ export class AdminService {
             passportDataEncrypted,
             ...rest
         } = client;
-        return rest;
+
+        return {
+            ...rest,
+            fcmToken: client.fcmToken
+        };
     }
 
     async getClientSensitiveData(clientId: string): Promise<{
