@@ -15,24 +15,29 @@ export class DocumentsService {
         title: string,
         type: any = 'OTHER'
     ) {
-        // 1. Upload to Firebase Storage
-        const uploadResult = await this.storageService.uploadFile(
-            file,
-            `users/${userId}/documents`
-        );
+        try {
+            // 1. Upload to Firebase Storage
+            const uploadResult = await this.storageService.uploadFile(
+                file,
+                `users/${userId}/documents`
+            );
 
-        // 2. Create record in Database
-        return this.prisma.document.create({
-            data: {
-                title: title || file.originalname,
-                type: type,
-                url: uploadResult.url,
-                s3Key: uploadResult.fileName, // We use s3Key field to store the filename/path in storage
-                mimeType: uploadResult.mimeType,
-                size: uploadResult.size,
-                userId: userId,
-            },
-        });
+            // 2. Create record in Database
+            return this.prisma.document.create({
+                data: {
+                    title: title || file.originalname,
+                    type: type,
+                    url: uploadResult.url,
+                    s3Key: uploadResult.fileName, // We use s3Key field to store the filename/path in storage
+                    mimeType: uploadResult.mimeType,
+                    size: uploadResult.size,
+                    userId: userId,
+                },
+            });
+        } catch (error) {
+            console.error('Error in uploadDocument service:', error);
+            throw error;
+        }
     }
 
     async findUserDocuments(userId: string) {

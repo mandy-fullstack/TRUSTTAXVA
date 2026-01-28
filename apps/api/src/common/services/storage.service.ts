@@ -13,7 +13,19 @@ export class StorageService {
     private getBucket() {
         if (!this.bucket) {
             const projectId = process.env.FIREBASE_PROJECT_ID;
-            const bucketName = process.env.FIREBASE_STORAGE_BUCKET || `${projectId}.firebasestorage.app`;
+            let bucketName = process.env.FIREBASE_STORAGE_BUCKET;
+
+            if (!bucketName && projectId) {
+                // Try the common default bucket extension first
+                bucketName = `${projectId}.appspot.com`;
+                console.log(`No bucket provided, trying default: ${bucketName}`);
+            }
+
+            if (!bucketName) {
+                console.error('FIREBASE_PROJECT_ID or FIREBASE_STORAGE_BUCKET is missing in .env');
+                throw new Error('Firebase Storage configuration missing');
+            }
+
             this.bucket = admin.storage().bucket(bucketName);
         }
         return this.bucket;
