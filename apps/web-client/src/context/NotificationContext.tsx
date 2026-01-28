@@ -33,15 +33,19 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     const unreadCount = notifications.filter(n => !n.read).length;
 
     useEffect(() => {
-        if ('Notification' in window) {
-            setPermission(Notification.permission);
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            setPermission(window.Notification.permission);
         }
     }, []);
 
     const requestPermission = async () => {
-        if ('Notification' in window) {
-            const perm = await Notification.requestPermission();
-            setPermission(perm);
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            try {
+                const perm = await window.Notification.requestPermission();
+                setPermission(perm);
+            } catch (e) {
+                console.warn('Notification permission request failed', e);
+            }
         }
     };
 
@@ -56,6 +60,20 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
     const markAsRead = (id: string) => {
         setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    };
+
+    const sendBrowserNotification = (title: string, body: string, tag?: string) => {
+        if (typeof window !== 'undefined' && 'Notification' in window && permission === 'granted') {
+            try {
+                new window.Notification(title, {
+                    body,
+                    icon: '/vite.svg',
+                    tag
+                });
+            } catch (e) {
+                console.warn('Failed to send browser notification', e);
+            }
+        }
     };
 
     const checkUpdates = async () => {
@@ -76,10 +94,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                     const lastMsg = conv.messages[0];
                     const msgDate = new Date(lastMsg.createdAt);
 
-                    // Add to notification list if it's new-ish (e.g. last 24h) and unread from preparer
-                    // Simplified logic: Just check if it's from preparer. Real app needs true "read" status from API.
                     if (lastMsg.sender?.role !== 'CLIENT') {
-                        // Check if we already have this notification
                         const exists = notifications.some(n => n.id === lastMsg.id);
                         if (!exists) {
                             newNotifications.push({
@@ -103,21 +118,16 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             // Check orders
             for (const order of orders) {
                 const orderDate = new Date(order.updatedAt);
-                // We will use a STABLE ID for the order to prevent duplicates.
-                // We overwrite the existing notification for this order if it exists.
                 const notifId = `order-${order.id}`;
 
-                // Find existing index
                 const existingIndex = notifications.findIndex(n => n.id === notifId);
                 const existingNotif = existingIndex !== -1 ? notifications[existingIndex] : null;
 
-                // Determine if this is a newer update than what we have
                 const isNewer = existingNotif ? orderDate > existingNotif.date : true;
 
                 if (isNewer) {
                     const isNewUpdate = orderDate > lastCheckRef.current;
 
-                    // Helper text for notification status
                     const statusMap: Record<string, string> = {
                         'APPROVED': 'Aprobada',
                         'REJECTED': 'Rechazada',
@@ -131,21 +141,15 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                     let notifBody = `Orden ${order.displayId || order.id.slice(0, 8)}: ${statusMap[order.status] || order.status}`;
                     let notifLink = `/dashboard/orders/${order.id}`;
 
-                    // Check for pending approvals
-                    // @ts-ignore - approvals is joined now
                     if (order.approvals && order.approvals.length > 0) {
-                        const pendingApproval = order.approvals[0]; // Logic: first pending one
+                        const pendingApproval = order.approvals[0];
                         notifTitle = 'Acción Requerida';
                         notifBody = `Aprobación pendiente: ${pendingApproval.title}`;
-                        // We could link directly to approval section if we had anchors?
                     }
-                    // Verify if status changed recently
                     else if (existingNotif && existingNotif.body !== notifBody) {
-                        // Body changed (status changed)
                         notifTitle = 'Estado Actualizado';
                     }
 
-                    // Construct new item
                     const newItem: NotificationItem = {
                         id: notifId,
                         type: 'order',
@@ -156,7 +160,6 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                         link: notifLink
                     };
 
-                    // If this is the FIRST load (no existing), and it's old (> 24h), maybe mark as read?
                     if (!existingNotif) {
                         const oneDay = 24 * 60 * 60 * 1000;
                         if (Date.now() - orderDate.getTime() > oneDay) {
@@ -166,29 +169,20 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
                     newNotifications.push(newItem);
 
-                    // Only alert if it's actually new since last poll
-                    if (isNewUpdate && permission === 'granted') {
+                    if (isNewUpdate) {
                         hasNewAlert = true;
-                        // Use 'tag' to replace existing browser notification for same order
-                        new Notification('TrustTax Update', {
-                            body: newItem.body,
-                            icon: '/vite.svg',
-                            tag: `order-${order.id}`
-                        });
+                        sendBrowserNotification('TrustTax Update', newItem.body, `order-${order.id}`);
                     }
                 }
             }
 
             if (newNotifications.length > 0) {
                 setNotifications(prev => {
-                    // Remove any items from 'prev' that are present in 'newNotifications' (by ID)
-                    // This ensures we replace the old one with the new one
                     const prevFiltered = prev.filter(p => !newNotifications.some(n => n.id === p.id));
                     return [...newNotifications, ...prevFiltered].sort((a, b) => b.date.getTime() - a.date.getTime());
                 });
 
                 if (hasNewAlert && permission === 'granted') {
-                    // We play sound once even if multiple updates came in
                     playSound();
                 }
             }
@@ -202,16 +196,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
     useEffect(() => {
         if (isAuthenticated) {
-            // Initial poll to catch up
             checkUpdates();
 
-            // Connect socket
             socket.auth = { token: getToken() };
             socket.connect();
 
             socket.on('notification', (payload: any) => {
                 const newNotif: NotificationItem = {
-                    id: Math.random().toString(36).substr(2, 9), // Temp ID or from payload if available
+                    id: Math.random().toString(36).substr(2, 9),
                     type: payload.type || 'order',
                     title: payload.title,
                     body: payload.body,
@@ -223,15 +215,11 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 setNotifications(prev => [newNotif, ...prev]);
                 if (permission === 'granted') {
                     playSound();
-                    new Notification(newNotif.title, {
-                        body: newNotif.body,
-                        icon: '/vite.svg'
-                    });
+                    sendBrowserNotification(newNotif.title, newNotif.body);
                 }
             });
 
-            // Keep polling as backup/sync mechanism, maybe less frequent
-            const interval = setInterval(checkUpdates, 60000); // Poll every 60 seconds
+            const interval = setInterval(checkUpdates, 60000);
 
             return () => {
                 socket.off('notification');
@@ -239,7 +227,7 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 clearInterval(interval);
             };
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, permission]); // Added permission dependency to ensure we use latest value
 
     return (
         <NotificationContext.Provider value={{ permission, requestPermission, notifications, markAsRead, unreadCount }}>
