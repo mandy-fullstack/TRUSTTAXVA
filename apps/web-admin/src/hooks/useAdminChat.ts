@@ -36,7 +36,26 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
             const handleNewMessage = (msg: any) => {
                 if (msg.conversationId === conversationId) {
                     setMessages(prev => {
+                        // 1. Check if we already have this real ID
                         if (prev.some(m => m.id === msg.id)) return prev;
+
+                        // 2. If it's our own message, try to match it with an optimistic one
+                        if (msg.senderId === user?.id) {
+                            let optimisticIdx = -1;
+                            for (let i = prev.length - 1; i >= 0; i--) {
+                                if (prev[i].id.startsWith('temp-') && prev[i].content === msg.content) {
+                                    optimisticIdx = i;
+                                    break;
+                                }
+                            }
+
+                            if (optimisticIdx !== -1) {
+                                const newMessages = [...prev];
+                                newMessages[optimisticIdx] = msg;
+                                return newMessages;
+                            }
+                        }
+
                         return [...prev, msg];
                     });
                     // Auto-mark as read and delivered
@@ -95,7 +114,13 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
 
         try {
             const newMessage = await api.sendMessage(conversationId, content, documentId);
-            setMessages(prev => prev.map(m => m.id === tempId ? newMessage : m));
+            setMessages(prev => {
+                const alreadyAdded = prev.some(m => m.id === newMessage.id);
+                if (alreadyAdded) {
+                    return prev.filter(m => m.id !== tempId);
+                }
+                return prev.map(m => m.id === tempId ? newMessage : m);
+            });
             return newMessage;
         } catch (error) {
             console.error('Failed to send message', error);

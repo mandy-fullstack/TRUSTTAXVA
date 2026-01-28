@@ -44,8 +44,16 @@ export const useChat = (conversationId: string | null | undefined) => {
 
         try {
             const message = await api.sendMessage(conversationId, content, documentId);
+
             // Replace optimistic message with real message
-            setMessages(prev => prev.map(m => m.id === tempId ? message : m));
+            // We search for the tempId to ensure we don't duplicate if socket already added it
+            setMessages(prev => {
+                const alreadyAdded = prev.some(m => m.id === message.id);
+                if (alreadyAdded) {
+                    return prev.filter(m => m.id !== tempId);
+                }
+                return prev.map(m => m.id === tempId ? message : m);
+            });
             return message;
         } catch (error) {
             console.error('Failed to send message', error);
@@ -91,7 +99,27 @@ export const useChat = (conversationId: string | null | undefined) => {
         const handleNewMessage = (msg: any) => {
             if (msg.conversationId === conversationId) {
                 setMessages(prev => {
+                    // 1. Check if we already have this real ID
                     if (prev.some(m => m.id === msg.id)) return prev;
+
+                    // 2. If it's our own message, try to match it with an optimistic one
+                    // to prevent "double bubble" while the API request is pending
+                    if (msg.senderId === user?.id) {
+                        let optimisticIdx = -1;
+                        for (let i = prev.length - 1; i >= 0; i--) {
+                            if (prev[i].id.startsWith('temp-') && prev[i].content === msg.content) {
+                                optimisticIdx = i;
+                                break;
+                            }
+                        }
+
+                        if (optimisticIdx !== -1) {
+                            const newMessages = [...prev];
+                            newMessages[optimisticIdx] = msg;
+                            return newMessages;
+                        }
+                    }
+
                     return [...prev, msg];
                 });
                 markAsRead();
