@@ -11,6 +11,7 @@ import { FormsModule } from './forms/forms.module';
 import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
+import { DocumentsModule } from './documents/documents.module';
 import { FirebaseModule } from './common/firebase.module';
 import { RedisModule } from './common/services/redis.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
@@ -39,6 +40,7 @@ import Redis from 'ioredis';
     OrdersModule,
     FaqModule,
     ChatModule,
+    DocumentsModule,
     FirebaseModule,
     RedisModule
   ],

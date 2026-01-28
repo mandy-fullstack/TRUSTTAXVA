@@ -140,7 +140,7 @@ export class ChatService {
         return result;
     }
 
-    async sendMessage(conversationId: string, senderId: string, content: string) {
+    async sendMessage(conversationId: string, senderId: string, content: string, documentId?: string) {
         // Verify conversation exists
         const conversation = await this.prisma.conversation.findUnique({
             where: { id: conversationId }
@@ -150,11 +150,20 @@ export class ChatService {
             throw new NotFoundException('Conversation not found');
         }
 
+        // If there is a document, link it to the conversation as well
+        if (documentId) {
+            await this.prisma.document.update({
+                where: { id: documentId },
+                data: { conversationId }
+            });
+        }
+
         const message = await this.prisma.message.create({
             data: {
                 conversationId,
                 senderId,
-                content
+                content,
+                documentId
             },
             include: {
                 sender: {
@@ -170,7 +179,8 @@ export class ChatService {
                         clientId: true,
                         preparerId: true
                     }
-                }
+                },
+                document: true
             }
         });
 

@@ -24,17 +24,36 @@ export const useChat = (conversationId: string | null | undefined) => {
         }
     }, []);
 
-    const sendMessage = useCallback(async (content: string) => {
-        if (!conversationId || !content.trim()) return;
+    const sendMessage = useCallback(async (content: string, documentId?: string) => {
+        if (!conversationId || (!content.trim() && !documentId)) return;
+
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage = {
+            id: tempId,
+            content,
+            documentId,
+            senderId: user?.id,
+            conversationId,
+            createdAt: new Date().toISOString(),
+            status: 'sending',
+            sender: user
+        };
+
+        // Add optimistic message
+        setMessages(prev => [...prev, optimisticMessage]);
+
         try {
-            const message = await api.sendMessage(conversationId, content);
-            // socket.emit('newMessage') is handled by backend emitting back to room
+            const message = await api.sendMessage(conversationId, content, documentId);
+            // Replace optimistic message with real message
+            setMessages(prev => prev.map(m => m.id === tempId ? message : m));
             return message;
         } catch (error) {
             console.error('Failed to send message', error);
+            // Remove optimistic message on error
+            setMessages(prev => prev.filter(m => m.id !== tempId));
             throw error;
         }
-    }, [conversationId]);
+    }, [conversationId, user]);
 
     const markAsRead = useCallback(() => {
         if (conversationId && isConnected) {

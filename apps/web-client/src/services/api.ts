@@ -29,8 +29,9 @@ export class NetworkError extends Error {
 
 class ApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const isFormData = options.body instanceof FormData;
         const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
+            ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
             ...(typeof options.headers === 'object' && !(options.headers instanceof Headers)
                 ? (options.headers as Record<string, string>)
                 : {}),
@@ -376,13 +377,29 @@ class ApiService {
         });
     }
 
-    async sendMessage(conversationId: string, content: string): Promise<any> {
+    async sendMessage(conversationId: string, content: string, documentId?: string): Promise<any> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
         return this.request<any>(`/chat/conversations/${conversationId}/messages`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ content })
+            body: JSON.stringify({ content, documentId })
+        });
+    }
+
+    async uploadDocument(file: File, title?: string, type: string = 'OTHER'): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        if (title) formData.append('title', title);
+        formData.append('type', type);
+
+        return this.request<any>('/documents/upload', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
         });
     }
 

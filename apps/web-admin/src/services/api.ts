@@ -36,8 +36,9 @@ type RequestOpts = RequestInit & { skipAuth?: boolean };
 
 async function request<T>(endpoint: string, options: RequestOpts = {}): Promise<T> {
   const { skipAuth, ...init } = options;
+  const isFormData = init.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(typeof init.headers === 'object' && !(init.headers instanceof Headers)
       ? (init.headers as Record<string, string>)
       : {}),
@@ -136,7 +137,14 @@ export const api = {
   getConversations: () => request<any[]>('/chat/conversations'),
   getConversation: (id: string) => request<any>(`/chat/conversations/${id}`),
   createConversation: (subject?: string) => request<any>('/chat/conversations', { method: 'POST', body: JSON.stringify({ subject }) }),
-  sendMessage: (conversationId: string, content: string) => request<any>(`/chat/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ content }) }),
+  sendMessage: (conversationId: string, content: string, documentId?: string) => request<any>(`/chat/conversations/${conversationId}/messages`, { method: 'POST', body: JSON.stringify({ content, documentId }) }),
+  uploadDocument: (file: File, title?: string, type: string = 'OTHER') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    formData.append('type', type);
+    return request<any>('/documents/upload', { method: 'POST', body: formData });
+  },
   deleteConversation: (id: string) => request<void>(`/chat/conversations/${id}`, { method: 'DELETE' }),
 
   getDashboardMetrics: () => request<any>('/admin/dashboard/metrics'),

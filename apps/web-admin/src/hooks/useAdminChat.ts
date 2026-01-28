@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import { useSocket } from './useSocket';
+import { useAuth } from '../context/AuthContext';
 
 export const useAdminChat = (conversationId: string | null | undefined) => {
+    const { user } = useAuth();
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isOtherTyping, setIsOtherTyping] = useState(false);
@@ -49,7 +51,6 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
                 if (data.conversationId === conversationId) {
                     setMessages(prev => prev.map(msg => ({
                         ...msg,
-                        // If messages were read by the OTHER user, mark my sent messages as read
                         isRead: msg.senderId !== data.userId ? true : msg.isRead,
                         isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
                     })));
@@ -60,7 +61,6 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
                 if (data.conversationId === conversationId) {
                     setMessages(prev => prev.map(msg => ({
                         ...msg,
-                        // If messages were delivered to the OTHER user, mark my sent messages as delivered
                         isDelivered: msg.senderId !== data.userId ? true : msg.isDelivered
                     })));
                 }
@@ -76,13 +76,30 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
         }
     }, [conversationId, socket, fetchMessages]);
 
-    const sendMessage = async (content: string) => {
-        if (!conversationId) return;
+    const sendMessage = async (content: string, documentId?: string) => {
+        if (!conversationId || (!content.trim() && !documentId)) return;
+
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage = {
+            id: tempId,
+            content,
+            documentId,
+            senderId: user?.id,
+            conversationId,
+            createdAt: new Date().toISOString(),
+            status: 'sending',
+            sender: user
+        };
+
+        setMessages(prev => [...prev, optimisticMessage]);
+
         try {
-            const newMessage = await api.sendMessage(conversationId, content);
+            const newMessage = await api.sendMessage(conversationId, content, documentId);
+            setMessages(prev => prev.map(m => m.id === tempId ? newMessage : m));
             return newMessage;
         } catch (error) {
             console.error('Failed to send message', error);
+            setMessages(prev => prev.filter(m => m.id !== tempId));
             throw error;
         }
     };
