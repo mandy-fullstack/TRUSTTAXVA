@@ -15,23 +15,32 @@ export interface ToastProps {
     onClose: (id: string) => void;
 }
 
-const Toast = ({ id, title, message, type = 'info', link, onClose }: ToastProps) => {
+const Toast = ({ id, title, message, type = 'info', duration = 5000, link, onClose }: ToastProps) => {
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
-    const slideAnim = React.useRef(new Animated.Value(-20)).current;
+    const slideAnim = React.useRef(new Animated.Value(-30)).current;
+    const progressAnim = React.useRef(new Animated.Value(1)).current;
 
     React.useEffect(() => {
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
-                duration: 300,
+                duration: 400,
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnim, {
                 toValue: 0,
-                duration: 300,
+                duration: 400,
                 useNativeDriver: true,
             })
         ]).start();
+
+        if (duration > 0) {
+            Animated.timing(progressAnim, {
+                toValue: 0,
+                duration: duration,
+                useNativeDriver: false,
+            }).start();
+        }
     }, []);
 
     const handleClose = () => {
@@ -42,7 +51,7 @@ const Toast = ({ id, title, message, type = 'info', link, onClose }: ToastProps)
                 useNativeDriver: true,
             }),
             Animated.timing(slideAnim, {
-                toValue: -20,
+                toValue: -15,
                 duration: 300,
                 useNativeDriver: true,
             })
@@ -50,15 +59,16 @@ const Toast = ({ id, title, message, type = 'info', link, onClose }: ToastProps)
     };
 
     const getIcon = () => {
+        const size = 18;
         switch (type) {
-            case 'success': return <CheckCircle size={20} color="#10B981" />;
-            case 'error': return <AlertCircle size={20} color="#EF4444" />;
-            case 'warning': return <AlertCircle size={20} color="#F59E0B" />;
-            default: return <MessageSquare size={20} color="#3B82F6" />;
+            case 'success': return <View style={[styles.iconWrapper, { backgroundColor: '#10B98115' }]}><CheckCircle size={size} color="#10B981" /></View>;
+            case 'error': return <View style={[styles.iconWrapper, { backgroundColor: '#EF444415' }]}><AlertCircle size={size} color="#EF4444" /></View>;
+            case 'warning': return <View style={[styles.iconWrapper, { backgroundColor: '#F59E0B15' }]}><AlertCircle size={size} color="#F59E0B" /></View>;
+            default: return <View style={[styles.iconWrapper, { backgroundColor: '#3B82F615' }]}><MessageSquare size={size} color="#3B82F6" /></View>;
         }
     };
 
-    const getBorderColor = () => {
+    const getAccentColor = () => {
         switch (type) {
             case 'success': return '#10B981';
             case 'error': return '#EF4444';
@@ -70,7 +80,10 @@ const Toast = ({ id, title, message, type = 'info', link, onClose }: ToastProps)
     return (
         <Animated.View style={[
             styles.toast,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }], borderLeftColor: getBorderColor() }
+            {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+            }
         ]}>
             <TouchableOpacity
                 style={styles.content}
@@ -78,19 +91,37 @@ const Toast = ({ id, title, message, type = 'info', link, onClose }: ToastProps)
                     if (link) window.location.href = link;
                     handleClose();
                 }}
-                activeOpacity={0.9}
+                activeOpacity={0.8}
             >
-                <View style={styles.iconContainer}>
-                    {getIcon()}
-                </View>
-                <View style={styles.textContainer}>
-                    <Text style={styles.title}>{title}</Text>
-                    <Text style={styles.message} numberOfLines={2}>{message}</Text>
+                <View style={styles.mainContainer}>
+                    <View style={styles.iconContainer}>
+                        {getIcon()}
+                    </View>
+                    <View style={styles.textContainer}>
+                        <Text style={styles.title}>{title}</Text>
+                        <Text style={styles.message} numberOfLines={2}>{message}</Text>
+                    </View>
                 </View>
             </TouchableOpacity>
+
             <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
                 <X size={16} color="#94A3B8" />
             </TouchableOpacity>
+
+            <View style={styles.progressContainer}>
+                <Animated.View
+                    style={[
+                        styles.progressBar,
+                        {
+                            backgroundColor: getAccentColor(),
+                            width: progressAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0%', '100%']
+                            })
+                        }
+                    ]}
+                />
+            </View>
         </Animated.View>
     );
 };
@@ -140,39 +171,50 @@ export const useToast = () => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        top: Platform.OS === 'web' ? 20 : 50,
+        top: Platform.OS === 'web' ? 24 : 50,
         left: 0,
         right: 0,
-        alignItems: 'center',
+        alignItems: Platform.OS === 'web' ? 'flex-end' : 'center',
         zIndex: 9999,
-        paddingHorizontal: 20,
+        paddingHorizontal: 24,
     },
     toast: {
-        backgroundColor: '#FFFFFF',
-        width: Platform.OS === 'web' ? 360 : Dimensions.get('window').width - 40,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(12px)',
+        width: Platform.OS === 'web' ? 400 : Dimensions.get('window').width - 40,
         maxWidth: '100%',
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 12,
-        paddingHorizontal: 16,
-        marginBottom: 10,
+        paddingVertical: 0,
+        paddingHorizontal: 0,
+        marginBottom: 12,
         borderWidth: 1,
-        borderColor: '#F1F5F9',
-        borderLeftWidth: 4,
-        borderRadius: 0, // Strict No Corners
+        borderColor: 'rgba(241, 245, 249, 0.8)',
+        borderRadius: 0,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
-    },
+        shadowRadius: 20,
+        elevation: 8,
+        overflow: 'hidden',
+    } as any,
     content: {
         flex: 1,
+    },
+    mainContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        padding: 16,
+    },
+    iconWrapper: {
+        width: 36,
+        height: 36,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 0,
     },
     iconContainer: {
-        marginRight: 12,
+        marginRight: 16,
     },
     textContainer: {
         flex: 1,
@@ -182,13 +224,26 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: '#0F172A',
         marginBottom: 2,
+        letterSpacing: -0.2,
     },
     message: {
         fontSize: 13,
         color: '#64748B',
+        lineHeight: 18,
     },
     closeBtn: {
-        padding: 5,
-        marginLeft: 8,
+        padding: 16,
+        alignSelf: 'flex-start',
+    },
+    progressContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 3,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+    },
+    progressBar: {
+        height: '100%',
     }
 });
