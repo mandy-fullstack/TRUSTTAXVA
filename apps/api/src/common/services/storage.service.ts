@@ -15,19 +15,33 @@ export class StorageService {
             const projectId = process.env.FIREBASE_PROJECT_ID;
             let bucketName = process.env.FIREBASE_STORAGE_BUCKET;
 
+            if (admin.apps.length === 0) {
+                console.warn('[StorageService] Firebase Admin not initialized. Operational failure expected.');
+                throw new Error('Firebase Admin not initialized. Please check FirebaseService initialization.');
+            }
+
+            // Log initialization context
+            console.log(`[StorageService] Initializing with ProjectID: ${projectId}, EnvBucket: ${bucketName}`);
+
             if (!bucketName && projectId) {
-                // Try the common default bucket extension first
-                bucketName = `${projectId}.appspot.com`;
-                console.log(`No bucket provided, trying default: ${bucketName}`);
+                // Try to auto-resolve. Most modern projects use .firebasestorage.app
+                // but older ones use .appspot.com
+                bucketName = `${projectId}.firebasestorage.app`;
+                console.log(`[StorageService] No bucket provided, attempting default: ${bucketName}`);
             }
 
             if (!bucketName) {
-                console.error('FIREBASE_PROJECT_ID or FIREBASE_STORAGE_BUCKET is missing in .env');
-                throw new Error('Firebase Storage configuration missing');
+                console.error('[StorageService] Critical: STORAGE CONFIGURATION MISSING');
+                throw new Error('Firebase Storage configuration missing (Bucket Name)');
             }
 
-            console.log(`[StorageService] Using bucket: ${bucketName}`);
-            this.bucket = admin.storage().bucket(bucketName);
+            try {
+                this.bucket = admin.storage().bucket(bucketName);
+                console.log(`[StorageService] Successfully resolved bucket instance: ${bucketName}`);
+            } catch (error: any) {
+                console.error(`[StorageService] Failed to resolve bucket ${bucketName}:`, error);
+                throw error;
+            }
         }
         return this.bucket;
     }
