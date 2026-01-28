@@ -1,16 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseService } from '../common/services/firebase.service';
+import { RedisService } from '../common/services/redis.service';
 
 @Injectable()
 export class ChatService {
     constructor(
         private prisma: PrismaService,
-        private firebaseService: FirebaseService
+        private firebaseService: FirebaseService,
+        private redisService: RedisService
     ) { }
 
     async createConversation(clientId: string, subject?: string) {
-        return this.prisma.conversation.create({
+        const conversation = await this.prisma.conversation.create({
             data: {
                 clientId,
                 subject: subject || 'New Conversation',
@@ -19,11 +21,22 @@ export class ChatService {
                 messages: true
             }
         });
+
+        // Invalidate cache
+        await this.redisService.del(`conversations:${clientId}`);
+        await this.redisService.del(`conversations:admin`);
+
+        return conversation;
     }
 
     async getConversations(userId: string, role: string) {
+        const cacheKey = role === 'CLIENT' ? `conversations:${userId}` : `conversations:admin`;
+        const cached = await this.redisService.get<any[]>(cacheKey);
+        if (cached) return cached;
+
+        let conversations;
         if (role === 'CLIENT') {
-            return this.prisma.conversation.findMany({
+            conversations = await this.prisma.conversation.findMany({
                 where: { clientId: userId },
                 include: {
                     messages: {
@@ -42,7 +55,7 @@ export class ChatService {
             });
         } else {
             // ADMIN or PREPARER
-            return this.prisma.conversation.findMany({
+            conversations = await this.prisma.conversation.findMany({
                 include: {
                     messages: {
                         orderBy: { createdAt: 'desc' },
@@ -59,6 +72,10 @@ export class ChatService {
                 orderBy: { updatedAt: 'desc' }
             });
         }
+
+        // Cache for 5 minutes
+        await this.redisService.set(cacheKey, conversations, 300);
+        return conversations;
     }
 
     async getConversationById(id: string, userId: string, role: string) {
@@ -147,6 +164,14 @@ export class ChatService {
             data: { updatedAt: new Date() }
         });
 
+        // Invalidate caches
+        await this.redisService.del(`conversations:${conversation.clientId}`);
+        await this.redisService.del(`conversations:admin`);
+        await this.redisService.del(`unread_count:${conversation.clientId}`);
+        if (conversation.preparerId) {
+            await this.redisService.del(`unread_count:${conversation.preparerId}`);
+        }
+
         // Trigger Push Notification
         this.triggerPushNotification(message);
 
@@ -214,7 +239,7 @@ export class ChatService {
 
     async markMessagesAsRead(conversationId: string, userId: string) {
         // Mark all messages in this conversation where the sender IS NOT the current user as read
-        return this.prisma.message.updateMany({
+        const result = await this.prisma.message.updateMany({
             where: {
                 conversationId,
                 senderId: { not: userId },
@@ -225,6 +250,11 @@ export class ChatService {
                 isDelivered: true // If read, it's definitely delivered
             }
         });
+
+        // Invalidate cache
+        await this.redisService.del(`unread_count:${userId}`);
+
+        return result;
     }
 
     async markMessagesAsDelivered(conversationId: string, userId: string) {
@@ -242,6 +272,10 @@ export class ChatService {
     }
 
     async getUnreadMessageCount(userId: string) {
+        const cacheKey = `unread_count:${userId}`;
+        const cached = await this.redisService.get<{ count: number }>(cacheKey);
+        if (cached) return cached;
+
         const count = await this.prisma.message.count({
             where: {
                 senderId: { not: userId },
@@ -254,6 +288,9 @@ export class ChatService {
                 }
             }
         });
-        return { count };
+
+        const result = { count };
+        await this.redisService.set(cacheKey, result, 300);
+        return result;
     }
 }

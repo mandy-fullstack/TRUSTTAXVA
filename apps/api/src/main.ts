@@ -5,9 +5,15 @@ import { AppModule } from './app.module';
 import { ErrorInterceptor } from './common/interceptors/error.interceptor';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 
+import { RedisIoAdapter } from './common/adapters/redis-io.adapter';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
+
+  const redisIoAdapter = new RedisIoAdapter(app);
+  await redisIoAdapter.connectToRedis();
+  app.useWebSocketAdapter(redisIoAdapter);
 
   // Enable global validation pipe
   app.useGlobalPipes(new ValidationPipe({

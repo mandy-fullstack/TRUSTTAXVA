@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nest-lab/throttler-storage-redis": "^1.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
@@ -30,6 +31,7 @@
     "@nestjs/platform-socket.io": "^11.1.12",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.12",
+    "@socket.io/redis-adapter": "^8.3.0",
     "@trusttax/core": "workspace:*",
     "@trusttax/database": "workspace:*",
     "@types/nodemailer": "^7.0.9",
@@ -38,10 +40,12 @@
     "class-validator": "^0.14.3",
     "dotenv": "^17.2.3",
     "firebase-admin": "^13.6.0",
+    "ioredis": "^5.9.2",
     "nodemailer": "^7.0.12",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "qrcode": "^1.5.4",
+    "redis": "^5.10.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",

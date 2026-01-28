@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ChatService } from './chat.service';
 import { ClientToServerEvents, ServerToClientEvents } from '@trusttax/core';
+import { RedisService } from '../common/services/redis.service';
 
 @WebSocketGateway({
     cors: {
@@ -23,7 +24,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private jwtService: JwtService,
-        private chatService: ChatService
+        private chatService: ChatService,
+        private redisService: RedisService
     ) { }
 
     async handleConnection(client: Socket) {
@@ -45,6 +47,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 await client.join('admin_notifications');
             }
 
+            // Track presence in Redis
+            await this.redisService.set(`presence:${payload.sub}`, {
+                status: 'online',
+                lastSeen: new Date().toISOString(),
+                socketId: client.id
+            });
+
+            // Broadcast status change to admin room if it's a client
+            if (payload.role === 'CLIENT') {
+                this.server.to('admin_notifications').emit('userStatusChanged' as any, {
+                    userId: payload.sub,
+                    status: 'online'
+                });
+            }
+
             console.log(`Client connected: ${client.id}, User: ${payload.sub}`);
         } catch (e) {
             console.error('Connection unauthorized', e.message);
@@ -52,7 +69,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-    handleDisconnect(client: Socket) {
+    async handleDisconnect(client: Socket) {
+        const userId = client.data.user?.sub;
+        if (userId) {
+            // Remove presence from Redis or update to offline
+            await this.redisService.del(`presence:${userId}`);
+
+            // Broadcast status change
+            if (client.data.user?.role === 'CLIENT') {
+                this.server.to('admin_notifications').emit('userStatusChanged' as any, {
+                    userId,
+                    status: 'offline'
+                });
+            }
+        }
         console.log(`Client disconnected: ${client.id}`);
     }
 

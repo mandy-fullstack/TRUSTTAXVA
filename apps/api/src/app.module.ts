@@ -12,14 +12,25 @@ import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
 import { FirebaseModule } from './common/firebase.module';
+import { RedisModule } from './common/services/redis.module';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
 
 @Module({
   imports: [
-    // Rate limiting configuration
-    ThrottlerModule.forRoot([{
-      ttl: 60000, // Time window: 60 seconds
-      limit: 10, // Max 10 requests per window (default)
-    }]),
+    // Rate limiting configuration with Redis storage for global consistency
+    ThrottlerModule.forRootAsync({
+      useFactory: () => ({
+        throttlers: [{
+          ttl: 60000,
+          limit: 10,
+        }],
+        storage: new ThrottlerStorageRedisService(new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+          keyPrefix: 'tt:throttle:',
+          tls: (process.env.REDIS_URL || '').startsWith('rediss://') || (process.env.REDIS_URL || '').includes('upstash.io') ? {} : undefined,
+        })),
+      }),
+    }),
     AuthModule,
     ServicesModule,
     AdminModule,
@@ -28,7 +39,8 @@ import { FirebaseModule } from './common/firebase.module';
     OrdersModule,
     FaqModule,
     ChatModule,
-    FirebaseModule
+    FirebaseModule,
+    RedisModule
   ],
   controllers: [AppController],
   providers: [AppService],
