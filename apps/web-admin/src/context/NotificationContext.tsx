@@ -4,6 +4,7 @@ import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import { socket } from '../services/socket';
 import { getToken } from '../lib/cookies';
+import { requestFCMToken, onMessageListener } from '../lib/firebase';
 
 interface NotificationItem {
     id: string;
@@ -44,6 +45,24 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         if ('Notification' in window) {
             const perm = await Notification.requestPermission();
             setPermission(perm);
+
+            if (perm === 'granted' && isAuthenticated) {
+                setupFCM();
+            }
+        }
+    };
+
+    const setupFCM = async () => {
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.warn('FCM VAPID key not found in environment variables');
+            return;
+        }
+
+        const token = await requestFCMToken(vapidKey);
+        if (token) {
+            console.log('Admin FCM Token generated:', token);
+            await api.updateFcmToken(token);
         }
     };
 
@@ -118,6 +137,38 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         if (isAuthenticated) {
             checkUpdates();
 
+            if (permission === 'granted') {
+                setupFCM();
+            }
+
+            // Foreground FCM Listener
+            let unsubscribeFCM: (() => void) | undefined;
+            onMessageListener((payload) => {
+                console.log('Admin Foreground message received:', payload);
+                const notification = payload.notification;
+                if (notification) {
+                    showToast({
+                        title: notification.title || 'New Notification',
+                        message: notification.body || '',
+                        type: 'info',
+                        link: payload.data?.link
+                    });
+
+                    const newNotif: NotificationItem = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        type: 'message',
+                        title: notification.title || 'Notification',
+                        body: notification.body || '',
+                        date: new Date(),
+                        read: false,
+                        link: payload.data?.link || '/'
+                    };
+                    setNotifications(prev => [newNotif, ...prev]);
+                }
+            }).then(unsub => {
+                if (unsub) unsubscribeFCM = unsub;
+            });
+
             socket.auth = { token: getToken() };
             socket.connect();
 
@@ -149,6 +200,9 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
             const interval = setInterval(checkUpdates, 60000);
             return () => {
+                if (unsubscribeFCM) {
+                    unsubscribeFCM();
+                }
                 socket.off('notification');
                 socket.disconnect();
                 clearInterval(interval);

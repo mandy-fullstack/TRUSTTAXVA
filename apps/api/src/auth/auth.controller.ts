@@ -44,6 +44,12 @@ export class AuthController {
     }
 
     @UseGuards(AuthGuard('jwt'))
+    @Patch('fcm-token')
+    async updateFCMToken(@Request() req: any, @Body() body: { token: string | null }) {
+        return this.authService.updateFCMToken(req.user.userId, body.token);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
     @Get('profile/decrypt-ssn')
     async getDecryptedSSN(@Request() req: any) {
         const ssn = await this.authService.decryptSSN(req.user.userId);

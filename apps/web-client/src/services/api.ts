@@ -216,6 +216,18 @@ class ApiService {
         });
     }
 
+    async updateFCMToken(token: string | null): Promise<any> {
+        const authToken = getToken();
+        if (!authToken) return;
+        return this.request<any>('/auth/fcm-token', {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({ token }),
+        });
+    }
+
     async getDecryptedSSN(): Promise<string | null> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');

@@ -11,6 +11,7 @@ import { FormsModule } from './forms/forms.module';
 import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
+import { FirebaseModule } from './common/firebase.module';
 
 @Module({
   imports: [
@@ -26,7 +27,8 @@ import { ChatModule } from './chat/chat.module';
     FormsModule,
     OrdersModule,
     FaqModule,
-    ChatModule
+    ChatModule,
+    FirebaseModule
   ],
   controllers: [AppController],
   providers: [AppService],

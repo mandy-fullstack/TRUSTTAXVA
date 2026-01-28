@@ -4,6 +4,7 @@ import { socket } from '../services/socket';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { requestFCMToken, onMessageListener } from '../lib/firebase';
 
 interface NotificationItem {
     id: string;
@@ -62,9 +63,27 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             try {
                 const perm = await window.Notification.requestPermission();
                 setPermission(perm);
+
+                if (perm === 'granted' && isAuthenticated) {
+                    setupFCM();
+                }
             } catch (e) {
                 console.warn('Notification permission request failed', e);
             }
+        }
+    };
+
+    const setupFCM = async () => {
+        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+        if (!vapidKey) {
+            console.warn('FCM VAPID key not found in environment variables');
+            return;
+        }
+
+        const token = await requestFCMToken(vapidKey);
+        if (token) {
+            console.log('FCM Token generated:', token);
+            await api.updateFCMToken(token);
         }
     };
 
@@ -224,6 +243,40 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
         if (isAuthenticated) {
             checkUpdates();
 
+            if (permission === 'granted') {
+                setupFCM();
+            }
+
+            // Foreground FCM Listener
+            let unsubscribeFCM: (() => void) | undefined;
+            onMessageListener((payload) => {
+                console.log('Foreground message received:', payload);
+                const notification = payload.notification;
+                if (notification) {
+                    showToast({
+                        title: notification.title || 'New Notification',
+                        message: notification.body || '',
+                        type: 'info',
+                        link: payload.data?.link
+                    });
+
+                    const newNotif: NotificationItem = {
+                        id: Math.random().toString(36).substr(2, 9),
+                        type: 'message',
+                        title: notification.title || 'Notification',
+                        body: notification.body || '',
+                        date: new Date(),
+                        read: false,
+                        link: payload.data?.link || '/'
+                    };
+                    setNotifications(prev => [newNotif, ...prev]);
+                }
+            }).then(unsub => {
+                if (unsub) unsubscribeFCM = unsub;
+            });
+
+            socket.auth = { token: getToken() };
+
             socket.auth = { token: getToken() };
             socket.connect();
 
@@ -256,12 +309,15 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             const interval = setInterval(checkUpdates, 60000);
 
             return () => {
+                if (unsubscribeFCM) {
+                    unsubscribeFCM();
+                }
                 socket.off('notification');
                 socket.disconnect();
                 clearInterval(interval);
             };
         }
-    }, [isAuthenticated, permission]); // Added permission dependency to ensure we use latest value
+    }, [isAuthenticated, permission]);
 
     return (
         <NotificationContext.Provider value={{

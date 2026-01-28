@@ -268,6 +268,13 @@ export class AuthService {
         };
     }
 
+    async updateFCMToken(userId: string, token: string | null) {
+        return (this.prisma.user as any).update({
+            where: { id: userId },
+            data: { fcmToken: token },
+        });
+    }
+
     /**
      * Calculate if user profile is complete
      * Required fields: firstName, lastName, dateOfBirth, countryOfBirth, primaryLanguage, ssnEncrypted, termsAcceptedAt

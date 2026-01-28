@@ -97,10 +97,10 @@ export const api = {
     });
   },
 
-  updateFcmToken(fcmToken: string) {
+  updateFcmToken(token: string) {
     return request<any>('/auth/fcm-token', {
       method: 'PATCH',
-      body: JSON.stringify({ fcmToken }),
+      body: JSON.stringify({ token }),
     });
   },
 

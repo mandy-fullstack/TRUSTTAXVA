@@ -2,12 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { ChatGateway } from '../chat/chat.gateway';
+import { FirebaseService } from '../common/services/firebase.service';
 
 @Injectable()
 export class OrdersService {
     constructor(
         private prisma: PrismaService,
-        private chatGateway: ChatGateway
+        private chatGateway: ChatGateway,
+        private firebaseService: FirebaseService
     ) { }
 
     async create(userId: string, serviceId: string, metadata: any) {
@@ -145,7 +147,6 @@ export class OrdersService {
             link: `/orders/${approval.orderId}`
         });
 
-        // Also emit to admin channel
         this.chatGateway.server.to('admin_notifications').emit('notification', {
             type: 'order',
             title: 'Aprobación de Orden',
@@ -153,6 +154,33 @@ export class OrdersService {
             link: `/admin/orders/${approval.orderId}`
         });
 
+        // Trigger Push Notification for Admins (if any have registered tokens)
+        this.triggerAdminPushNotification(`Aprobación de Orden`, `Cliente respondió con ${status} para la orden ${approval.orderId.slice(0, 8)}`, `/admin/orders/${approval.orderId}`);
+
         return updated;
+    }
+
+    private async triggerAdminPushNotification(title: string, body: string, link: string) {
+        try {
+            // Find all admins/preparers with FCM tokens
+            const admins = await (this.prisma.user as any).findMany({
+                where: {
+                    role: { in: ['ADMIN', 'PREPARER'] },
+                    fcmToken: { not: null }
+                },
+                select: { fcmToken: true }
+            });
+
+            for (const admin of (admins as any[])) {
+                if (admin.fcmToken) {
+                    await this.firebaseService.sendPushNotification(admin.fcmToken, title, body, {
+                        type: 'admin_notification',
+                        link
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to send admin push notification:', error);
+        }
     }
 }

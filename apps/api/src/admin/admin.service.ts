@@ -3,13 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
 
 import { ChatGateway } from '../chat/chat.gateway';
+import { FirebaseService } from '../common/services/firebase.service';
 
 @Injectable()
 export class AdminService {
     constructor(
         private prisma: PrismaService,
         private encryptionService: EncryptionService,
-        private chatGateway: ChatGateway
+        private chatGateway: ChatGateway,
+        private firebaseService: FirebaseService
     ) { }
 
     async getAllClients() {
@@ -238,13 +240,15 @@ export class AdminService {
             }
         });
 
-        // Emit notification to user
         this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
             type: 'order',
             title: 'Actualización de Estado',
             body: `Tu orden ha cambiado a estado: ${status}`,
             link: `/dashboard/orders/${orderId}`
         });
+
+        // Trigger Push Notification
+        this.triggerOrderPushNotification(order.userId, 'Actualización de Estado', `Tu orden ha cambiado a estado: ${status}`, `/orders/${orderId}`);
 
         const total = Number((order.service as { price?: unknown }).price ?? 0);
         return { ...order, total };
@@ -293,9 +297,30 @@ export class AdminService {
                 body: `Se requiere tu aprobación: ${title}`,
                 link: `/dashboard/orders/${orderId}`
             });
+
+            // Trigger Push Notification
+            this.triggerOrderPushNotification(order.userId, 'Acción Requerida', `Se requiere tu aprobación: ${title}`, `/orders/${orderId}`);
         }
 
         return approval;
+    }
+
+    private async triggerOrderPushNotification(userId: string, title: string, body: string, link: string) {
+        try {
+            const user = await (this.prisma.user as any).findUnique({
+                where: { id: userId },
+                select: { fcmToken: true }
+            });
+
+            if (user && user.fcmToken) {
+                await this.firebaseService.sendPushNotification(user.fcmToken, title, body, {
+                    type: 'order_update',
+                    link
+                });
+            }
+        } catch (error) {
+            console.error('Failed to send order push notification:', error);
+        }
     }
 
     async getDashboardMetrics() {

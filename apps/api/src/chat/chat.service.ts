@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FirebaseService } from '../common/services/firebase.service';
 
 @Injectable()
 export class ChatService {
     constructor(
-        private prisma: PrismaService
+        private prisma: PrismaService,
+        private firebaseService: FirebaseService
     ) { }
 
     async createConversation(clientId: string, subject?: string) {
@@ -145,7 +147,45 @@ export class ChatService {
             data: { updatedAt: new Date() }
         });
 
+        // Trigger Push Notification
+        this.triggerPushNotification(message);
+
         return message;
+    }
+
+    private async triggerPushNotification(message: any) {
+        try {
+            const { conversationId, senderId, sender, content } = message;
+            const conversation = await (this.prisma.conversation as any).findUnique({
+                where: { id: conversationId },
+                include: {
+                    client: { select: { id: true, fcmToken: true } },
+                    preparer: { select: { id: true, fcmToken: true } }
+                }
+            });
+
+            if (!conversation) return;
+
+            // Determine recipient
+            const recipient = conversation.clientId === senderId
+                ? conversation.preparer
+                : conversation.client;
+
+            if (recipient && recipient.fcmToken) {
+                await this.firebaseService.sendPushNotification(
+                    recipient.fcmToken,
+                    `Nuevo mensaje de ${sender.name || 'Soporte'}`,
+                    content.length > 100 ? content.substring(0, 97) + '...' : content,
+                    {
+                        conversationId,
+                        type: 'chat_message',
+                        link: `/dashboard/chat/${conversationId}`
+                    }
+                );
+            }
+        } catch (error) {
+            console.error('Failed to send message push notification:', error);
+        }
     }
 
     async deleteConversation(id: string, userId: string, role: string) {
