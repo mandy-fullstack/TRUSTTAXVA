@@ -26,6 +26,7 @@ export class StorageService {
                 throw new Error('Firebase Storage configuration missing');
             }
 
+            console.log(`[StorageService] Using bucket: ${bucketName}`);
             this.bucket = admin.storage().bucket(bucketName);
         }
         return this.bucket;
@@ -62,7 +63,7 @@ export class StorageService {
 
         return {
             url,
-            fileName: file.originalname,
+            fileName: fileName, // Store the FULL path (path + uuid + originalname)
             size: file.size,
             mimeType: file.mimetype,
         };

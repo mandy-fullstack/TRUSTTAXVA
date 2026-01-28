@@ -1,15 +1,21 @@
-import { Controller, Get, Param, Patch, Body, UseGuards, Request, Post, Put, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Body, UseGuards, Request, Post, Put, Delete, UseInterceptors, UploadedFile, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
+import { DocumentsService } from '../documents/documents.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { UploadDocumentDto } from '../documents/dto/upload-document.dto';
+import { DocType } from '@trusttax/database';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
 export class AdminController {
-    constructor(private adminService: AdminService) { }
+    constructor(
+        private adminService: AdminService,
+        private documentsService: DocumentsService
+    ) { }
 
     @Get('clients')
     async getAllClients(@Request() req: any) {
-        // Verify admin role
         if (req.user.role !== 'ADMIN') {
             throw new Error('Unauthorized');
         }
@@ -67,6 +73,7 @@ export class AdminController {
         }
         return this.adminService.updateOrderStatus(id, body.status, body.notes);
     }
+
     @Post('orders/:id/timeline')
     async addOrderTimelineEntry(
         @Request() req: any,
@@ -197,5 +204,44 @@ export class AdminController {
     ) {
         if (req.user.role !== 'ADMIN') throw new Error('Unauthorized');
         return this.adminService.reorderServiceSteps(body.stepIds);
+    }
+
+    // Client Document Management
+    @Get('clients/:id/documents')
+    async getClientDocuments(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Query('type') type?: DocType,
+        @Query('limit') limit?: string,
+        @Query('offset') offset?: string,
+    ) {
+        if (req.user.role !== 'ADMIN') throw new Error('Unauthorized');
+        return this.documentsService.findUserDocuments(id, {
+            type,
+            limit: limit ? parseInt(limit) : undefined,
+            offset: offset ? parseInt(offset) : undefined,
+        });
+    }
+
+    @Post('clients/:id/documents/upload')
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadClientDocument(
+        @Request() req: any,
+        @Param('id') id: string,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() dto: UploadDocumentDto
+    ) {
+        if (req.user.role !== 'ADMIN') throw new Error('Unauthorized');
+        return this.documentsService.uploadDocument(id, file, dto);
+    }
+
+    @Delete('clients/:userId/documents/:docId')
+    async removeClientDocument(
+        @Request() req: any,
+        @Param('userId') userId: string,
+        @Param('docId') docId: string
+    ) {
+        if (req.user.role !== 'ADMIN') throw new Error('Unauthorized');
+        return this.documentsService.deleteDocument(userId, docId);
     }
 }

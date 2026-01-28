@@ -9,6 +9,11 @@ dist
 .env.*
 .env.*.local
 !.env.example
+# Firebase & Service Accounts
+*-firebase-adminsdk-*.json
+firebase-key.json
+service-account.json
+secrets.json
 
 # Database (local / SQLite dev)
 *.db
