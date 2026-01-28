@@ -25,6 +25,12 @@ export class FirebaseService implements OnModuleInit {
 
                     try {
                         const serviceAccount = JSON.parse(jsonStr);
+
+                        // Fix private key newlines if they are escaped as literals
+                        if (serviceAccount.private_key) {
+                            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+                        }
+
                         admin.initializeApp({
                             credential: admin.credential.cert(serviceAccount),
                         });
