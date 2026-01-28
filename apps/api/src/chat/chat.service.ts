@@ -172,14 +172,19 @@ export class ChatService {
                 : conversation.client;
 
             if (recipient && recipient.fcmToken) {
+                const isToClient = conversation.clientId === recipient.id;
+                const link = isToClient
+                    ? `/dashboard/chat/${conversationId}`
+                    : `/chat/${conversationId}`;
+
                 await this.firebaseService.sendPushNotification(
                     recipient.fcmToken,
-                    `Nuevo mensaje de ${sender.name || 'Soporte'}`,
+                    `💬 ${sender.name || 'Soporte'}`,
                     content.length > 100 ? content.substring(0, 97) + '...' : content,
                     {
+                        type: 'chat',
                         conversationId,
-                        type: 'chat_message',
-                        link: `/dashboard/chat/${conversationId}`
+                        link
                     }
                 );
             }

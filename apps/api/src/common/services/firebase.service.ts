@@ -53,7 +53,8 @@ export class FirebaseService implements OnModuleInit {
             token,
             webpush: {
                 headers: {
-                    Urgency: 'high'
+                    Urgency: 'high',
+                    TTL: '86400' // 24 hours persistence
                 },
                 notification: {
                     icon: '/vite.svg',
@@ -68,15 +69,26 @@ export class FirebaseService implements OnModuleInit {
             },
             android: {
                 priority: 'high',
+                ttl: 86400000, // 24 hours in ms
                 notification: {
                     sound: 'default',
                     color: '#0F172A',
-                    icon: 'stock_ticker_update', // Placeholder, using default
+                    icon: 'stock_ticker_update',
+                    sticky: false,
+                    visibility: 'public'
                 }
             },
             apns: {
+                headers: {
+                    'apns-priority': '10',
+                    'apns-expiration': Math.floor(Date.now() / 1000 + 86400).toString()
+                },
                 payload: {
                     aps: {
+                        alert: {
+                            title,
+                            body
+                        },
                         sound: 'default',
                         badge: 1,
                         'mutable-content': 1,

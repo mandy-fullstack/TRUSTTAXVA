@@ -32,6 +32,14 @@ export class AdminController {
         return this.adminService.getClientDetails(id);
     }
 
+    @Post('clients/:id/test-push')
+    async sendTestPush(@Request() req: any, @Param('id') id: string) {
+        if (req.user.role !== 'ADMIN') {
+            throw new Error('Unauthorized');
+        }
+        return this.adminService.sendTestPush(id);
+    }
+
     @Get('orders')
     async getAllOrders(@Request() req: any) {
         if (req.user.role !== 'ADMIN') {

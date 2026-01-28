@@ -21,6 +21,8 @@ import {
   Eye,
   EyeOff,
   Clock,
+  Bell,
+  CheckCircle,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -68,6 +70,9 @@ export function ClientDetailPage() {
   const [sensitiveLoading, setSensitiveLoading] = useState(false);
   const [sensitiveError, setSensitiveError] = useState('');
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [pushError, setPushError] = useState('');
 
   useEffect(() => {
     setSensitiveData(null);
@@ -128,6 +133,23 @@ export function ClientDetailPage() {
   const hideSensitive = () => {
     setSecondsLeft(0);
     setSensitiveData(null);
+  };
+
+  const handleTestPush = async () => {
+    if (!id || pushLoading) return;
+    setPushLoading(true);
+    setPushStatus('idle');
+    setPushError('');
+    try {
+      await api.sendTestPush(id);
+      setPushStatus('success');
+      setTimeout(() => setPushStatus('idle'), 5000);
+    } catch (e: any) {
+      setPushStatus('error');
+      setPushError(e?.message || 'Failed to send test notification');
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   if (loading) {
@@ -281,6 +303,55 @@ export function ClientDetailPage() {
               <Row label="Terms version" value={orDash(client.termsVersion)} />
               <Row label="Profile completed" value={client.profileCompleted ? 'Yes' : 'No'} />
               <Row label="Completed at" value={formatDateTime(client.profileCompletedAt)} />
+            </View>
+          </View>
+
+          {/* Notifications */}
+          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+            <View style={styles.sectionTitleRow}>
+              <Bell size={18} color="#334155" />
+              <H4 style={styles.sectionTitle}>Push Notifications</H4>
+            </View>
+            <View style={styles.card}>
+              <Row
+                label="Status"
+                value={client.fcmToken ? '✅ Registered' : '❌ Not Registered'}
+              />
+              <Text style={styles.notifHint}>
+                {client.fcmToken
+                  ? 'The user has enabled notifications on at least one device.'
+                  : 'The user has not granted notification permissions yet.'}
+              </Text>
+
+              <TouchableOpacity
+                style={[
+                  styles.testPushButton,
+                  !client.fcmToken && styles.testPushButtonDisabled,
+                  pushStatus === 'success' && styles.testPushButtonSuccess
+                ]}
+                onPress={handleTestPush}
+                disabled={!client.fcmToken || pushLoading}
+                activeOpacity={0.7}
+              >
+                {pushLoading ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : pushStatus === 'success' ? (
+                  <>
+                    <CheckCircle size={18} color="#FFF" />
+                    <Text style={styles.testPushButtonText}>Notification Sent!</Text>
+                  </>
+                ) : (
+                  <>
+                    <Bell size={18} color={client.fcmToken ? "#FFF" : "#94A3B8"} />
+                    <Text style={[styles.testPushButtonText, !client.fcmToken && { color: '#94A3B8' }]}>
+                      Send Test Notification
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              {pushStatus === 'error' && (
+                <Text style={styles.pushError}>{pushError}</Text>
+              )}
             </View>
           </View>
         </View>
@@ -459,4 +530,19 @@ const styles = StyleSheet.create({
   linkText: { fontSize: 13, fontWeight: '600', color: '#2563EB' },
   empty: { padding: 24, backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
   emptyText: { color: '#94A3B8', fontSize: 14 },
+  notifHint: { fontSize: 13, color: '#64748B', marginTop: 8, marginBottom: 16, fontStyle: 'italic' },
+  testPushButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#0F172A',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8
+  },
+  testPushButtonDisabled: { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
+  testPushButtonSuccess: { backgroundColor: '#10B981' },
+  testPushButtonText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
+  pushError: { fontSize: 13, color: '#EF4444', marginTop: 12, textAlign: 'center' },
 });

@@ -15,7 +15,7 @@ export class AdminService {
     ) { }
 
     async getAllClients() {
-        const clients = await this.prisma.user.findMany({
+        const clients = await (this.prisma.user as any).findMany({
             where: { role: 'CLIENT' },
             select: {
                 id: true,
@@ -33,6 +33,7 @@ export class AdminService {
                 driverLicenseLast4: true,
                 passportLast4: true,
                 termsAcceptedAt: true,
+                fcmToken: true,
                 createdAt: true,
                 updatedAt: true,
                 _count: {
@@ -616,5 +617,28 @@ export class AdminService {
                 })
             )
         );
+    }
+
+    async sendTestPush(userId: string) {
+        const user = await (this.prisma.user as any).findUnique({
+            where: { id: userId },
+            select: { fcmToken: true, name: true, email: true }
+        });
+
+        if (!user?.fcmToken) {
+            throw new Error('User does not have a registered push token');
+        }
+
+        await this.firebaseService.sendPushNotification(
+            user.fcmToken,
+            '🔔 Prueba de Notificación',
+            '¡Hola! Esta es una notificación de prueba de TrustTax. Si recibes esto, tu dispositivo está configurado correctamente.',
+            {
+                type: 'admin_test',
+                link: '/dashboard'
+            }
+        );
+
+        return { success: true };
     }
 }

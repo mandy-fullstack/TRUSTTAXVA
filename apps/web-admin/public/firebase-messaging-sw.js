@@ -29,6 +29,30 @@ messaging.onBackgroundMessage((payload) => {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// Generic push event handler for non-FCM or legacy pushes
+self.addEventListener('push', (event) => {
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            if (!data.fcm_message_id) {
+                const options = {
+                    body: data.body || 'Nueva actualización de TrustTax Admin',
+                    icon: '/vite.svg',
+                    badge: '/favicon.svg',
+                    data: data.link || '/',
+                    tag: 'legacy-admin-notification',
+                    actions: [
+                        { action: 'open', title: 'Ver ahora' }
+                    ]
+                };
+                event.waitUntil(self.registration.showNotification(data.title || 'TrustTax Admin', options));
+            }
+        } catch (e) {
+            console.log('Non-JSON push received');
+        }
+    }
+});
+
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
     const urlToOpen = event.notification.data || '/';

@@ -106,6 +106,7 @@ export const api = {
 
   getClients: () => request<any[]>('/admin/clients'),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
+  sendTestPush: (id: string) => request<any>(`/admin/clients/${id}/test-push`, { method: 'POST' }),
   getClientSensitive: (id: string) =>
     request<{
       ssn: string | null;
