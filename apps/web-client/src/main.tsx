@@ -28,10 +28,11 @@ createRoot(root).render(
 // Register service worker if supported
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(registration => {
-      console.log('SW registered: ', registration);
+    // Register the Firebase messaging sw.js
+    navigator.serviceWorker.register('/firebase-messaging-sw.js').then(registration => {
+      console.log('FCM SW registered: ', registration);
     }).catch(registrationError => {
-      console.log('SW registration failed: ', registrationError);
+      console.log('FCM SW registration failed: ', registrationError);
     });
   });
 }

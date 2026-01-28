@@ -31,6 +31,32 @@ messaging.onBackgroundMessage((payload) => {
     self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
+// Generic push event handler for non-FCM or legacy pushes
+self.addEventListener('push', (event) => {
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            // Only show if it's NOT an FCM notification (which is handled by messaging.onBackgroundMessage)
+            // Or if we specifically want to handle legacy pushes
+            if (!data.fcm_message_id) {
+                const options = {
+                    body: data.body || 'Nuevo mensaje de TrustTax',
+                    icon: '/vite.svg',
+                    badge: '/favicon.svg',
+                    data: data.link || '/',
+                    tag: 'legacy-notification',
+                    actions: [
+                        { action: 'open', title: 'Ver ahora' }
+                    ]
+                };
+                event.waitUntil(self.registration.showNotification(data.title || 'TrustTax', options));
+            }
+        } catch (e) {
+            console.log('Non-JSON push received');
+        }
+    }
+});
+
 // Notification click behavior
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();

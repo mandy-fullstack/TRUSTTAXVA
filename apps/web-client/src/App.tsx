@@ -25,6 +25,17 @@ import { NotificationProvider } from './context/NotificationContext';
 import { ToastProvider } from './context/ToastContext';
 import type { ReactNode } from 'react';
 
+const AuthRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -71,9 +82,9 @@ function App() {
                   <Route path="/contact" element={<ContactPage />} />
 
                   {/* Auth Routes */}
-                  <Route path="/register" element={<RegisterPage />} />
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
+                  <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
+                  <Route path="/forgot-password" element={<AuthRoute><ForgotPasswordPage /></AuthRoute>} />
                   <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                   <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
 

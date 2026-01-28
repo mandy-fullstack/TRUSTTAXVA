@@ -8,7 +8,7 @@ import Cookies from 'js-cookie';
 export const COOKIE_TOKEN = 'admin_token';
 export const COOKIE_USER = 'admin_user';
 
-const DEFAULT_EXPIRES = 7;
+const DEFAULT_EXPIRES = 30;
 const COOKIE_PATH = '/';
 
 function defaultOptions(): Cookies.CookieAttributes {

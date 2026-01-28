@@ -19,6 +19,13 @@ import { SocketProvider } from './context/SocketContext';
 import { AdminChatPage } from './pages/Chat/AdminChatPage';
 import type { ReactNode } from 'react';
 
+const AuthRoute = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+};
+
 const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -41,9 +48,9 @@ function App() {
             <BrowserRouter>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
+                <Route path="/forgot-password" element={<AuthRoute><ForgotPasswordPage /></AuthRoute>} />
+                <Route path="/reset-password/:token" element={<AuthRoute><ResetPasswordPage /></AuthRoute>} />
 
                 {/* Protected Admin Routes */}
                 <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

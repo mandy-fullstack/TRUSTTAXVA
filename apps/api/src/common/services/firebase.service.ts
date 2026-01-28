@@ -52,12 +52,36 @@ export class FirebaseService implements OnModuleInit {
             },
             token,
             webpush: {
+                headers: {
+                    Urgency: 'high'
+                },
                 notification: {
                     icon: '/vite.svg',
                     badge: '/favicon.svg',
+                    requireInteraction: true,
+                    silent: false,
+                    tag: data.type || 'general'
                 },
                 fcm_options: {
                     link: data.link || '/'
+                }
+            },
+            android: {
+                priority: 'high',
+                notification: {
+                    sound: 'default',
+                    color: '#0F172A',
+                    icon: 'stock_ticker_update', // Placeholder, using default
+                }
+            },
+            apns: {
+                payload: {
+                    aps: {
+                        sound: 'default',
+                        badge: 1,
+                        'mutable-content': 1,
+                        'content-available': 1
+                    }
                 }
             }
         };
@@ -68,6 +92,8 @@ export class FirebaseService implements OnModuleInit {
             return response;
         } catch (error) {
             console.error('Error sending push notification:', error);
+            // Handle expired/invalid tokens by clearing them in DB?
+            // This would require more logic to pass userId here
             return null;
         }
     }

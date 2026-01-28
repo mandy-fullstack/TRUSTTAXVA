@@ -55,8 +55,20 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 (window.navigator as any).standalone ||
                 document.referrer.includes('android-app://');
             setIsStandalone(!!standalone);
+
+            // If iOS and not standalone, show a tip after a delay
+            if (ios && !standalone) {
+                setTimeout(() => {
+                    showToast({
+                        title: '💡 Tip para iPhone',
+                        message: 'Para recibir notificaciones, pulsa "Compartir" y luego "Añadir a la pantalla de inicio".',
+                        type: 'info',
+                        duration: 10000
+                    });
+                }, 5000);
+            }
         }
-    }, []);
+    }, [showToast]);
 
     const requestPermission = async () => {
         if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -240,15 +252,57 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
 
 
     useEffect(() => {
-        if (isAuthenticated) {
-            checkUpdates();
+        if (!isAuthenticated) return;
+
+        checkUpdates();
+        const interval = setInterval(checkUpdates, 60 * 1000);
+
+        socket.auth = { token: getToken() };
+        socket.connect();
+
+        socket.on('notification', (payload: any) => {
+            const newNotif: NotificationItem = {
+                id: Math.random().toString(36).substr(2, 9),
+                type: payload.type || 'order',
+                title: payload.title,
+                body: payload.body,
+                date: new Date(),
+                read: false,
+                link: payload.link
+            };
+
+            setNotifications(prev => [newNotif, ...prev]);
+
+            showToast({
+                title: newNotif.title,
+                message: newNotif.body,
+                type: 'info',
+                link: newNotif.link
+            });
 
             if (permission === 'granted') {
-                setupFCM();
+                playSound();
+                sendBrowserNotification(newNotif.title, newNotif.body);
             }
+        });
 
-            // Foreground FCM Listener
-            let unsubscribeFCM: (() => void) | undefined;
+        return () => {
+            socket.off('notification');
+            socket.disconnect();
+            clearInterval(interval);
+        };
+    }, [isAuthenticated, permission]);
+
+    // Separate effect for Firebase Cloud Messaging
+    useEffect(() => {
+        // Setup FCM Token (even if not authenticated, the api service will skip if no token)
+        if (permission === 'granted') {
+            setupFCM();
+        }
+
+        // Foreground FCM Listener - Always active if permission granted
+        let unsubscribeFCM: (() => void) | undefined;
+        if (permission === 'granted') {
             onMessageListener((payload) => {
                 console.log('Foreground message received:', payload);
                 const notification = payload.notification;
@@ -274,60 +328,24 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
             }).then(unsub => {
                 if (unsub) unsubscribeFCM = unsub;
             });
-
-            socket.auth = { token: getToken() };
-
-            socket.auth = { token: getToken() };
-            socket.connect();
-
-            socket.on('notification', (payload: any) => {
-                const newNotif: NotificationItem = {
-                    id: Math.random().toString(36).substr(2, 9),
-                    type: payload.type || 'order',
-                    title: payload.title,
-                    body: payload.body,
-                    date: new Date(),
-                    read: false,
-                    link: payload.link
-                };
-
-                setNotifications(prev => [newNotif, ...prev]);
-
-                showToast({
-                    title: newNotif.title,
-                    message: newNotif.body,
-                    type: 'info',
-                    link: newNotif.link
-                });
-
-                if (permission === 'granted') {
-                    playSound();
-                    sendBrowserNotification(newNotif.title, newNotif.body);
-                }
-            });
-
-            const interval = setInterval(checkUpdates, 60000);
-
-            return () => {
-                if (unsubscribeFCM) {
-                    unsubscribeFCM();
-                }
-                socket.off('notification');
-                socket.disconnect();
-                clearInterval(interval);
-            };
         }
-    }, [isAuthenticated, permission]);
+
+        return () => {
+            if (unsubscribeFCM) {
+                unsubscribeFCM();
+            }
+        };
+    }, [permission, isAuthenticated]);
 
     return (
         <NotificationContext.Provider value={{
             permission,
-            isStandalone,
-            isIOS,
             requestPermission,
             notifications,
             markAsRead,
-            unreadCount
+            unreadCount,
+            isStandalone,
+            isIOS
         }}>
             {children}
         </NotificationContext.Provider>

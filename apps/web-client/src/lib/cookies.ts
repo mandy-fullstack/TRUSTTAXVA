@@ -12,8 +12,8 @@ export const COOKIE_TOKEN = 'token';
 /** Cookie key for serialized user (JSON). No sensitive data. */
 export const COOKIE_USER = 'user';
 
-/** Default expiry in days */
-const DEFAULT_EXPIRES = 7;
+/** Default expiry in days (30 days for persistence) */
+const DEFAULT_EXPIRES = 30;
 
 const COOKIE_PATH = '/';
 

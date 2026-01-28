@@ -217,15 +217,26 @@ class ApiService {
     }
 
     async updateFCMToken(token: string | null): Promise<any> {
+        if (token) {
+            localStorage.setItem('fcm_token_pending', token);
+        }
+
         const authToken = getToken();
         if (!authToken) return;
-        return this.request<any>('/auth/fcm-token', {
-            method: 'PATCH',
-            headers: {
-                Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify({ token }),
-        });
+
+        try {
+            const res = await this.request<any>('/auth/fcm-token', {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify({ token }),
+            });
+            if (token) localStorage.removeItem('fcm_token_pending');
+            return res;
+        } catch (e) {
+            console.warn('Failed to sync FCM token', e);
+        }
     }
 
     async getDecryptedSSN(): Promise<string | null> {

@@ -1,5 +1,7 @@
 import { View, StyleSheet, TouchableOpacity, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Text, H1, H2, H3, H4, Button } from '@trusttax/ui';
+import { useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { PublicLayout } from '../../components/PublicLayout';
 import { AuthorizedIRSBadge } from '../../components/AuthorizedIRSBadge';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +17,13 @@ export const LandingPage = () => {
     const { profile } = useCompany();
     const { width } = useWindowDimensions();
     const isMobile = width <= 1024;
+    const { isAuthenticated, isLoading } = useAuth();
+
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            navigate('/dashboard');
+        }
+    }, [isAuthenticated, isLoading, navigate]);
 
     return (
         <PublicLayout>
@@ -201,15 +210,15 @@ const styles = StyleSheet.create({
     stepText: { fontSize: 15, color: '#64748B', lineHeight: 26, fontWeight: '300' },
 
     grid: { flexDirection: 'row', gap: 24, flexWrap: 'wrap', justifyContent: 'center' },
-    card: { 
-        flex: 1, 
-        minWidth: 280, 
-        padding: 32, 
-        backgroundColor: '#FFFFFF', 
-        borderWidth: 1, 
+    card: {
+        flex: 1,
+        minWidth: 280,
+        padding: 32,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
         borderColor: '#E2E8F0',
-        ...(Platform.OS === 'web' 
-            ? { boxShadow: '0 2px 8px rgba(0,0,0,0.02)' } 
+        ...(Platform.OS === 'web'
+            ? { boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }
             : { shadowColor: '#000', shadowOpacity: 0.02, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2 }
         ),
     } as any,
