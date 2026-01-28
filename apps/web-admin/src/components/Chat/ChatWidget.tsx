@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     listContainer: { flex: 1 },
     listActions: { flexDirection: 'row', padding: 12, gap: 8, alignItems: 'center' },
     searchContainer: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', paddingHorizontal: 12, borderRadius: 0, height: 40, borderWidth: 1, borderColor: '#E2E8F0' },
-    searchInput: { flex: 1, marginLeft: 8, fontSize: 14, outlineStyle: 'none' } as any,
+    searchInput: { flex: 1, marginLeft: 8, fontSize: 16, outlineStyle: 'none' } as any,
     conversationList: { flex: 1 },
     convItem: { flexDirection: 'row', padding: 16, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
     avatar: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center', marginRight: 12 },

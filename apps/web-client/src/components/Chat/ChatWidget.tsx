@@ -298,9 +298,9 @@ const styles = StyleSheet.create({
     messageRow: { flexDirection: 'row', marginBottom: 4, maxWidth: '85%' },
     rowLeft: { alignSelf: 'flex-start' },
     rowRight: { alignSelf: 'flex-end', flexDirection: 'row-reverse' },
-    messageBubble: { padding: 12, borderRadius: 0, maxWidth: '100%' },
+    messageBubble: { padding: 14, borderRadius: 0, maxWidth: '100%' },
     bubbleLeft: { backgroundColor: '#FFF', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0' },
-    bubbleRight: { backgroundColor: '#2563EB', borderRadius: 0 },
+    bubbleRight: { backgroundColor: '#0F172A', borderRadius: 0 },
     messageText: { fontSize: 14, lineHeight: 20 },
     textWhite: { color: '#FFF' },
     textDark: { color: '#1E293B' },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
 
     inputArea: { padding: 12, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
     input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
-    sendBtn: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#2563EB', alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+    sendBtn: { width: 40, height: 40, borderRadius: 0, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
     sendBtnDisabled: { opacity: 0.5 },
 
     // Order List styles
