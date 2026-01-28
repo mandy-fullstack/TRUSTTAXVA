@@ -25,10 +25,10 @@ export class EncryptionService {
      * Falls back to a default for development (MUST be changed in production)
      */
     private getEncryptionKey(): Buffer {
-        const keyMaterial = process.env.ENCRYPTION_KEY || 'CHANGE_THIS_IN_PRODUCTION_USE_STRONG_RANDOM_KEY_AT_LEAST_32_CHARS';
-        
-        if (keyMaterial.length < 32) {
-            throw new Error('ENCRYPTION_KEY must be at least 32 characters long');
+        const keyMaterial = process.env.ENCRYPTION_KEY;
+
+        if (!keyMaterial || keyMaterial.length < 32) {
+            throw new Error('ENCRYPTION_KEY must be configured and at least 32 characters long');
         }
 
         // Derive a consistent key from the material using PBKDF2
@@ -54,23 +54,23 @@ export class EncryptionService {
             const key = this.getEncryptionKey();
             const iv = crypto.randomBytes(this.ivLength);
             const salt = crypto.randomBytes(this.saltLength);
-            
+
             const cipher = crypto.createCipheriv(this.algorithm, key, iv);
-        
-        let encrypted = cipher.update(plaintext, 'utf8');
-        encrypted = Buffer.concat([encrypted, cipher.final()]);
-        
-        const tag = cipher.getAuthTag();
-        
-        // Combine: IV + Salt + Tag + EncryptedData
-        const combined = Buffer.concat([
-            iv,
-            salt,
-            tag,
-            encrypted
-        ]);
-        
-        return combined.toString('base64');
+
+            let encrypted = cipher.update(plaintext, 'utf8');
+            encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+            const tag = cipher.getAuthTag();
+
+            // Combine: IV + Salt + Tag + EncryptedData
+            const combined = Buffer.concat([
+                iv,
+                salt,
+                tag,
+                encrypted
+            ]);
+
+            return combined.toString('base64');
         } catch (error) {
             console.error('Encryption error:', error);
             throw new Error('Failed to encrypt sensitive data');
@@ -89,7 +89,7 @@ export class EncryptionService {
         try {
             const key = this.getEncryptionKey();
             const combined = Buffer.from(encryptedData, 'base64');
-            
+
             // Extract components
             const iv = combined.subarray(0, this.ivLength);
             const salt = combined.subarray(this.ivLength, this.ivLength + this.saltLength);
@@ -98,13 +98,13 @@ export class EncryptionService {
                 this.ivLength + this.saltLength + this.tagLength
             );
             const encrypted = combined.subarray(this.ivLength + this.saltLength + this.tagLength);
-            
+
             const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
             decipher.setAuthTag(tag);
-            
+
             let decrypted = decipher.update(encrypted);
             decrypted = Buffer.concat([decrypted, decipher.final()]);
-            
+
             return decrypted.toString('utf8');
         } catch (error) {
             console.error('Decryption error:', error);
@@ -118,12 +118,12 @@ export class EncryptionService {
      */
     extractSSNLast4(ssn: string): string | null {
         if (!ssn) return null;
-        
+
         // Remove all non-digits
         const digits = ssn.replace(/\D/g, '');
-        
+
         if (digits.length < 4) return null;
-        
+
         // Return last 4 digits
         return digits.slice(-4);
     }
@@ -134,10 +134,10 @@ export class EncryptionService {
      */
     maskSSN(ssn: string): string | null {
         if (!ssn) return null;
-        
+
         const digits = ssn.replace(/\D/g, '');
         if (digits.length !== 9) return null;
-        
+
         return `XXX-XX-${digits.slice(-4)}`;
     }
 
