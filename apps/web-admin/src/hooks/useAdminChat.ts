@@ -95,7 +95,7 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
         }
     }, [conversationId, socket, fetchMessages]);
 
-    const sendMessage = async (content: string, documentId?: string) => {
+    const sendMessage = async (content: string, documentId?: string, document?: any) => {
         if (!conversationId || (!content.trim() && !documentId)) return;
 
         const tempId = `temp-${Date.now()}`;
@@ -103,6 +103,7 @@ export const useAdminChat = (conversationId: string | null | undefined) => {
             id: tempId,
             content,
             documentId,
+            document,
             senderId: user?.id,
             conversationId,
             createdAt: new Date().toISOString(),

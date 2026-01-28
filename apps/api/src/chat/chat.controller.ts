@@ -54,9 +54,9 @@ export class ChatController {
     async sendMessage(
         @Request() req: any,
         @Param('id') id: string,
-        @Body() body: { content: string }
+        @Body() body: { content: string; documentId?: string }
     ) {
-        const message: any = await this.chatService.sendMessage(id, req.user.userId, body.content);
+        const message: any = await this.chatService.sendMessage(id, req.user.userId, body.content, body.documentId);
 
         // 1. Real-time update to the conversation room (for visible chat)
         this.chatGateway.server.to(`conversation_${id}`).emit('newMessage', message);

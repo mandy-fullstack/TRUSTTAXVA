@@ -166,7 +166,7 @@ export const AdminChatPage = () => {
                                 <AdminConversationView
                                     messages={messages}
                                     loading={loadingMessages}
-                                    onSendMessage={sendMessage}
+                                    onSendMessage={(content, docId, doc) => sendMessage(content, docId, doc)}
                                     onTyping={handleTyping}
                                     isOtherTyping={isOtherTyping}
                                 />

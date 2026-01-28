@@ -8,7 +8,7 @@ import { api } from '../../services/api';
 interface ConversationViewProps {
     messages: any[];
     loading: boolean;
-    onSendMessage: (content: string, documentId?: string) => void;
+    onSendMessage: (content: string, documentId?: string, document?: any) => void;
     onTyping: (isTyping: boolean) => void;
     isOtherTyping: boolean;
     user: any;
@@ -28,6 +28,7 @@ export const ConversationView = ({
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<{ file: File, previewUrl: string } | null>(null);
     const scrollRef = useRef<ScrollView>(null);
 
     const fileInputRef = useRef<any>(null);
@@ -87,17 +88,37 @@ export const ConversationView = ({
         scrollToBottom();
     }, [messages, isOtherTyping]);
 
-    const handleSend = async (content: string = inputText, docId?: string) => {
-        if ((!content.trim() && !docId) || sending) return;
+    const handleSend = async (content: string = inputText, docId?: string, doc?: any) => {
+        if ((!content.trim() && !docId && !selectedFile) || sending) return;
         setSending(true);
         try {
-            await onSendMessage(content, docId);
-            if (!docId) setInputText('');
+            let documentId = docId;
+            let document = doc;
+
+            // Upload pending file if exists
+            if (selectedFile && !documentId) {
+                setUploading(true);
+                try {
+                    document = await api.uploadDocument(selectedFile.file, selectedFile.file.name, 'OTHER');
+                    documentId = document.id;
+                } catch (error) {
+                    console.error('Failed to upload document:', error);
+                    alert('Error al subir el documento. Inténtalo de nuevo.');
+                    setSending(false);
+                    setUploading(false);
+                    return;
+                }
+            }
+
+            await onSendMessage(content, documentId, document);
+            setInputText('');
+            setSelectedFile(null);
             onTyping(false);
         } catch (error) {
             console.error('Error sending message:', error);
         } finally {
             setSending(false);
+            setUploading(false);
         }
     };
 
@@ -105,19 +126,21 @@ export const ConversationView = ({
         const file = event.target.files?.[0];
         if (!file) return;
 
-        setUploading(true);
-        try {
-            const document = await api.uploadDocument(file, file.name, 'OTHER');
-            // After upload, send a message with the documentId
-            // If the user hasn't typed anything, we send a default message or just the doc
-            await handleSend(inputText || `Archivo enviado: ${file.name}`, document.id);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        } catch (error) {
-            console.error('Failed to upload document:', error);
-            alert('Error al subir el documento. Inténtalo de nuevo.');
-        } finally {
-            setUploading(false);
-        }
+        // Create local preview
+        const previewUrl = URL.createObjectURL(file);
+        setSelectedFile({ file, previewUrl });
+
+        // Reset input so same file can be selected again if needed
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        // Focus input
+        setTimeout(() => {
+            // Logic to focus input could go here if ref available
+        }, 100);
+    };
+
+    const clearAttachment = () => {
+        setSelectedFile(null);
     };
 
     return (
@@ -165,7 +188,7 @@ export const ConversationView = ({
                                                             <View style={styles.fileRow}>
                                                                 {getFileIcon(msg.document.mimeType, isMine)}
                                                                 <View style={styles.docInfo}>
-                                                                    <Text style={[styles.docTitle, isMine ? styles.textWhite : styles.textDark]} numberOfLines={1}>
+                                                                    <Text style={[styles.docTitle, isMine ? styles.textWhite : styles.textDark]}>
                                                                         {msg.document.title}
                                                                     </Text>
                                                                     <Text style={[styles.docSize, isMine ? styles.timeWhite : styles.timeDark]}>
@@ -238,7 +261,7 @@ export const ConversationView = ({
                                             <FileText size={16} color="#64748B" />
                                         </View>
                                         <View style={styles.sidebarDocInfo}>
-                                            <Text style={styles.sidebarDocTitle} numberOfLines={1}>{doc.title}</Text>
+                                            <Text style={styles.sidebarDocTitle} numberOfLines={2}>{doc.title}</Text>
                                             <Text style={styles.sidebarDocMeta}>{(doc.size / 1024).toFixed(1)} KB</Text>
                                         </View>
                                         <ChevronRight size={14} color="#CBD5E1" />
@@ -249,6 +272,28 @@ export const ConversationView = ({
                     </View>
                 )}
             </View>
+
+            {/* Pending Attachment Preview */}
+            {selectedFile && (
+                <View style={styles.pendingAttachment}>
+                    <View style={styles.pendingContent}>
+                        {isImage(selectedFile.file.type) ? (
+                            <Image source={{ uri: selectedFile.previewUrl }} style={styles.pendingImage} resizeMode="cover" />
+                        ) : (
+                            <View style={styles.pendingFileIcon}>
+                                <FileText size={24} color="#64748B" />
+                            </View>
+                        )}
+                        <View style={styles.pendingInfo}>
+                            <Text style={styles.pendingName} numberOfLines={2}>{selectedFile.file.name}</Text>
+                            <Text style={styles.pendingSize}>{(selectedFile.file.size / 1024).toFixed(1)} KB</Text>
+                        </View>
+                        <TouchableOpacity onPress={clearAttachment} style={styles.removeAttachmentBtn}>
+                            <X size={16} color="#64748B" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
 
             <View style={[styles.inputArea, isMobile && styles.inputAreaMobile]}>
                 {Platform.OS === 'web' && (
@@ -297,9 +342,9 @@ export const ConversationView = ({
                     }}
                 />
                 <TouchableOpacity
-                    style={[styles.sendBtn, (!inputText.trim() || sending) && styles.sendBtnDisabled]}
+                    style={[styles.sendBtn, (!inputText.trim() && !selectedFile || sending) && styles.sendBtnDisabled]}
                     onPress={() => handleSend()}
-                    disabled={(!inputText.trim() && !uploading) || sending}
+                    disabled={(!inputText.trim() && !selectedFile) || sending}
                 >
                     {sending ? (
                         <ActivityIndicator size="small" color="#FFF" />
@@ -399,4 +444,12 @@ const styles = StyleSheet.create({
     emptySidebar: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
     emptySidebarText: { fontSize: 12, color: '#94A3B8', textAlign: 'center' },
     sidebarActiveBtn: { backgroundColor: '#E2E8F0' },
+    pendingAttachment: { padding: 12, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#E2E8F0' },
+    pendingContent: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 8, borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', gap: 12 },
+    pendingImage: { width: 48, height: 48, borderRadius: 0, backgroundColor: '#E2E8F0' },
+    pendingFileIcon: { width: 48, height: 48, borderRadius: 0, backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' },
+    pendingInfo: { flex: 1 },
+    pendingName: { fontSize: 13, fontWeight: '500', color: '#1E293B' },
+    pendingSize: { fontSize: 11, color: '#94A3B8' },
+    removeAttachmentBtn: { padding: 8 },
 });

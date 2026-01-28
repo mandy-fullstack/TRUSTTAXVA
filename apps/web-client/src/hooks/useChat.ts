@@ -24,7 +24,7 @@ export const useChat = (conversationId: string | null | undefined) => {
         }
     }, []);
 
-    const sendMessage = useCallback(async (content: string, documentId?: string) => {
+    const sendMessage = useCallback(async (content: string, documentId?: string, document?: any) => {
         if (!conversationId || (!content.trim() && !documentId)) return;
 
         const tempId = `temp-${Date.now()}`;
@@ -32,6 +32,7 @@ export const useChat = (conversationId: string | null | undefined) => {
             id: tempId,
             content,
             documentId,
+            document,
             senderId: user?.id,
             conversationId,
             createdAt: new Date().toISOString(),
