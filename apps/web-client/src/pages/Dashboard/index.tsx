@@ -44,7 +44,7 @@ export const DashboardPage = () => {
         refreshUser,
         isAuthenticated,
     } = useAuth();
-    const { permission, requestPermission } = useNotification();
+    const { permission, requestPermission, isIOS, isStandalone } = useNotification();
 
     // Refrescar user al montar para tener profileComplete actualizado (p. ej. tras completar perfil)
     useEffect(() => {
@@ -101,9 +101,19 @@ export const DashboardPage = () => {
                 )}
 
                 {permission === 'default' && (
-                    <View style={styles.notificationBanner}>
-                        <Text style={styles.notificationText}>Enable notifications to stay updated on your orders.</Text>
-                        <Button title="Enable Notifications" onPress={requestPermission} size="sm" />
+                    <View style={[styles.notificationBanner, isIOS && !isStandalone && { backgroundColor: '#F0F9FF', borderLeftColor: '#0EA5E9' }]}>
+                        {isIOS && !isStandalone ? (
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.notificationText, { color: '#0369A1' }]}>
+                                    {t('notifications.ios_install_prompt', 'To enable notifications on iPhone: Tap the Share button and select "Add to Home Screen"')}
+                                </Text>
+                            </View>
+                        ) : (
+                            <>
+                                <Text style={styles.notificationText}>Enable notifications to stay updated on your orders.</Text>
+                                <Button title="Enable Notifications" onPress={requestPermission} size="sm" />
+                            </>
+                        )}
                     </View>
                 )}
 

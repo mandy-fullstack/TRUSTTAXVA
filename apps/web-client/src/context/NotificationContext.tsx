@@ -16,6 +16,8 @@ interface NotificationItem {
 
 interface NotificationContextType {
     permission: NotificationPermission;
+    isStandalone: boolean;
+    isIOS: boolean;
     requestPermission: () => Promise<void>;
     notifications: NotificationItem[];
     markAsRead: (id: string) => void;
@@ -27,14 +29,29 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
     const [permission, setPermission] = useState<NotificationPermission>('default');
+    const [isStandalone, setIsStandalone] = useState(false);
+    const [isIOS, setIsIOS] = useState(false);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const lastCheckRef = useRef<Date>(new Date());
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            setPermission(window.Notification.permission);
+        if (typeof window !== 'undefined') {
+            if ('Notification' in window) {
+                setPermission(window.Notification.permission);
+            }
+
+            // Check if iOS
+            const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            setIsIOS(ios);
+
+            // Check if standalone (installed as PWA)
+            const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+                (window.navigator as any).standalone ||
+                document.referrer.includes('android-app://');
+            setIsStandalone(!!standalone);
         }
     }, []);
 
@@ -230,7 +247,15 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
     }, [isAuthenticated, permission]); // Added permission dependency to ensure we use latest value
 
     return (
-        <NotificationContext.Provider value={{ permission, requestPermission, notifications, markAsRead, unreadCount }}>
+        <NotificationContext.Provider value={{
+            permission,
+            isStandalone,
+            isIOS,
+            requestPermission,
+            notifications,
+            markAsRead,
+            unreadCount
+        }}>
             {children}
         </NotificationContext.Provider>
     );
