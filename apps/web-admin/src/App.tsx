@@ -14,6 +14,7 @@ import { FormsPage } from './pages/Forms';
 import { FormDetailPage } from './pages/Forms/FormDetail';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ToastProvider } from './context/ToastContext';
 import { SocketProvider } from './context/SocketContext';
 import { AdminChatPage } from './pages/Chat/AdminChatPage';
 import type { ReactNode } from 'react';
@@ -34,34 +35,36 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
 function App() {
   return (
     <AuthProvider>
-      <NotificationProvider>
-        <SocketProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+      <ToastProvider>
+        <NotificationProvider>
+          <SocketProvider>
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
-              {/* Protected Admin Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-              <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
-              <Route path="/clients/:id" element={<ProtectedRoute><ClientDetailPage /></ProtectedRoute>} />
-              <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
-              <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
-              <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
-              <Route path="/services/:id" element={<ProtectedRoute><ServiceDetailPage /></ProtectedRoute>} />
-              <Route path="/forms" element={<ProtectedRoute><FormsPage /></ProtectedRoute>} />
-              <Route path="/forms/:id" element={<ProtectedRoute><FormDetailPage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><CompanySettingsPage /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><AdminChatPage /></ProtectedRoute>} />
-              <Route path="/chat/:id" element={<ProtectedRoute><AdminChatPage /></ProtectedRoute>} />
+                {/* Protected Admin Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+                <Route path="/clients" element={<ProtectedRoute><ClientsPage /></ProtectedRoute>} />
+                <Route path="/clients/:id" element={<ProtectedRoute><ClientDetailPage /></ProtectedRoute>} />
+                <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+                <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
+                <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+                <Route path="/services/:id" element={<ProtectedRoute><ServiceDetailPage /></ProtectedRoute>} />
+                <Route path="/forms" element={<ProtectedRoute><FormsPage /></ProtectedRoute>} />
+                <Route path="/forms/:id" element={<ProtectedRoute><FormDetailPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><CompanySettingsPage /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><AdminChatPage /></ProtectedRoute>} />
+                <Route path="/chat/:id" element={<ProtectedRoute><AdminChatPage /></ProtectedRoute>} />
 
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </SocketProvider>
-      </NotificationProvider>
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </SocketProvider>
+        </NotificationProvider>
+      </ToastProvider>
     </AuthProvider>
   );
 }

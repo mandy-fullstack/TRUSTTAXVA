@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useRef } from 'r
 import { socket } from '../services/socket';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 
 interface NotificationItem {
     id: string;
@@ -28,6 +29,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [isStandalone, setIsStandalone] = useState(false);
     const [isIOS, setIsIOS] = useState(false);
@@ -189,6 +191,13 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                     if (isNewUpdate) {
                         hasNewAlert = true;
                         sendBrowserNotification('TrustTax Update', newItem.body, `order-${order.id}`);
+
+                        showToast({
+                            title: newItem.title,
+                            message: newItem.body,
+                            type: order.status === 'REJECTED' || order.status === 'needs_info' ? 'warning' : 'info',
+                            link: newItem.link
+                        });
                     }
                 }
             }
@@ -230,6 +239,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 };
 
                 setNotifications(prev => [newNotif, ...prev]);
+
+                showToast({
+                    title: newNotif.title,
+                    message: newNotif.body,
+                    type: 'info',
+                    link: newNotif.link
+                });
+
                 if (permission === 'granted') {
                     playSound();
                     sendBrowserNotification(newNotif.title, newNotif.body);

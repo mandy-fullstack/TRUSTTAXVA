@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { socket } from '../services/socket';
 import { getToken } from '../lib/cookies';
 
@@ -26,6 +27,7 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
     const { isAuthenticated } = useAuth();
+    const { showToast } = useToast();
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const lastCheckRef = useRef<Date>(new Date());
@@ -131,6 +133,14 @@ export const NotificationProvider = ({ children }: { children: React.ReactNode }
                 };
 
                 setNotifications(prev => [newNotif, ...prev]);
+
+                showToast({
+                    title: newNotif.title,
+                    message: newNotif.body,
+                    type: 'info',
+                    link: newNotif.link
+                });
+
                 if (permission === 'granted') {
                     playSound();
                     new Notification(newNotif.title, { body: newNotif.body });
