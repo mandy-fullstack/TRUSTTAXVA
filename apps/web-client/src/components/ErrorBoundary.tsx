@@ -32,6 +32,11 @@ export class ErrorBoundary extends Component<Props, State> {
           <Text style={styles.message}>
             Recarga la página o intenta más tarde. Si el problema continúa, contacta a soporte.
           </Text>
+          {this.state.error && (
+            <Text style={[styles.message, { fontSize: 12, color: '#ef4444', fontFamily: 'monospace' }]}>
+              Additional Info: {this.state.error.toString()}
+            </Text>
+          )}
           <TouchableOpacity
             onPress={() => {
               if (typeof window !== 'undefined') {
@@ -42,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
           >
             <Text style={styles.buttonText}>Recargar página</Text>
           </TouchableOpacity>
-        </View>
+        </View >
       );
     }
     return this.props.children;
