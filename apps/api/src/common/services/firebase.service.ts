@@ -7,31 +7,54 @@ export class FirebaseService implements OnModuleInit {
 
     onModuleInit() {
         if (admin.apps.length === 0) {
+            console.log('[FirebaseService] Initializing Firebase Admin...');
             try {
-                const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
-                    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
-                    : null;
+                let jsonStr = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
 
-                if (serviceAccount) {
-                    admin.initializeApp({
-                        credential: admin.credential.cert(serviceAccount),
-                    });
-                    this.isInitialized = true;
-                    console.log('Firebase Admin initialized with Service Account');
-                } else if (process.env.FIREBASE_PROJECT_ID) {
+                if (!jsonStr) {
+                    console.warn('[FirebaseService] FIREBASE_SERVICE_ACCOUNT_JSON is not defined.');
+                } else {
+                    // Cleanup common formatting errors in environment variables
+                    // 1. Remove outer quotes if they exist (sometimes added by Render/Heroku UI)
+                    if (jsonStr.startsWith("'") && jsonStr.endsWith("'")) {
+                        jsonStr = jsonStr.slice(1, -1);
+                    }
+                    if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) {
+                        jsonStr = jsonStr.slice(1, -1);
+                    }
+
+                    try {
+                        const serviceAccount = JSON.parse(jsonStr);
+                        admin.initializeApp({
+                            credential: admin.credential.cert(serviceAccount),
+                        });
+                        this.isInitialized = true;
+                        console.log('[FirebaseService] Firebase Admin initialized with Service Account successfully.');
+                        return; // Done
+                    } catch (parseError: any) {
+                        console.error('[FirebaseService] Failed to parse FIREBASE_SERVICE_ACCOUNT_JSON:', parseError.message);
+                        // Log a snippet of the string (safely) to debug
+                        const snippet = jsonStr.substring(0, 50) + '...';
+                        console.log('[FirebaseService] String snippet:', snippet);
+                    }
+                }
+
+                // Fallback to Project ID if Service Account fails or is missing
+                if (process.env.FIREBASE_PROJECT_ID) {
                     admin.initializeApp({
                         projectId: process.env.FIREBASE_PROJECT_ID,
                     });
                     this.isInitialized = true;
-                    console.log('Firebase Admin initialized with Project ID:', process.env.FIREBASE_PROJECT_ID);
+                    console.log('[FirebaseService] Firebase Admin initialized with Project ID fallback:', process.env.FIREBASE_PROJECT_ID);
                 } else {
-                    console.warn('Firebase configuration not found. Push notifications will be limited or disabled.');
+                    console.warn('[FirebaseService] CRITICAL: No Firebase configuration found (JSON or Project ID).');
                 }
-            } catch (error) {
-                console.error('Error initializing Firebase Admin:', error);
+            } catch (error: any) {
+                console.error('[FirebaseService] Unexpected error during initialization:', error);
             }
         } else {
             this.isInitialized = true;
+            console.log('[FirebaseService] Firebase Admin already initialized (Apps count: ' + admin.apps.length + ')');
         }
     }
 

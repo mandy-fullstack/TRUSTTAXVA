@@ -17,7 +17,8 @@ export class StorageService {
 
             if (admin.apps.length === 0) {
                 console.warn('[StorageService] Firebase Admin not initialized. Operational failure expected.');
-                throw new Error('Firebase Admin not initialized. Please check FirebaseService initialization.');
+                const appsList = admin.apps.map(app => app?.name).join(', ') || 'None';
+                throw new Error(`Firebase Admin not initialized. Apps: ${appsList}. Please check FirebaseService initialization.`);
             }
 
             // Log initialization context
