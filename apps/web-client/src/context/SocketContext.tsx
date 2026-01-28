@@ -19,9 +19,11 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
         notificationSoundRef.current = new Audio('/notification.mp3');
         notificationSoundRef.current.volume = 0.5;
 
-        // Request notification permission
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
+        // Request notification permission safely
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (window.Notification.permission === 'default') {
+                window.Notification.requestPermission();
+            }
         }
     }, []);
 
@@ -62,23 +64,27 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
                 });
             }
 
-            // Show browser notification with click handler
-            if (Notification.permission === 'granted') {
-                const notification = new Notification(data.title || 'New Message', {
-                    body: data.message || 'You have a new message',
-                    icon: '/logo.png',
-                    tag: data.conversationId,
-                    requireInteraction: false,
-                });
+            // Show browser notification with click handler safely
+            if (typeof window !== 'undefined' && 'Notification' in window && window.Notification.permission === 'granted') {
+                try {
+                    const notification = new window.Notification(data.title || 'New Message', {
+                        body: data.message || 'You have a new message',
+                        icon: '/logo.png',
+                        tag: data.conversationId,
+                        requireInteraction: false,
+                    });
 
-                // Make notification clickable - navigate to conversation
-                notification.onclick = () => {
-                    window.focus();
-                    if (data.conversationId) {
-                        window.location.href = `/dashboard/chat/${data.conversationId}`;
-                    }
-                    notification.close();
-                };
+                    // Make notification clickable - navigate to conversation
+                    notification.onclick = () => {
+                        window.focus();
+                        if (data.conversationId) {
+                            window.location.href = `/dashboard/chat/${data.conversationId}`;
+                        }
+                        notification.close();
+                    };
+                } catch (e) {
+                    console.warn('Failed to show notification', e);
+                }
             }
         }
 
