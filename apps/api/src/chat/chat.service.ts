@@ -78,50 +78,66 @@ export class ChatService {
         return conversations;
     }
 
-    async getConversationById(id: string, userId: string, role: string) {
-        const conversation = await this.prisma.conversation.findUnique({
+    async getConversationById(id: string, userId: string, role: string, cursor?: string, limit: number = 50) {
+        // Security check first
+        const conversationInfo = await this.prisma.conversation.findUnique({
             where: { id },
-            include: {
-                messages: {
-                    orderBy: { createdAt: 'asc' },
+            select: { clientId: true, preparerId: true }
+        });
+
+        if (!conversationInfo) {
+            throw new NotFoundException('Conversation not found');
+        }
+
+        if (role === 'CLIENT' && conversationInfo.clientId !== userId) {
+            throw new NotFoundException('Conversation not found');
+        }
+
+        // Try to get from Redis first if it's the first page
+        if (!cursor) {
+            const cachedMessages = await this.redisService.get<any[]>(`active_messages:${id}`);
+            if (cachedMessages) {
+                // Return conversation with cached messages
+                // We still need the conversation metadata
+                const metadata = await this.prisma.conversation.findUnique({
+                    where: { id },
                     include: {
-                        sender: {
-                            select: {
-                                id: true,
-                                name: true,
-                                email: true,
-                                role: true
-                            }
-                        }
+                        client: { select: { id: true, name: true, email: true } },
+                        preparer: { select: { id: true, name: true, email: true } }
                     }
-                },
-                client: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
-                },
-                preparer: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true
-                    }
+                });
+                return { ...metadata, messages: cachedMessages };
+            }
+        }
+
+        const messages = await this.prisma.message.findMany({
+            where: { conversationId: id },
+            take: limit,
+            ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+            orderBy: { createdAt: 'desc' }, // Latest first for pagination efficiency
+            include: {
+                sender: {
+                    select: { id: true, name: true, email: true, role: true }
                 }
             }
         });
 
-        if (!conversation) {
-            throw new NotFoundException('Conversation not found');
+        const conversation = await this.prisma.conversation.findUnique({
+            where: { id },
+            include: {
+                client: { select: { id: true, name: true, email: true } },
+                preparer: { select: { id: true, name: true, email: true } }
+            }
+        });
+
+        const result = { ...conversation, messages: messages.reverse() }; // Reverse to keep chronological order in UI
+
+        // Cache the first page if it's new
+        if (!cursor && messages.length > 0) {
+            await this.redisService.set(`active_messages:${id}`, result.messages, 600); // 10 mins cache
         }
 
-        // Security check
-        if (role === 'CLIENT' && conversation.clientId !== userId) {
-            throw new NotFoundException('Conversation not found');
-        }
-
-        return conversation;
+        return result;
     }
 
     async sendMessage(conversationId: string, senderId: string, content: string) {
@@ -171,6 +187,9 @@ export class ChatService {
         if (conversation.preparerId) {
             await this.redisService.del(`unread_count:${conversation.preparerId}`);
         }
+
+        // Invalidate message cache
+        await this.redisService.del(`active_messages:${conversationId}`);
 
         // Trigger Push Notification
         this.triggerPushNotification(message);

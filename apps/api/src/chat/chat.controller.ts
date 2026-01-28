@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, NotFoundException, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, NotFoundException, Delete, Query } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ChatService } from './chat.service';
 
@@ -28,11 +28,24 @@ export class ChatController {
     }
 
     @Get('conversations/:id')
-    async getConversation(@Request() req: any, @Param('id') id: string) {
-        const conversation = await this.chatService.getConversationById(id, req.user.userId, req.user.role);
+    async getConversation(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Query('cursor') cursor?: string,
+        @Query('limit') limit?: number
+    ) {
+        const conversation = await this.chatService.getConversationById(
+            id,
+            req.user.userId,
+            req.user.role,
+            cursor,
+            limit ? Number(limit) : undefined
+        );
 
-        // Mark unread messages as read
-        await this.chatService.markMessagesAsRead(id, req.user.userId);
+        // Mark unread messages as read (only if it's the first load or we want to mark as read)
+        if (!cursor) {
+            await this.chatService.markMessagesAsRead(id, req.user.userId);
+        }
 
         return conversation;
     }

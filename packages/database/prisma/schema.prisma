@@ -157,7 +157,8 @@ model Conversation {
   preparer   User?                @relation("PreparerConversations", fields: [preparerId], references: [id])
   messages   Message[]
 
-  @@index([clientId])
+  @@index([clientId, updatedAt(sort: Desc)])
+  @@index([preparerId, updatedAt(sort: Desc)])
   @@index([updatedAt])
 }
 
@@ -171,6 +172,8 @@ model Message {
   isDelivered    Boolean      @default(false)
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt(sort: Asc)])
 }
 
 model Invoice {
