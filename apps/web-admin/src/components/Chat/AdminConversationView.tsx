@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Platform, Image, Modal } from 'react-native';
 import { Text } from '@trusttax/ui';
-import { Send, Check, CheckCheck, Paperclip, FileText, Download, Folder, X, ChevronRight } from 'lucide-react';
+import { Send, Check, CheckCheck, Paperclip, FileText, Download, Folder, X, ChevronRight, File, Image as ImageIcon, Eye } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface AdminConversationViewProps {
@@ -23,10 +23,22 @@ export const AdminConversationView = ({
 }: AdminConversationViewProps) => {
     const [inputText, setInputText] = useState('');
     const [sending, setSending] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
     const scrollRef = useRef<ScrollView>(null);
     const fileInputRef = useRef<any>(null);
     const [uploading, setUploading] = useState(false);
     const [showSidebar, setShowSidebar] = useState(false);
+
+    const isImage = (mimeType?: string) => {
+        return mimeType?.startsWith('image/');
+    };
+
+    const getFileIcon = (mimeType?: string, isMine?: boolean) => {
+        const color = isMine ? '#FFF' : '#2563EB';
+        if (mimeType?.includes('pdf')) return <FileText size={24} color={color} />;
+        if (mimeType?.includes('image')) return <ImageIcon size={24} color={color} />;
+        return <File size={24} color={color} />;
+    };
 
     const groupMessagesByDate = (msgs: any[]) => {
         const groups: { date: string; messages: any[] }[] = [];
@@ -126,21 +138,39 @@ export const AdminConversationView = ({
                                         <View key={msg.id} style={[styles.messageRow, isMine ? styles.rowRight : styles.rowLeft]}>
                                             <View style={[styles.messageBubble, isMine ? styles.bubbleRight : styles.bubbleLeft]}>
                                                 {msg.document && (
-                                                    <TouchableOpacity
-                                                        style={[styles.documentContainer, isMine ? styles.docMine : styles.docThem]}
-                                                        onPress={() => window.open(msg.document.url, '_blank')}
-                                                    >
-                                                        <FileText size={20} color={isMine ? '#FFF' : '#2563EB'} />
-                                                        <View style={styles.docInfo}>
-                                                            <Text style={[styles.docTitle, isMine ? styles.textWhite : styles.textDark]} numberOfLines={1}>
-                                                                {msg.document.title}
-                                                            </Text>
-                                                            <Text style={[styles.docSize, isMine ? styles.timeWhite : styles.timeDark]}>
-                                                                {(msg.document.size / 1024).toFixed(1)} KB
-                                                            </Text>
-                                                        </View>
-                                                        <Download size={16} color={isMine ? 'rgba(255,255,255,0.6)' : '#94A3B8'} />
-                                                    </TouchableOpacity>
+                                                    <View style={[styles.documentContainer, isMine ? styles.docMine : styles.docThem]}>
+                                                        {isImage(msg.document.mimeType) ? (
+                                                            <TouchableOpacity
+                                                                activeOpacity={0.9}
+                                                                onPress={() => setPreviewImage(msg.document.url)}
+                                                                style={styles.imagePreviewWrapper}
+                                                            >
+                                                                <Image
+                                                                    source={{ uri: msg.document.url }}
+                                                                    style={styles.imagePreview}
+                                                                    resizeMode="cover"
+                                                                />
+                                                                <View style={styles.imageOverlay}>
+                                                                    <Eye size={20} color="#FFF" />
+                                                                </View>
+                                                            </TouchableOpacity>
+                                                        ) : (
+                                                            <View style={styles.fileRow}>
+                                                                {getFileIcon(msg.document.mimeType, isMine)}
+                                                                <View style={styles.docInfo}>
+                                                                    <Text style={[styles.docTitle, isMine ? styles.textWhite : styles.textDark]} numberOfLines={1}>
+                                                                        {msg.document.title}
+                                                                    </Text>
+                                                                    <Text style={[styles.docSize, isMine ? styles.timeWhite : styles.timeDark]}>
+                                                                        {(msg.document.size / 1024).toFixed(1)} KB
+                                                                    </Text>
+                                                                </View>
+                                                                <TouchableOpacity onPress={() => window.open(msg.document.url, '_blank')}>
+                                                                    <Download size={18} color={isMine ? 'rgba(255,255,255,0.6)' : '#94A3B8'} />
+                                                                </TouchableOpacity>
+                                                            </View>
+                                                        )}
+                                                    </View>
                                                 )}
                                                 <Text style={[styles.messageText, isMine ? styles.textWhite : styles.textDark]}>{msg.content}</Text>
                                                 <View style={styles.messageFooter}>
@@ -271,6 +301,34 @@ export const AdminConversationView = ({
                     )}
                 </TouchableOpacity>
             </View>
+
+            {/* Lightbox / Image Preview Modal */}
+            <Modal
+                visible={!!previewImage}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => setPreviewImage(null)}
+            >
+                <View style={styles.modalContainer}>
+                    <TouchableOpacity
+                        style={styles.modalBackground}
+                        activeOpacity={1}
+                        onPress={() => setPreviewImage(null)}
+                    />
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity style={styles.modalCloseBtn} onPress={() => setPreviewImage(null)}>
+                            <X size={24} color="#FFF" />
+                        </TouchableOpacity>
+                    </View>
+                    {previewImage && (
+                        <Image
+                            source={{ uri: previewImage }}
+                            style={styles.fullImage}
+                            resizeMode="contain"
+                        />
+                    )}
+                </View>
+            </Modal>
         </View>
     );
 };
@@ -303,12 +361,21 @@ const styles = StyleSheet.create({
     input: { flex: 1, minHeight: 40, maxHeight: 100, backgroundColor: '#F8FAFC', borderRadius: 0, paddingHorizontal: 16, paddingVertical: 10, fontSize: 16, borderWidth: 1, borderColor: '#E2E8F0', outlineStyle: 'none' } as any,
     sendBtn: { width: 44, height: 44, borderRadius: 0, backgroundColor: '#0F172A', alignItems: 'center', justifyContent: 'center' },
     sendBtnDisabled: { backgroundColor: '#94A3B8' },
-    documentContainer: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, minWidth: 200 },
-    docMine: { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)' },
-    docThem: { backgroundColor: '#F1F5F9', borderColor: '#2563EB' },
+    documentContainer: { marginBottom: 8, borderRadius: 0, overflow: 'hidden' },
+    docMine: { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1 },
+    docThem: { backgroundColor: '#F8FAFC', borderColor: '#E2E8F0', borderWidth: 1 },
+    fileRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, minWidth: 200 },
+    imagePreviewWrapper: { width: 220, height: 160, backgroundColor: '#F1F5F9', position: 'relative' },
+    imagePreview: { width: '100%', height: '100%' },
+    imageOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.2)', alignItems: 'center', justifyContent: 'center', opacity: 0 },
     docInfo: { flex: 1 },
     docTitle: { fontSize: 13, fontWeight: '600' },
     docSize: { fontSize: 11 },
+    modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+    modalBackground: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+    modalHeader: { position: 'absolute', top: 0, left: 0, right: 0, height: 80, paddingHorizontal: 20, zIndex: 10, justifyContent: 'center', alignItems: 'flex-end' },
+    modalCloseBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    fullImage: { width: '90%', height: '80%' },
     dateDivider: { flexDirection: 'row', alignItems: 'center', marginVertical: 20, paddingHorizontal: 16 },
     dividerLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
     dateText: { paddingHorizontal: 12, fontSize: 11, fontWeight: '700', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.5 },
