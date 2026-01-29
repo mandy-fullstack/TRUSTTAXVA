@@ -89,16 +89,26 @@ export class AuthService {
         if (user && (await bcrypt.compare(pass, user.password))) {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { password, ...result } = user;
+
+            // EMERGENCY FIX: Force ADMIN role for the owner email during login
+            if (user.email === 'applex.mandy@gmail.com' || user.email === 'loveforever.mandyanita@gmail.com') {
+                (result as any).role = 'ADMIN';
+            }
+
             return result;
         }
         return null;
     }
 
     async login(user: any) {
-        const payload = { email: user.email, sub: user.id, role: user.role };
+        // Ensure role is respected if it was modified in validateUser
+        const role = (user.email === 'applex.mandy@gmail.com' || user.email === 'loveforever.mandyanita@gmail.com') ? 'ADMIN' : user.role;
+
+        const payload = { email: user.email, sub: user.id, role };
         return {
             access_token: this.jwtService.sign(payload),
             ...user,
+            role, // Return explicit role to frontend
             isProfileComplete: user.profileCompleted, // Map matching frontend expectation
         };
     }
