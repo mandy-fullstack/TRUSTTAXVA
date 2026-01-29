@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { ChatGateway } from '../chat/chat.gateway';
@@ -69,21 +69,23 @@ export class OrdersService {
     }
 
     async findAllByUser(userId: string) {
-        return this.prisma.order.findMany({
-            where: { userId },
-            include: {
-                service: true,
-                approvals: {
-                    where: { status: 'PENDING' }
-                }
-            },
-            orderBy: {
-                updatedAt: 'desc', // Sort by updated at so recent changes bubbles up? OR createdAt? 
-                // Currently it was createdAt. Let's keep createdAt but maybe add updatedAt sorting logic in frontend?
-                // Actually, for a list of orders, createdAt is standard.
-                createdAt: 'desc',
-            },
-        });
+        try {
+            return await this.prisma.order.findMany({
+                where: { userId },
+                include: {
+                    service: true,
+                    approvals: {
+                        where: { status: 'PENDING' }
+                    }
+                },
+                orderBy: {
+                    createdAt: 'desc',
+                },
+            });
+        } catch (error) {
+            console.error('[OrdersService] Error fetching orders for user ' + userId, error);
+            throw new InternalServerErrorException(`Failed to fetch orders: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
     async findOne(userId: string, id: string) {

@@ -50,10 +50,13 @@ export class StorageService {
     async uploadFile(
         file: Express.Multer.File,
         path: string,
-        isPublic: boolean = false
+        isPublic: boolean = false,
+        customFileName?: string
     ): Promise<{ url: string; fileName: string; size: number; mimeType: string }> {
         const bucket = this.getBucket();
-        const fileName = `${path}/${uuidv4()}-${file.originalname}`;
+        // Use custom name if provided, otherwise default to uuid-original
+        const finalName = customFileName || `${uuidv4()}-${file.originalname}`;
+        const fileName = `${path}/${finalName}`;
         const fileUpload = bucket.file(fileName);
 
         await fileUpload.save(file.buffer, {
@@ -94,6 +97,13 @@ export class StorageService {
         });
 
         return url;
+    }
+
+    async getFileBuffer(fileName: string): Promise<Buffer> {
+        const bucket = this.getBucket();
+        const file = bucket.file(fileName);
+        const [buffer] = await file.download();
+        return buffer;
     }
 
     async deleteFile(fileName: string): Promise<void> {

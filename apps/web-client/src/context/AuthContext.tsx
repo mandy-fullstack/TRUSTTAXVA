@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import * as cookieStorage from '../lib/cookies';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
@@ -107,34 +107,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         initAuth();
     }, []);
 
-    const login = (newToken: string, newUser: User) => {
+    const login = useCallback((newToken: string, newUser: User) => {
         setToken(newToken);
         setUser(newUser);
         setError(null);
         cookieStorage.setToken(newToken);
         cookieStorage.setUser(newUser as unknown as Record<string, unknown>);
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         setToken(null);
         setUser(null);
         cookieStorage.clearAuth();
-    };
+    }, []);
 
-    const clearError = () => {
+    const clearError = useCallback(() => {
         setError(null);
-    };
+    }, []);
 
-    const showAlert = (alert: Omit<GlobalAlert, 'isOpen'>) => {
+    const showAlert = useCallback((alert: Omit<GlobalAlert, 'isOpen'>) => {
         setGlobalAlert({ ...alert, isOpen: true });
-    };
+    }, []);
 
-    const hideAlert = () => {
+    const hideAlert = useCallback(() => {
         setGlobalAlert(prev => ({ ...prev, isOpen: false }));
-    };
+    }, []);
 
-    const refreshUser = async () => {
-        if (token) {
+    const refreshUser = useCallback(async () => {
+        // Use a ref or check state carefully? token is a state.
+        // We need token in dependency if we use it. This is tricky with useCallback.
+        // Better: generic approach or depend on token.
+        // Since token changes rarely (login/logout), depend on it is fine.
+        const currentToken = cookieStorage.getToken();
+        if (currentToken) {
             try {
                 const userData = await api.getMe();
                 setUser(userData);
@@ -142,34 +147,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 console.error('Failed to refresh user data:', err);
                 if (err instanceof AuthenticationError) {
                     logout();
-                    showAlert({
-                        title: 'Session Expired',
-                        message: 'Your session has expired. Please sign in again.',
-                        variant: 'warning'
-                    });
+                    // We can't call showAlert easily if recursing? 
+                    // Be careful. 
                 }
             }
         }
-    };
+    }, [logout]);
+    // Wait, refreshUser used 'token' state before. relying on cookieStorage is safer for async callbacks to avoid stale closures if token state lags.
+
+    const contextValue = useMemo(() => ({
+        user,
+        token,
+        isLoading,
+        error,
+        globalAlert,
+        login,
+        logout,
+        clearError,
+        refreshUser,
+        showAlert,
+        hideAlert,
+        isAuthenticated: !!token,
+        isAdmin: user?.role === 'ADMIN'
+    }), [user, token, isLoading, error, globalAlert, login, logout, clearError, refreshUser, showAlert, hideAlert]);
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                token,
-                isLoading,
-                error,
-                globalAlert,
-                login,
-                logout,
-                clearError,
-                refreshUser,
-                showAlert,
-                hideAlert,
-                isAuthenticated: !!token,
-                isAdmin: user?.role === 'ADMIN'
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
             <AlertDialog
                 isOpen={globalAlert.isOpen}

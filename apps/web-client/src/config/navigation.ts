@@ -19,7 +19,7 @@ export const publicNavItems: PublicNavItem[] = [
 ];
 
 export interface DashboardNavItem extends PublicNavItem {
-    icon?: 'LayoutDashboard' | 'ShoppingBag';
+    icon?: 'LayoutDashboard' | 'ShoppingBag' | 'FileText' | 'Settings';
     /** Show this item only when pathname matches (e.g. /dashboard). */
     showOnlyWhen?: string;
 }
@@ -27,6 +27,9 @@ export interface DashboardNavItem extends PublicNavItem {
 export const dashboardNavItems: DashboardNavItem[] = [
     { path: '/dashboard', i18nKey: 'header.dashboard', order: 0, icon: 'LayoutDashboard' },
     { path: '/dashboard/services', i18nKey: 'header.services', order: 1, icon: 'ShoppingBag' },
+    { path: '/dashboard/documents', i18nKey: 'header.documents', order: 2, icon: 'Folder' },
+    { path: '/dashboard/orders', i18nKey: 'header.orders', order: 3, icon: 'FileText' },
+    { path: '/dashboard/settings', i18nKey: 'header.settings', order: 99, icon: 'Settings' },
 ];
 
 export interface AuthNavLink {

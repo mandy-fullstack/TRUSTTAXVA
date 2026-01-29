@@ -9,16 +9,18 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 import { TwoFactorService } from './two-factor.service';
 import { ChatModule } from '../chat/chat.module';
+import { PinModule } from './pin/pin.module';
 
 @Module({
     imports: [
         PassportModule,
         JwtModule.register({
             secret: process.env.JWT_SECRET || 'secretKey',
-            signOptions: { expiresIn: '60m' },
+            signOptions: { expiresIn: '30d' },
         }),
         EmailModule,
         ChatModule,
+        PinModule,
     ],
     providers: [AuthService, PrismaService, EncryptionService, JwtStrategy, TwoFactorService],
     controllers: [AuthController],

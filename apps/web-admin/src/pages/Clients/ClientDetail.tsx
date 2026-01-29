@@ -24,6 +24,7 @@ import {
   Bell,
   CheckCircle,
   RefreshCw,
+  Folder,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -273,6 +274,54 @@ export function ClientDetailPage() {
                   <Row label="SSN/ITIN (full)" value={sensitiveData.ssn || '—'} />
                   <Row label="Driver license" value={sensitiveData.driverLicense ? `${sensitiveData.driverLicense.number} • ${sensitiveData.driverLicense.stateCode} ${sensitiveData.driverLicense.stateName} • Exp ${sensitiveData.driverLicense.expirationDate}` : '—'} />
                   <Row label="Passport" value={sensitiveData.passport ? `${sensitiveData.passport.number} • ${sensitiveData.passport.countryOfIssue} • Exp ${sensitiveData.passport.expirationDate}` : '—'} />
+
+                  {/* Documents Folder View */}
+                  <View style={styles.docsSection}>
+                    <H4 style={styles.docsTitle}>Documents Repository</H4>
+                    <View style={styles.folder}>
+                      <View style={styles.folderHeader}>
+                        <Folder size={16} color="#64748B" />
+                        <Text style={styles.folderName}>Client Documents</Text>
+                      </View>
+
+                      {/* Driver License Folder */}
+                      {sensitiveData.driverLicense && (sensitiveData.driverLicense as any).photoKey && (
+                        <View style={styles.subFolder}>
+                          <View style={styles.folderHeader}>
+                            <Folder size={14} color="#64748B" />
+                            <Text style={styles.subFolderName}>Driver License</Text>
+                          </View>
+                          <View style={styles.fileItem}>
+                            <FileText size={14} color="#0F172A" />
+                            <Text style={styles.fileName}>
+                              {((sensitiveData.driverLicense as any).photoKey || '').split('/').pop()}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {/* Passport Folder */}
+                      {sensitiveData.passport && (sensitiveData.passport as any).photoKey && (
+                        <View style={styles.subFolder}>
+                          <View style={styles.folderHeader}>
+                            <Folder size={14} color="#64748B" />
+                            <Text style={styles.subFolderName}>Passport</Text>
+                          </View>
+                          <View style={styles.fileItem}>
+                            <FileText size={14} color="#0F172A" />
+                            <Text style={styles.fileName}>
+                              {((sensitiveData.passport as any).photoKey || '').split('/').pop()}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+
+                      {!(sensitiveData.driverLicense as any)?.photoKey && !(sensitiveData.passport as any)?.photoKey && (
+                        <Text style={styles.noDocs}>No digital documents found.</Text>
+                      )}
+                    </View>
+                  </View>
+
                   <View style={styles.sensitiveActions}>
                     {secondsLeft > 0 && (
                       <View style={styles.countdown}>
@@ -478,6 +527,8 @@ function Row({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: '100%' },
+  mainContainer: { flex: 1, height: '100%', flexDirection: 'column' },
+  headerContainer: { paddingHorizontal: 32, paddingTop: 32, paddingBottom: 0, borderBottomWidth: 1, borderBottomColor: '#E2E8F0', backgroundColor: '#FFF' },
   container: {
     padding: 32,
     width: '100%',
@@ -498,12 +549,12 @@ const styles = StyleSheet.create({
 
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, marginBottom: 32 },
   topActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-  refreshButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#F8FAFC', borderRadius: 6, borderWidth: 1, borderColor: '#E2E8F0' },
+  refreshButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, backgroundColor: '#F8FAFC', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0' },
   refreshText: { fontSize: 13, color: '#64748B', fontWeight: '500' },
   avatar: {
     width: 64,
     height: 64,
-    borderRadius: 0,
+    borderRadius: 0, // Already 0, but keeping it explicit
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -532,21 +583,21 @@ const styles = StyleSheet.create({
   rowLabel: { fontSize: 12, color: '#64748B', marginBottom: 2, textTransform: 'uppercase', fontWeight: '600' },
   rowValue: { fontSize: 15, color: '#0F172A' },
   statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 0 },
   statusBadgeText: { fontSize: 12, fontWeight: '600' },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusDot: { width: 6, height: 6, borderRadius: 0 },
 
   sensitiveActions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, flexWrap: 'wrap' },
   countdown: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   countdownText: { fontSize: 14, color: '#F59E0B', fontWeight: '600' },
-  hideNowButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#F1F5F9', borderRadius: 8 },
+  hideNowButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#F1F5F9', borderRadius: 0 },
   hideNowText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
   sensitiveError: { fontSize: 13, color: '#EF4444', marginTop: 8, marginBottom: 8 },
-  revealButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F172A', paddingVertical: 12, paddingHorizontal: 20, marginTop: 16, borderRadius: 8 },
+  revealButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F172A', paddingVertical: 12, paddingHorizontal: 20, marginTop: 16, borderRadius: 0 },
   revealButtonDisabled: { opacity: 0.7 },
   revealButtonText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
 
-  tableWrap: { backgroundColor: '#FFF', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
+  tableWrap: { backgroundColor: '#FFF', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0', overflow: 'hidden' },
   tableHeader: { flexDirection: 'row', backgroundColor: '#F8FAFC', padding: 14, borderBottomWidth: 1, borderBottomColor: '#E2E8F0' },
   tableHeaderMobile: { flexWrap: 'wrap' },
   th: { fontSize: 12, fontWeight: '600', color: '#64748B', textTransform: 'uppercase' },
@@ -559,11 +610,11 @@ const styles = StyleSheet.create({
   colAction: { flex: 1 },
   serviceName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
   serviceCat: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
-  badge: { fontSize: 12, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  badge: { fontSize: 12, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 0, alignSelf: 'flex-start' },
   amount: { flex: 1, fontSize: 14, fontWeight: '600', color: '#10B981' },
   link: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   linkText: { fontSize: 13, fontWeight: '600', color: '#2563EB' },
-  empty: { padding: 24, backgroundColor: '#F8FAFC', borderRadius: 12, borderWidth: 1, borderColor: '#E2E8F0' },
+  empty: { padding: 24, backgroundColor: '#F8FAFC', borderRadius: 0, borderWidth: 1, borderColor: '#E2E8F0' },
   emptyText: { color: '#94A3B8', fontSize: 14 },
   notifHint: { fontSize: 13, color: '#64748B', marginTop: 8, marginBottom: 16, fontStyle: 'italic' },
   testPushButton: {
@@ -574,10 +625,28 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8
+    borderRadius: 0
   },
   testPushButtonDisabled: { backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' },
   testPushButtonSuccess: { backgroundColor: '#10B981' },
   testPushButtonText: { fontSize: 14, fontWeight: '600', color: '#FFF' },
   pushError: { fontSize: 13, color: '#EF4444', marginTop: 12, textAlign: 'center' },
+
+  docsSection: { marginTop: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: '#E2E8F0' },
+  docsTitle: { fontSize: 13, fontWeight: '700', color: '#334155', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 },
+  folder: { marginLeft: 0 },
+  folderHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  folderName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
+  subFolder: { marginLeft: 24, marginBottom: 12, borderLeftWidth: 1, borderLeftColor: '#E2E8F0', paddingLeft: 12 },
+  subFolderName: { fontSize: 13, fontWeight: '600', color: '#475569' },
+  fileItem: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 24, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: '#F8FAFC', borderRadius: 0, alignSelf: 'flex-start' },
+  fileName: { fontSize: 13, color: '#1E293B', fontFamily: 'monospace' },
+  noDocs: { fontSize: 13, color: '#94A3B8', fontStyle: 'italic', marginLeft: 8 },
+
+  tabsContainer: { marginTop: 12 },
+  tabsScroll: { flexDirection: 'row', gap: 24 },
+  tabItem: { paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  tabItemActive: { borderBottomColor: '#2563EB' },
+  tabText: { fontSize: 14, fontWeight: '500', color: '#64748B' },
+  tabTextActive: { color: '#2563EB', fontWeight: '600' },
 });

@@ -251,6 +251,17 @@ export const Header = () => {
                             </Link>
                         );
                     })}
+                    {isAuthenticated && (
+                        <Link
+                            to="/dashboard/settings"
+                            onClick={handleMenuClose}
+                            style={styles.mobileNavLink as any}
+                        >
+                            <Text style={styles.mobileNavLinkText}>
+                                {t('settings.title', 'Settings')}
+                            </Text>
+                        </Link>
+                    )}
                     <View style={styles.mobileAuthRow}>
                         {authItems.map((item) => {
                             if (item.type === 'link') {

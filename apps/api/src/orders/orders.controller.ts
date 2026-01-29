@@ -15,6 +15,10 @@ export class OrdersController {
     @UseGuards(AuthGuard('jwt'))
     @Get()
     async findAll(@Request() req: any) {
+        if (!req.user || !req.user.userId) {
+            console.error('[OrdersController] User not authenticated properly', req.user);
+            throw new NotFoundException('User not authenticated properly');
+        }
         return this.ordersService.findAllByUser(req.user.userId);
     }
 

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text as RNText, StyleSheet, TouchableOpacity as RNTouchableOpacity, ActivityIndicator, TextInput } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text as RNText, StyleSheet, TouchableOpacity as RNTouchableOpacity, ActivityIndicator, TextInput, Animated, Easing } from 'react-native';
 import { spacing, space, type SpaceKey } from './spacing';
 
 export { spacing, space } from './spacing';
@@ -9,14 +9,17 @@ const theme = {
     colors: {
         primary: 'var(--primary-color, #2563EB)',
         primaryLight: 'var(--primary-light, #EFF6FF)',
-        secondary: 'var(--secondary-color, #1E293B)',
+        secondary: 'var(--secondary-color, #0F172A)',
+        neutral: '#0F172A',
         success: '#10B981',
         warning: '#F59E0B',
         danger: '#EF4444',
+        dangerLight: '#FEF2F2',
         slate: {
             50: '#F8FAFC',
             100: '#F1F5F9',
             200: '#E2E8F0',
+            300: '#CBD5E1',
             400: '#94A3B8',
             500: '#64748B',
             600: '#475569',
@@ -28,6 +31,9 @@ const theme = {
     radius: 0,
     spacing,
     space,
+    fonts: {
+        inter: 'Inter, system-ui, Avenir, Helvetica, Arial, sans-serif'
+    }
 };
 
 const toPx = (v: SpaceKey | number) => (typeof v === 'number' ? v : space[v]);
@@ -62,7 +68,7 @@ export const Card = ({ children, style, padding = spacing[6], elevated = true }:
 );
 
 // --- INPUT ---
-export const Input = ({ label, placeholder, value, onChangeText, secureTextEntry, icon, iconPosition = 'left', style }: any) => {
+export const Input = ({ label, placeholder, value, onChangeText, secureTextEntry, icon, iconPosition = 'left', style, keyboardType, maxLength, autoCapitalize }: any) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -84,6 +90,9 @@ export const Input = ({ label, placeholder, value, onChangeText, secureTextEntry
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     underlineColorAndroid="transparent"
+                    keyboardType={keyboardType}
+                    maxLength={maxLength}
+                    autoCapitalize={autoCapitalize}
                 />
                 {icon && iconPosition === 'right' && icon}
             </View>
@@ -111,15 +120,21 @@ export const Badge = ({ label, variant = 'neutral', style }: any) => {
 };
 
 // --- BUTTON ---
-export const Button = ({ title, onPress, variant = 'primary', loading, disabled, icon, iconPosition = 'left', style, textStyle }: any) => {
+export const Button = ({ title, children, onPress, variant = 'primary', loading, disabled, icon, iconPosition = 'left', style, textStyle }: any) => {
     const getButtonStyle = () => {
         if (variant === 'primary') return styles.btnPrimary;
+        if (variant === 'secondary') return styles.btnSecondary;
+        if (variant === 'neutral') return styles.btnNeutral;
+        if (variant === 'danger') return styles.btnDanger;
         if (variant === 'ghost') return styles.btnGhost;
         return styles.btnOutline;
     };
 
     const getTextStyle = () => {
         if (variant === 'primary') return styles.btnTextPrimary;
+        if (variant === 'secondary') return styles.btnTextSecondary;
+        if (variant === 'neutral') return styles.btnTextNeutral;
+        if (variant === 'danger') return styles.btnTextDanger;
         if (variant === 'ghost') return styles.btnTextGhost;
         return styles.btnTextOutline;
     };
@@ -139,7 +154,7 @@ export const Button = ({ title, onPress, variant = 'primary', loading, disabled,
             {loading ? (
                 <ActivityIndicator color={getActivityIndicatorColor()} />
             ) : (
-                <View style={[styles.btnContent, { gap: spacing[3] }]}>
+                <View style={[styles.btnContent, { gap: spacing[3] }]} key={variant}>
                     {icon && iconPosition === 'left' && icon}
                     <RNText
                         style={[
@@ -147,7 +162,7 @@ export const Button = ({ title, onPress, variant = 'primary', loading, disabled,
                             getTextStyle(),
                             textStyle
                         ]}
-                    >{title}</RNText>
+                    >{title || children}</RNText>
                     {icon && iconPosition === 'right' && icon}
                 </View>
             )}
@@ -193,7 +208,39 @@ export const Tabs = ({ tabs, activeTab, onTabChange, style }: any) => (
     </View>
 );
 
-// --- STATS CARD ---
+// --- SWITCH ---
+export const Switch = ({ value, onValueChange, disabled }: { value: boolean; onValueChange: (v: boolean) => void; disabled?: boolean }) => {
+    const translateX = useRef(new Animated.Value(value ? 23 : 3)).current;
+
+    useEffect(() => {
+        Animated.spring(translateX, {
+            toValue: value ? 23 : 3,
+            friction: 8,
+            tension: 50,
+            useNativeDriver: true,
+        }).start();
+    }, [value]);
+
+    return (
+        <RNTouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => !disabled && onValueChange(!value)}
+            style={[
+                styles.switchTrack,
+                value ? styles.switchTrackOn : styles.switchTrackOff,
+                disabled && { opacity: 0.5 }
+            ]}
+        >
+            <Animated.View
+                style={[
+                    styles.switchThumb,
+                    { transform: [{ translateX }] }
+                ]}
+            />
+        </RNTouchableOpacity>
+    );
+};
+
 export const StatsCard = ({ label, value, trend, trendValue, trendColor, trendLabel, style }: any) => (
     <Card style={[styles.statsCard, style]}>
         <RNText style={styles.statsLabel}>{label}</RNText>
@@ -211,47 +258,78 @@ export const StatsCard = ({ label, value, trend, trendValue, trendColor, trendLa
 
 const s = spacing;
 const styles = StyleSheet.create({
-    h1: { fontSize: 32, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.8, marginBottom: s[2] },
-    h2: { fontSize: 24, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.5, marginBottom: s[1] },
-    h3: { fontSize: 20, fontWeight: '600', color: theme.colors.slate[900], letterSpacing: -0.3 },
-    h4: { fontSize: 18, fontWeight: '600', color: theme.colors.slate[900] },
-    subtitle: { fontSize: 16, color: theme.colors.slate[500], lineHeight: 24 },
-    text: { fontSize: 14, color: theme.colors.slate[600], lineHeight: 22 },
+    h1: { fontSize: 32, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.8, marginBottom: s[2], fontFamily: theme.fonts.inter },
+    h2: { fontSize: 24, fontWeight: '700', color: theme.colors.slate[900], letterSpacing: -0.5, marginBottom: s[1], fontFamily: theme.fonts.inter },
+    h3: { fontSize: 20, fontWeight: '600', color: theme.colors.slate[900], letterSpacing: -0.3, fontFamily: theme.fonts.inter },
+    h4: { fontSize: 18, fontWeight: '600', color: theme.colors.slate[900], fontFamily: theme.fonts.inter },
+    subtitle: { fontSize: 16, color: theme.colors.slate[500], lineHeight: 24, fontFamily: theme.fonts.inter },
+    text: { fontSize: 14, color: theme.colors.slate[600], lineHeight: 22, fontFamily: theme.fonts.inter },
     card: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: theme.colors.slate[200], overflow: 'hidden', borderRadius: 0 },
     elevated: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
     badge: { paddingHorizontal: 10, paddingVertical: s[1], alignSelf: 'flex-start', borderRadius: 0 },
-    badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+    badgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: theme.fonts.inter },
     button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', paddingHorizontal: s[8], minWidth: 120, flexShrink: 0, borderRadius: 0 },
     btnPrimary: { backgroundColor: theme.colors.primary },
+    btnSecondary: { backgroundColor: theme.colors.secondary },
+    btnNeutral: { backgroundColor: theme.colors.neutral },
+    btnDanger: { backgroundColor: theme.colors.dangerLight, borderWidth: 1, borderColor: theme.colors.danger },
     btnOutline: { backgroundColor: 'transparent', borderWidth: 1, borderColor: theme.colors.primary },
     btnGhost: { backgroundColor: 'transparent', borderWidth: 0 },
     btnContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
-    btnText: { fontSize: 13, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1.5, flexShrink: 0 },
+    btnText: { fontSize: 13, fontWeight: '500', textTransform: 'uppercase', letterSpacing: 1.5, flexShrink: 0, fontFamily: theme.fonts.inter },
     btnTextPrimary: { color: '#FFFFFF' },
+    btnTextSecondary: { color: '#FFFFFF' },
+    btnTextNeutral: { color: '#FFFFFF' },
+    btnTextDanger: { color: theme.colors.danger },
     btnTextOutline: { color: theme.colors.primary },
     btnTextGhost: { color: theme.colors.slate[700] },
     inputGroup: { marginBottom: s[4], width: '100%' },
-    inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: s[2] },
+    inputLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[700], marginBottom: s[2], fontFamily: theme.fonts.inter },
     inputWrapper: { height: 48, borderWidth: 1.5, borderColor: theme.colors.slate[200], paddingHorizontal: s[4], backgroundColor: '#FFFFFF', justifyContent: 'center', borderRadius: 0 },
     inputWrapperFocused: { borderColor: theme.colors.primary },
-    inputText: { flex: 1, fontSize: 16, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none' } as any,
+    inputText: { flex: 1, fontSize: 16, color: theme.colors.slate[900], height: '100%', outlineStyle: 'none', fontFamily: theme.fonts.inter } as any,
 
     table: { width: '100%', borderTopWidth: 1, borderTopColor: theme.colors.slate[200] },
     tableHeader: { flexDirection: 'row', backgroundColor: theme.colors.slate[50], padding: s[4], borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200] },
-    th: { fontSize: 12, fontWeight: '700', color: theme.colors.slate[500], textTransform: 'uppercase', letterSpacing: 1 },
+    th: { fontSize: 12, fontWeight: '700', color: theme.colors.slate[500], textTransform: 'uppercase', letterSpacing: 1, fontFamily: theme.fonts.inter },
     tr: { flexDirection: 'row', padding: s[4], borderBottomWidth: 1, borderBottomColor: theme.colors.slate[100], alignItems: 'center' },
-    tdText: { fontSize: 14, color: theme.colors.slate[900] },
+    tdText: { fontSize: 14, color: theme.colors.slate[900], fontFamily: theme.fonts.inter },
 
     tabsContainer: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: theme.colors.slate[200], marginBottom: s[6] },
     tab: { paddingVertical: s[3], paddingHorizontal: s[4], borderBottomWidth: 2, borderBottomColor: 'transparent' },
     tabActive: { borderBottomColor: theme.colors.primary },
-    tabText: { fontSize: 14, fontWeight: '500', color: theme.colors.slate[500] },
-    tabTextActive: { color: theme.colors.primary, fontWeight: '600' },
+    tabText: { fontSize: 14, fontWeight: '500', color: theme.colors.slate[500], fontFamily: theme.fonts.inter },
+    tabTextActive: { color: theme.colors.primary, fontWeight: '600', fontFamily: theme.fonts.inter },
 
     statsCard: { minWidth: 240, flex: 1 },
-    statsLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[500], marginBottom: s[2] },
-    statsValue: { fontSize: 28, fontWeight: '700', color: theme.colors.slate[900], marginBottom: s[2] },
+    statsLabel: { fontSize: 14, fontWeight: '600', color: theme.colors.slate[500], marginBottom: s[2], fontFamily: theme.fonts.inter },
+    statsValue: { fontSize: 28, fontWeight: '700', color: theme.colors.slate[900], marginBottom: s[2], fontFamily: theme.fonts.inter },
     trendRow: { flexDirection: 'row', alignItems: 'center', gap: s[2] },
-    trendValue: { fontSize: 13, fontWeight: '600' },
-    trendText: { fontSize: 13, color: theme.colors.slate[400] },
+    trendValue: { fontSize: 13, fontWeight: '600', fontFamily: theme.fonts.inter },
+    trendText: { fontSize: 13, color: theme.colors.slate[400], fontFamily: theme.fonts.inter },
+
+    switchTrack: {
+        width: 44,
+        height: 24,
+        borderRadius: 0,
+        padding: 3,
+        justifyContent: 'center',
+        borderWidth: 1,
+    },
+    switchTrackOn: {
+        backgroundColor: theme.colors.neutral,
+        borderColor: theme.colors.neutral,
+    },
+    switchTrackOff: {
+        backgroundColor: theme.colors.slate[200],
+        borderColor: theme.colors.slate[300],
+    },
+    switchThumb: {
+        width: 16,
+        height: 16,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 0,
+        borderWidth: 1,
+        borderColor: theme.colors.slate[100],
+    },
 });

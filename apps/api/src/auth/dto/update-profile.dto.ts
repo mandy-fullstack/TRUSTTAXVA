@@ -47,6 +47,10 @@ export class UpdateProfileDto {
     driverLicenseStateName?: string;
 
     @IsOptional()
+    @IsString()
+    driverLicenseIssueDate?: string; // YYYY-MM-DD
+
+    @IsOptional()
     @IsString() // Accepting string, frontend validation ensures format
     driverLicenseExpiration?: string; // YYYY-MM-DD
 
@@ -57,6 +61,10 @@ export class UpdateProfileDto {
     @IsOptional()
     @IsString()
     passportCountryOfIssue?: string;
+
+    @IsOptional()
+    @IsString()
+    passportIssueDate?: string; // YYYY-MM-DD
 
     @IsOptional()
     @IsString()

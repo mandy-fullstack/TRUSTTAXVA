@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChatGateway } from '../chat/chat.gateway';
+import { StorageService } from '../common/services/storage.service';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,7 @@ export class AuthService {
         private emailService: EmailService,
         private twoFactorService: TwoFactorService,
         private chatGateway: ChatGateway,
+        private storageService: StorageService,
     ) { }
 
     async register(data: {
@@ -66,7 +68,8 @@ export class AuthService {
             await this.emailService.sendEmailVerification(
                 user.email,
                 verificationToken,
-                user.name || undefined
+                user.name || undefined,
+                data.origin
             );
         } catch (error) {
             console.error('Failed to send verification email:', error);
@@ -102,23 +105,8 @@ export class AuthService {
     async findById(id: string) {
         const user = await this.prisma.user.findUnique({
             where: { id },
-            include: {
-                orders: {
-                    include: {
-                        service: true
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    }
-                },
-                invoices: {
-                    where: {
-                        status: {
-                            in: ['DRAFT', 'SENT', 'OVERDUE']
-                        }
-                    }
-                }
-            }
+            // Removed heavy relations (orders, invoices) to optimize initial load.
+            // These should be fetched via dedicated endpoints where needed.
         } as any);
 
         if (!user) {
@@ -185,6 +173,7 @@ export class AuthService {
                 number: dto.driverLicenseNumber?.trim() ?? '',
                 stateCode: dto.driverLicenseStateCode?.trim() ?? '',
                 stateName: dto.driverLicenseStateName?.trim() ?? '',
+                issueDate: dto.driverLicenseIssueDate?.trim() ?? '',
                 expirationDate: dto.driverLicenseExpiration?.trim() ?? '',
             });
             updateData.driverLicenseEncrypted = this.encryptionService.encrypt(dlJson);
@@ -204,6 +193,7 @@ export class AuthService {
             const ppJson = JSON.stringify({
                 number: dto.passportNumber?.trim() ?? '',
                 countryOfIssue: dto.passportCountryOfIssue?.trim() ?? '',
+                issueDate: dto.passportIssueDate?.trim() ?? '',
                 expirationDate: dto.passportExpiration?.trim() ?? '',
             });
             updateData.passportDataEncrypted = this.encryptionService.encrypt(ppJson);
@@ -337,7 +327,9 @@ export class AuthService {
         number: string;
         stateCode: string;
         stateName: string;
+        issueDate: string;
         expirationDate: string;
+        photoKey?: string;
     } | null> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -358,7 +350,9 @@ export class AuthService {
                 number: dlData.number || '',
                 stateCode: dlData.stateCode || '',
                 stateName: dlData.stateName || '',
+                issueDate: dlData.issueDate || '',
                 expirationDate: dlData.expirationDate || '',
+                photoKey: dlData.photoKey,
             };
         } catch (error) {
             console.error('Failed to decrypt driver license:', error);
@@ -373,7 +367,9 @@ export class AuthService {
     async decryptPassport(userId: string): Promise<{
         number: string;
         countryOfIssue: string;
+        issueDate: string;
         expirationDate: string;
+        photoKey?: string;
     } | null> {
         const user = await this.prisma.user.findUnique({
             where: { id: userId },
@@ -393,7 +389,9 @@ export class AuthService {
             return {
                 number: ppData.number || '',
                 countryOfIssue: ppData.countryOfIssue || '',
+                issueDate: ppData.issueDate || '',
                 expirationDate: ppData.expirationDate || '',
+                photoKey: ppData.photoKey,
             };
         } catch (error) {
             console.error('Failed to decrypt passport:', error);
@@ -404,7 +402,7 @@ export class AuthService {
     /**
      * Request password reset - generates token and sends email
      */
-    async requestPasswordReset(email: string) {
+    async requestPasswordReset(email: string, origin?: string) {
         const user = await this.prisma.user.findUnique({ where: { email } });
 
         // Account doesn't exist - send marketing email
@@ -440,8 +438,9 @@ export class AuthService {
 
         // Send email
         try {
-            await this.emailService.sendPasswordResetEmail(email, resetToken, user.name || undefined);
-        } catch (error) {
+            await this.emailService.sendPasswordResetEmail(email, resetToken, user.name || undefined, origin);
+        }
+        catch (error) {
             console.error('Failed to send password reset email:', error);
             // Don't throw error to user, still return success message
         }
@@ -831,7 +830,7 @@ export class AuthService {
             data: {
                 email,
                 name: name || 'Admin User',
-                role: 'ADMIN',
+                role: 'ADMIN' as Role,
                 password: '', // Empty password initially
                 passwordResetToken: setupToken,
                 passwordResetExpires: setupExpires,
@@ -850,5 +849,143 @@ export class AuthService {
         }
 
         return { message: 'Admin invitation has been sent successfully', email };
+    }
+
+    /**
+     * Upload and encrypt a profile document photo
+     */
+    async uploadProfileDocument(
+        userId: string,
+        file: Express.Multer.File,
+        docType: 'DL' | 'PASSPORT'
+    ) {
+        try {
+            // Get user details for renaming
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { firstName: true, lastName: true }
+            });
+
+            if (!user) throw new NotFoundException('User not found');
+
+            const year = new Date().getFullYear();
+            const fName = (user.firstName || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const lName = (user.lastName || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            // Extension from original file (e.g., .jpg, .pdf)
+            const originalExt = file.originalname.split('.').pop() || 'bin';
+
+            // Format: YEAR_DOCTYPE_FIRSTNAME_LASTNAME.ext.enc
+            // Example: 2024_PASSPORT_MANDY_FERRO.jpg.enc
+            const newFileName = `${year}_${docType}_${fName}_${lName}.${originalExt}.enc`;
+
+            // 1. Encrypt the file buffer
+            const encryptedBuffer = this.encryptionService.encryptBuffer(file.buffer);
+
+            // 2. Prepare file metadata for storage
+            const encryptedFile = {
+                ...file,
+                buffer: encryptedBuffer,
+                originalname: newFileName,
+                mimetype: 'application/octet-stream', // Force encrypted binary type
+            };
+
+            // 3. Upload to private folder
+            // Path: users/{userId}/documents/{docType}/...
+            const path = `users/${userId}/documents/${docType.toLowerCase()}`;
+
+            // Pass the custom file name to the storage service
+            const uploadResult = await this.storageService.uploadFile(encryptedFile, path, false, newFileName);
+
+            // 4. Update the profile with the storage key
+            const decryptedProfile = docType === 'DL'
+                ? await this.decryptDriverLicense(userId)
+                : await this.decryptPassport(userId);
+
+            if (decryptedProfile) {
+                const updatedJson = JSON.stringify({
+                    ...decryptedProfile,
+                    photoKey: uploadResult.fileName,
+                });
+
+                const updateData = docType === 'DL'
+                    ? { driverLicenseEncrypted: this.encryptionService.encrypt(updatedJson) }
+                    : { passportDataEncrypted: this.encryptionService.encrypt(updatedJson) };
+
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: updateData,
+                });
+            }
+
+            return {
+                message: 'Document photo uploaded and encrypted successfully',
+                fileName: uploadResult.fileName,
+            };
+        } catch (error) {
+            console.error('Document upload error:', error);
+            throw new Error('Failed to securely upload document');
+        }
+    }
+
+    // ==================== PIN MANAGEMENT ====================
+
+    async getPinStatus(userId: string): Promise<{ hasPin: boolean }> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { pinEnabled: true, pinHash: true },
+        });
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        return { hasPin: !!user.pinHash && user.pinEnabled };
+    }
+
+    async setupPin(userId: string, pin: string): Promise<{ message: string }> {
+        // Validate PIN (basic check)
+        if (!pin || pin.length < 4) {
+            throw new BadRequestException('PIN must be at least 4 digits');
+        }
+
+        // Hash the PIN
+        const pinHash = await bcrypt.hash(pin, 10);
+
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                pinHash,
+                pinEnabled: true,
+            },
+        });
+
+        return { message: 'PIN setup successful' };
+    }
+
+    async verifyPin(userId: string, pin: string): Promise<{ valid: boolean }> {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { pinHash: true, pinEnabled: true },
+        });
+
+        if (!user || !user.pinEnabled || !user.pinHash) {
+            throw new BadRequestException('PIN is not set up');
+        }
+
+        const valid = await bcrypt.compare(pin, user.pinHash);
+
+        if (!valid) {
+            throw new UnauthorizedException('Invalid PIN');
+        }
+
+        return { valid: true };
+    }
+
+    async changePin(userId: string, oldPin: string, newPin: string): Promise<{ message: string }> {
+        // First verify old PIN
+        await this.verifyPin(userId, oldPin);
+
+        // Then setup new PIN
+        return this.setupPin(userId, newPin);
     }
 }

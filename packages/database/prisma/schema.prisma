@@ -40,6 +40,8 @@ model User {
   twoFactorBackupCodes   String?
   twoFactorEnabled       Boolean           @default(false)
   twoFactorSecret        String?
+  pinHash                String?
+  pinEnabled             Boolean           @default(false)
   fcmToken               String?           @unique
   clientAppointments     Appointment[]     @relation("ClientAppointments")
   preparedAppointments   Appointment[]     @relation("PreparerAppointments")
@@ -437,6 +439,7 @@ enum CaseType {
 enum DocType {
   PASSPORT
   ID_CARD
+  DRIVER_LICENSE
   TAX_FORM
   PROOF_OF_INCOME
   SSN_CARD

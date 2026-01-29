@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, useWindowDimensions, Platform } from 'react-native';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, User, LogOut, Menu, X, ShoppingBag, ChevronDown, Bell, MessageCircle, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, User, LogOut, Menu, X, ShoppingBag, ChevronDown, Bell, MessageCircle, FileText, Settings, Folder, type LucideIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { Text } from '@trusttax/ui';
@@ -18,6 +18,10 @@ const iconMap: Record<string, LucideIcon> = {
     MessageCircle,
     User,
     LogOut,
+    FileText,
+    FileText,
+    Settings,
+    Folder,
 };
 
 interface LayoutProps {

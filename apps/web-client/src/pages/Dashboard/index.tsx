@@ -34,6 +34,9 @@ interface UserWithRelations {
     }>;
 }
 
+import { useState } from 'react';
+import { api } from '../../services/api';
+
 export const DashboardPage = () => {
     const { t } = useTranslation();
     const {
@@ -46,14 +49,34 @@ export const DashboardPage = () => {
     } = useAuth();
     const { permission, requestPermission, isIOS, isStandalone } = useNotification();
 
+    const [orders, setOrders] = useState<any[]>([]);
+    const [invoices, setInvoices] = useState<any[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+
     // Refrescar user al montar para tener profileComplete actualizado (p. ej. tras completar perfil)
     useEffect(() => {
         if (!authLoading && isAuthenticated) {
             refreshUser();
+
+            // Fetch Orders and Invoices explicitly
+            Promise.all([
+                api.getOrders().catch(err => {
+                    console.error('Failed to fetch orders', err);
+                    return [];
+                }),
+                api.getInvoices().catch(err => {
+                    console.error('Failed to fetch invoices', err);
+                    return [];
+                })
+            ]).then(([ordersData, invoicesData]) => {
+                setOrders(ordersData);
+                setInvoices(invoicesData);
+                setIsLoadingData(false);
+            });
         }
     }, [authLoading, isAuthenticated, refreshUser]);
 
-    if (authLoading) {
+    if (authLoading || (isAuthenticated && isLoadingData)) {
         return (
             <Layout>
                 <DashboardLoading error={authError ?? undefined} />
@@ -77,8 +100,9 @@ export const DashboardPage = () => {
 
     const userData = user as UserWithRelations | null;
     const userName = userData?.name ?? 'Client';
-    const orders = userData?.orders ?? [];
-    const pendingInvoices = userData?.invoices ?? [];
+    // const orders = userData?.orders ?? []; // Old way
+    // const pendingInvoices = userData?.invoices ?? []; // Old way
+    const pendingInvoices = invoices.filter(inv => inv.status !== 'PAID' && inv.status !== 'CANCELLED');
 
     return (
         <Layout>

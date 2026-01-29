@@ -185,6 +185,29 @@ class ApiService {
         });
     }
 
+    // --- Invoices ---
+    async getInvoices(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any[]>('/invoices', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getInvoiceById(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any>(`/invoices/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
     // --- Profile ---
     async updateProfile(data: {
         firstName?: string;
@@ -198,9 +221,11 @@ class ApiService {
         driverLicenseNumber?: string;
         driverLicenseStateCode?: string;
         driverLicenseStateName?: string;
+        driverLicenseIssueDate?: string;
         driverLicenseExpiration?: string;
         passportNumber?: string;
         passportCountryOfIssue?: string;
+        passportIssueDate?: string;
         passportExpiration?: string;
         acceptTerms?: boolean;
         termsVersion?: string;
@@ -240,6 +265,21 @@ class ApiService {
         }
     }
 
+    async uploadProfileDocument(file: File, docType: 'DL' | 'PASSPORT'): Promise<{ message: string, fileName: string }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in');
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('docType', docType);
+
+        return this.request<{ message: string, fileName: string }>('/auth/profile/upload-document', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData
+        });
+    }
+
     async getDecryptedSSN(): Promise<string | null> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
@@ -256,7 +296,9 @@ class ApiService {
         number: string;
         stateCode: string;
         stateName: string;
+        issueDate: string;
         expirationDate: string;
+        photoKey?: string;
     } | null> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
@@ -266,7 +308,9 @@ class ApiService {
                 number: string;
                 stateCode: string;
                 stateName: string;
+                issueDate: string;
                 expirationDate: string;
+                photoKey?: string;
             } | null
         }>('/auth/profile/decrypt-driver-license', {
             headers: {
@@ -279,7 +323,9 @@ class ApiService {
     async getDecryptedPassport(): Promise<{
         number: string;
         countryOfIssue: string;
+        issueDate: string;
         expirationDate: string;
+        photoKey?: string;
     } | null> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
@@ -288,7 +334,9 @@ class ApiService {
             passport: {
                 number: string;
                 countryOfIssue: string;
+                issueDate: string;
                 expirationDate: string;
+                photoKey?: string;
             } | null
         }>('/auth/profile/decrypt-passport', {
             headers: {
@@ -387,6 +435,36 @@ class ApiService {
         });
     }
 
+
+    async getDocuments(filters?: { type?: string; limit?: number; offset?: number }): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        const params = new URLSearchParams();
+        if (filters?.type) params.append('type', filters.type);
+        if (filters?.limit) params.append('limit', filters.limit.toString());
+        if (filters?.offset) params.append('offset', filters.offset.toString());
+
+        return this.request<any[]>(`/documents?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    async downloadDocument(id: string): Promise<Blob> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in');
+
+        const response = await fetch(`${this.baseUrl}/documents/${id}/content`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Download failed');
+        }
+
+        return response.blob();
+    }
+
     async uploadDocument(file: File, title?: string, type: string = 'OTHER'): Promise<any> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');
@@ -415,6 +493,45 @@ class ApiService {
     // --- FAQs ---
     async getFAQs(): Promise<any[]> {
         return this.request<any[]>('/faq');
+    }
+
+    // --- Secure PIN ---
+    async getPinStatus(): Promise<{ hasPin: boolean }> {
+        const token = getToken();
+        if (!token) return { hasPin: false }; // Safe fallback
+        return this.request<{ hasPin: boolean }>('/auth/pin/status', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    async setupPin(pin: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in');
+        return this.request<any>('/auth/pin/setup', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin })
+        });
+    }
+
+    async verifyPin(pin: string): Promise<{ valid: boolean }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in');
+        return this.request<{ valid: boolean }>('/auth/pin/verify', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin })
+        });
+    }
+
+    async changePin(oldPin: string, newPin: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in');
+        return this.request<any>('/auth/pin/change', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ oldPin, newPin })
+        });
     }
 
     // Add future modules here (Orders, Appointments, etc.)

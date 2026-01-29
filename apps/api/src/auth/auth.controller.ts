@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Patch, UnauthorizedException, Param, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, Patch, UnauthorizedException, Param, Query, Headers, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,8 +18,8 @@ export class AuthController {
 
     @Post('register')
     @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 requests per hour
-    async register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto);
+    async register(@Body() dto: RegisterDto, @Headers('origin') origin: string) {
+        return this.authService.register({ ...dto, origin });
     }
 
     @Post('login')
@@ -72,8 +73,8 @@ export class AuthController {
 
     @Post('forgot-password')
     @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 3 requests per hour
-    async forgotPassword(@Body() dto: ForgotPasswordDto) {
-        return this.authService.requestPasswordReset(dto.email);
+    async forgotPassword(@Body() dto: ForgotPasswordDto, @Headers('origin') origin: string) {
+        return this.authService.requestPasswordReset(dto.email, origin);
     }
 
     @Get('verify-reset-token/:token')
@@ -136,4 +137,45 @@ export class AuthController {
         return this.authService.complete2FALogin(body.tempToken, body.code);
     }
 
+
+    // ==================== SECURE PIN ENDPOINTS ====================
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('pin/status')
+    async getPinStatus(@Request() req: any) {
+        return this.authService.getPinStatus(req.user.userId);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('pin/setup')
+    async setupPin(@Request() req: any, @Body() body: { pin: string }) {
+        return this.authService.setupPin(req.user.userId, body.pin);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('pin/verify')
+    async verifyPin(@Request() req: any, @Body() body: { pin: string }) {
+        return this.authService.verifyPin(req.user.userId, body.pin);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('pin/change')
+    async changePin(@Request() req: any, @Body() body: { oldPin: string; newPin: string }) {
+        return this.authService.changePin(req.user.userId, body.oldPin, body.newPin);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Post('profile/upload-document')
+    @UseInterceptors(FileInterceptor('file'))
+    @Throttle({ default: { limit: 10, ttl: 3600000 } }) // 10 uploads per hour
+    async uploadDocument(
+        @Request() req: any,
+        @Body() body: { docType: 'DL' | 'PASSPORT' },
+        @UploadedFile() file: any // NestJS Multer file type
+    ) {
+        if (!file) {
+            throw new UnauthorizedException('No file uploaded or invalid file format');
+        }
+        return this.authService.uploadProfileDocument(req.user.userId, file, body.docType);
+    }
 }

@@ -11,6 +11,7 @@ import { FormsModule } from './forms/forms.module';
 import { OrdersModule } from './orders/orders.module';
 import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
+import { InvoicesModule } from './invoices/invoices.module';
 import { DocumentsModule } from './documents/documents.module';
 import { FirebaseModule } from './common/firebase.module';
 import { RedisModule } from './common/services/redis.module';
@@ -38,6 +39,7 @@ import Redis from 'ioredis';
     CompanyModule,
     FormsModule,
     OrdersModule,
+    InvoicesModule,
     FaqModule,
     ChatModule,
     DocumentsModule,

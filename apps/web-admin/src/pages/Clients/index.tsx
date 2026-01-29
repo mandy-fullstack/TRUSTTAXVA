@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
 
   tableContainer: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 0,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -235,14 +235,14 @@ const styles = StyleSheet.create({
   avatar: {
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: 0,
     backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   nameCell: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   clientName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  profileBadge: { backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  profileBadge: { backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 0 },
   profileBadgeText: { fontSize: 11, fontWeight: '600', color: '#15803D' },
   emailText: { fontSize: 13, color: '#64748B' },
   dateText: { fontSize: 13, color: '#64748B' },
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   cardList: { gap: 12, width: '100%' },
   card: {
     backgroundColor: '#FFF',
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     padding: 16,

@@ -40,7 +40,6 @@ export const DashboardHeader = ({ userName }: DashboardHeaderProps) => {
                     </Subtitle>
                 </View>
 
-
             </View>
         </View>
     );
@@ -88,4 +87,14 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         fontWeight: '400',
     },
+    actionButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#F8FAFC',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    }
 });

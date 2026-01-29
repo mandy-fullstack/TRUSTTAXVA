@@ -30,14 +30,16 @@ export class PrismaExceptionFilter implements ExceptionFilter {
             exception?.stack || exception,
         );
 
+        // Check if this is a NestJS HTTP Exception FIRST
+        // This allows standard NestJS exceptions (like NotFound, Forbidden, InternalServerError) to pass through
+        // with their original messages, unless they wrap a Prisma error
+        if (exception?.getStatus && typeof exception.getStatus === 'function') {
+            return this.handleHttpException(exception, response, request);
+        }
+
         // Check if this is a Prisma error
         if (this.isPrismaError(exception)) {
             return this.handlePrismaError(exception, response, request);
-        }
-
-        // Check if this is a NestJS HTTP Exception
-        if (exception?.getStatus && typeof exception.getStatus === 'function') {
-            return this.handleHttpException(exception, response, request);
         }
 
         // Generic server error (don't expose internal details)
@@ -53,13 +55,14 @@ export class PrismaExceptionFilter implements ExceptionFilter {
      */
     private isPrismaError(exception: any): boolean {
         return (
-            exception?.name?.includes('Prisma') ||
+            (exception?.name?.includes('Prisma') && !exception?.name?.includes('PrismaClientKnownRequestError') && !exception?.name?.includes('PrismaClientUnknownRequestError') && !exception?.name?.includes('PrismaClientRustPanicError') && !exception?.name?.includes('PrismaClientInitializationError') && !exception?.name?.includes('PrismaClientValidationError')) === false ||
             exception?.code?.startsWith('P') ||
             exception?.clientVersion !== undefined ||
-            exception?.message?.includes('prisma') ||
-            exception?.message?.includes('PrismaClient') ||
-            exception?.message?.includes('Invalid `') ||
-            exception?.message?.includes('Cannot fetch data from service')
+            // Avoid flagging generic Errors as Prisma errors just because they contain the word "prisma" in the message (unless it's a known prisma error structure)
+            (exception instanceof Error && exception.message && (
+                exception.message.includes('Invalid `') ||
+                exception.message.includes('Cannot fetch data from service')
+            ))
         );
     }
 

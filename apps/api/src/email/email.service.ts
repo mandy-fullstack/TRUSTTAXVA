@@ -77,8 +77,9 @@ export class EmailService {
     /**
      * Send password reset email using template
      */
-    async sendPasswordResetEmail(email: string, resetToken: string, userName?: string) {
-        const resetUrl = `${process.env.ADMIN_URL || process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+    async sendPasswordResetEmail(email: string, resetToken: string, userName?: string, origin?: string) {
+        const baseUrl = origin || process.env.ADMIN_URL || process.env.CLIENT_URL || 'http://localhost:5173';
+        const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
 
         const htmlContent = this.loadTemplate('password-reset', {
             userName: userName || 'there',
@@ -161,8 +162,8 @@ export class EmailService {
     /**
      * Send email verification email using template
      */
-    async sendEmailVerification(email: string, verificationToken: string, userName?: string) {
-        const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
+    async sendEmailVerification(email: string, verificationToken: string, userName?: string, origin?: string) {
+        const verifyUrl = `${origin || process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
 
         const htmlContent = this.loadTemplate('email-verification', {
             userName: userName || 'there',
@@ -283,6 +284,47 @@ export class EmailService {
         } catch (error) {
             console.error('❌ Error sending admin invitation:', error);
             throw new Error('Failed to send admin invitation');
+        }
+    }
+
+    /**
+     * Send PIN activation confirmation email (Security Alert)
+     */
+    async sendPinActivatedEmail(email: string, userName?: string) {
+        const htmlContent = this.loadTemplate('pin-activated', {
+            userName: userName || 'there',
+            year: new Date().getFullYear().toString()
+        });
+
+        const mailOptions = {
+            from: process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+            to: email,
+            subject: 'Security Alert: PIN Activated - TrustTax',
+            html: htmlContent,
+            text: this.htmlToText(htmlContent)
+        };
+
+        try {
+            const info = await this.transporter.sendMail(mailOptions);
+
+            // Log to console in dev mode
+            if (!process.env.SMTP_USER) {
+                console.log('\n📧 PIN ACTIVATED ALERT (DEV MODE)');
+                console.log('═══════════════════════════════════════════');
+                console.log(`To: ${email}`);
+                console.log('Message: Security PIN activated alert sent');
+                console.log('═══════════════════════════════════════════\n');
+            } else {
+                console.log(`✅ PIN activated alert sent to ${email}`);
+                console.log(`📬 SMTP Response: ${info.response}`);
+                console.log(`🆔 Message ID: ${info.messageId}`);
+            }
+
+            return info;
+        } catch (error) {
+            console.error('❌ Error sending PIN activation email:', error);
+            // Don't throw here to avoid blocking the API response if email fails
+            // Just log the error
         }
     }
 }

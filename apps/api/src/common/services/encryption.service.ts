@@ -113,6 +113,61 @@ export class EncryptionService {
     }
 
     /**
+     * Encrypt a Buffer (for files/photos)
+     * Returns: Buffer(IV + Salt + Tag + EncryptedData)
+     */
+    encryptBuffer(buffer: Buffer): Buffer {
+        try {
+            const key = this.getEncryptionKey();
+            const iv = crypto.randomBytes(this.ivLength);
+            const salt = crypto.randomBytes(this.saltLength);
+
+            const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+
+            let encrypted = cipher.update(buffer);
+            encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+            const tag = cipher.getAuthTag();
+
+            // Combine: IV + Salt + Tag + EncryptedData
+            return Buffer.concat([iv, salt, tag, encrypted]);
+        } catch (error) {
+            console.error('Buffer encryption error:', error);
+            throw new Error('Failed to encrypt file buffer');
+        }
+    }
+
+    /**
+     * Decrypt an encrypted Buffer
+     * Input: Buffer(IV + Salt + Tag + EncryptedData)
+     */
+    decryptBuffer(encryptedBuffer: Buffer): Buffer {
+        try {
+            const key = this.getEncryptionKey();
+
+            // Extract components
+            const iv = encryptedBuffer.subarray(0, this.ivLength);
+            const salt = encryptedBuffer.subarray(this.ivLength, this.ivLength + this.saltLength);
+            const tag = encryptedBuffer.subarray(
+                this.ivLength + this.saltLength,
+                this.ivLength + this.saltLength + this.tagLength
+            );
+            const encrypted = encryptedBuffer.subarray(this.ivLength + this.saltLength + this.tagLength);
+
+            const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
+            decipher.setAuthTag(tag);
+
+            let decrypted = decipher.update(encrypted);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+            return decrypted;
+        } catch (error) {
+            console.error('Buffer decryption error:', error);
+            throw new Error('Failed to decrypt file buffer');
+        }
+    }
+
+    /**
      * Extract last 4 digits from SSN for display purposes
      * Format: XXX-XX-1234 -> returns "1234"
      */

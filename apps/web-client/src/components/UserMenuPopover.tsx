@@ -94,9 +94,23 @@ export const UserMenuPopover = forwardRef<View, UserMenuPopoverProps>(({
                         onPress={handleProfileClick}
                         activeOpacity={0.7}
                     >
-                        <Settings size={18} color="#64748B" />
+                        <User size={18} color="#64748B" />
                         <Text style={styles.menuItemText}>
                             {t('header.profile', 'Profile')}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                            onClose();
+                            navigate('/dashboard/settings');
+                        }}
+                        activeOpacity={0.7}
+                    >
+                        <Settings size={18} color="#64748B" />
+                        <Text style={styles.menuItemText}>
+                            {t('settings.title', 'Settings')}
                         </Text>
                     </TouchableOpacity>
 

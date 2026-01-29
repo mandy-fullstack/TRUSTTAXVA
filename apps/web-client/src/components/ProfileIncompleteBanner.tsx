@@ -30,7 +30,7 @@ export const ProfileIncompleteBanner = ({ profileComplete }: ProfileIncompleteBa
                 </View>
                 <TouchableOpacity
                     style={styles.button}
-                    onPress={() => navigate('/dashboard/profile')}
+                    onPress={() => navigate('/profile/complete')}
                     activeOpacity={0.7}
                 >
                     <Text style={styles.buttonText}>
