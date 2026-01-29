@@ -114,6 +114,7 @@ export const api = {
       driverLicense: { number: string; stateCode: string; stateName: string; expirationDate: string } | null;
       passport: { number: string; countryOfIssue: string; expirationDate: string } | null;
     }>(`/admin/clients/${id}/sensitive`),
+  getUserDocuments: (userId: string) => request<any[]>(`/documents/admin/user/${userId}`),
 
   getOrders: () => request<any[]>('/admin/orders'),
   getOrderDetails: (id: string) => request<any>(`/admin/orders/${id}`),
@@ -239,4 +240,6 @@ export const api = {
     request<any>(`/admin/forms/${formId}/fields/${fieldId}`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteFormField: (formId: string, fieldId: string) =>
     request<any>(`/admin/forms/${formId}/fields/${fieldId}`, { method: 'DELETE' }),
+
+  getToken: () => getToken(),
 };

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, UseGuards, Request, UploadedFile, UseInterceptors, Body, Delete, Param, Patch, Query, Res } from '@nestjs/common';
+import { Controller, Post, Get, UseGuards, Request, UploadedFile, UseInterceptors, Body, Delete, Param, Patch, Query, Res, ForbiddenException } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -99,5 +99,43 @@ export class DocumentsController {
         // We should update findUserDocuments to return the proxy URL.
         const url = `/api/documents/${id}/content`;
         return { url };
+    }
+    // --- Admin Endpoints ---
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('admin/user/:userId')
+    async adminGetUserDocuments(
+        @Request() req: any,
+        @Param('userId') userId: string
+    ) {
+        // Simple role check
+        if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
+
+        const docs = await this.documentsService.adminFindUserDocuments(userId);
+        // Map to admin download urls
+        return docs.map((doc: any) => ({
+            ...doc,
+            url: `/api/documents/admin/download/${doc.id}`
+        }));
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Get('admin/download/:id')
+    async adminDownload(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Res() res: Response
+    ) {
+        if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
+
+        const fileData = await this.documentsService.adminDownloadDocument(id);
+
+        res.set({
+            'Content-Type': fileData.mimeType,
+            'Content-Disposition': `attachment; filename="${fileData.filename}"`, // Force download for admins
+            'Content-Length': fileData.buffer.length,
+        });
+
+        res.send(fileData.buffer);
     }
 }

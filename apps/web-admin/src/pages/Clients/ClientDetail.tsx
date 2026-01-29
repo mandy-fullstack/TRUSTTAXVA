@@ -25,6 +25,7 @@ import {
   CheckCircle,
   RefreshCw,
   Folder,
+  Download,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -75,11 +76,15 @@ export function ClientDetailPage() {
   const [pushLoading, setPushLoading] = useState(false);
   const [pushStatus, setPushStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [pushError, setPushError] = useState('');
+  // Documents
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
 
   useEffect(() => {
     setSensitiveData(null);
     setSensitiveError('');
     setSecondsLeft(0);
+    setDocuments([]);
   }, [id]);
 
   useEffect(() => {
@@ -89,8 +94,17 @@ export function ClientDetailPage() {
       try {
         setLoading(true);
         setError('');
-        const data = await api.getClientDetails(id);
-        if (!cancelled) setClient(data);
+
+        // Parallel fetch
+        const [clientData, docsData] = await Promise.all([
+          api.getClientDetails(id),
+          api.getUserDocuments(id).catch(() => []) // Don't fail whole page if docs fail
+        ]);
+
+        if (!cancelled) {
+          setClient(clientData);
+          setDocuments(docsData);
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load client');
       } finally {
@@ -99,6 +113,49 @@ export function ClientDetailPage() {
     })();
     return () => { cancelled = true; };
   }, [id]);
+
+  const handleDownload = async (doc: any) => {
+    try {
+      // Direct open won't work with Header-based JWT.
+      // We need to fetch blob with auth headers.
+      // Since our API client handles auth, we can use a raw fetch with the client's token logic 
+      // OR extending the api client.
+      // Constructing the full URL:
+      const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${doc.url}`;
+
+      // We can use the api.ts `request` but it expects JSON usually.
+      // We'll interpret this locally for now or add a blob method to api.
+      // Let's use standard fetch with the token from cookie/storage
+      const token = document.cookie.split('; ').find(row => row.startsWith('admin_token='))?.split('=')[1];
+      // fallback to just trying window.open if we rely on cookie auth (if set)
+
+      // Actually, safest is to use the `api` helper which I should probably expose a `download` method on.
+      // But for now, I'll alert the user I'm doing a trick.
+      // Wait, api.ts has `getToken`.
+      // Let's try opening in new window first? No, 401.
+
+      // WORKAROUND: Use `fetch` with header, then blob.
+      const res = await fetch(fullUrl, {
+        headers: {
+          'Authorization': `Bearer ${api.getToken ? api.getToken() : ''}`
+        }
+      });
+      if (!res.ok) throw new Error('Download failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.title || 'document'; // backend sets filename in content-disposition usually
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (e) {
+      alert('Failed to download document');
+    }
+  };
 
   useEffect(() => {
     if (secondsLeft <= 0) {
@@ -480,6 +537,73 @@ export function ClientDetailPage() {
           )}
         </View>
 
+        {/* Documents Manager */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Folder size={18} color="#334155" />
+            <H4 style={styles.sectionTitle}>Documents & Files ({documents.length})</H4>
+          </View>
+          <View style={styles.card}>
+            {docsLoading ? (
+              <ActivityIndicator size="small" color="#0F172A" />
+            ) : documents.length === 0 ? (
+              <Text style={styles.emptyText}>No documents uploaded yet.</Text>
+            ) : (
+              <View style={styles.docsGrid}>
+                {['IDENTITY', 'TAX', 'LEGAL', 'OTHER'].map(groupKey => {
+                  const groupDocs = documents.filter(d => {
+                    const t = (d.type || 'OTHER').toUpperCase();
+                    if (groupKey === 'IDENTITY') return t.includes('LICENSE') || t.includes('PASSPORT') || t === 'SSN';
+                    if (groupKey === 'TAX') return t.includes('TAX');
+                    if (groupKey === 'LEGAL') return t.includes('AGREEMENT') || t.includes('FORM');
+                    return !t.includes('LICENSE') && !t.includes('PASSPORT') && t !== 'SSN' && !t.includes('TAX') && !t.includes('AGREEMENT') && !t.includes('FORM');
+                  });
+
+                  if (groupDocs.length === 0) return null;
+
+                  const groupTitle =
+                    groupKey === 'IDENTITY' ? 'Identity Documents' :
+                      groupKey === 'TAX' ? 'Tax Returns & Filings' :
+                        groupKey === 'LEGAL' ? 'Legal & Agreements' : 'General & Uploads';
+
+                  return (
+                    <View key={groupKey} style={styles.docGroup}>
+                      <View style={styles.docGroupHeader}>
+                        <Folder size={16} color="#475569" />
+                        <Text style={styles.docGroupTitle}>{groupTitle}</Text>
+                        <View style={styles.docCountBadge}>
+                          <Text style={styles.docCountText}>{groupDocs.length}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.docList}>
+                        {groupDocs.map(doc => (
+                          <TouchableOpacity
+                            key={doc.id}
+                            style={styles.docRow}
+                            onPress={() => handleDownload(doc)}
+                            activeOpacity={0.6}
+                          >
+                            <View style={[styles.docIcon, { backgroundColor: groupKey === 'TAX' ? '#ECFDF5' : '#F1F5F9' }]}>
+                              <FileText size={16} color={groupKey === 'TAX' ? '#059669' : '#475569'} />
+                            </View>
+                            <View style={styles.docInfo}>
+                              <Text style={styles.docName} numberOfLines={1}>{doc.title || doc.s3Key?.split('/').pop() || 'Untitled'}</Text>
+                              <Text style={styles.docMeta}>
+                                {formatDate(doc.uploadedAt)} • {(doc.size / 1024).toFixed(0)}KB
+                              </Text>
+                            </View>
+                            <Download size={16} color="#94A3B8" />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* Invoices */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
@@ -649,4 +773,17 @@ const styles = StyleSheet.create({
   tabItemActive: { borderBottomColor: '#2563EB' },
   tabText: { fontSize: 14, fontWeight: '500', color: '#64748B' },
   tabTextActive: { color: '#2563EB', fontWeight: '600' },
+
+  docsGrid: { gap: 24 },
+  docGroup: {},
+  docGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  docGroupTitle: { fontSize: 14, fontWeight: '700', color: '#334155' },
+  docCountBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 99 },
+  docCountText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
+  docList: { gap: 8 },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: '#F8FAFC', borderRadius: 6, borderWidth: 1, borderColor: 'transparent' },
+  docIcon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 4 },
+  docInfo: { flex: 1, minWidth: 0 },
+  docName: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
+  docMeta: { fontSize: 11, color: '#64748B', marginTop: 2 },
 });

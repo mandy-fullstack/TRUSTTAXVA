@@ -101,6 +101,48 @@ export class DocumentsService {
         }
     }
 
+    // --- Admin / Internal Methods ---
+
+    async findById(id: string) {
+        const doc = await this.prisma.document.findUnique({
+            where: { id },
+        });
+        if (!doc) throw new NotFoundException('Document not found');
+        return doc;
+    }
+
+    async adminFindUserDocuments(userId: string) {
+        // Reuse the logic but without limit/offset for now for admins (or add later)
+        return this.findUserDocuments(userId, { limit: 100 });
+    }
+
+    async adminDownloadDocument(id: string) {
+        const doc = await this.findById(id);
+
+        if (!doc.s3Key) {
+            throw new NotFoundException('Document file not found');
+        }
+
+        try {
+            const fileBuffer = await this.storageService.getFileBuffer(doc.s3Key);
+            let finalBuffer = fileBuffer;
+            if (doc.s3Key.endsWith('.enc')) {
+                finalBuffer = this.encryptionService.decryptBuffer(fileBuffer);
+            }
+
+            return {
+                buffer: finalBuffer,
+                mimeType: doc.mimeType,
+                filename: doc.title || doc.s3Key
+            };
+        } catch (error) {
+            console.error('Error downloading document (admin):', error);
+            throw new InternalServerErrorException('Failed to retrieve document');
+        }
+    }
+
+    // --- User Methods ---
+
     async findUserDocuments(userId: string, filters?: { type?: DocType, limit?: number, offset?: number }) {
         const { type, limit = 50, offset = 0 } = filters || {};
 
@@ -116,10 +158,6 @@ export class DocumentsService {
 
         // Return proxy URLs
         return documents.map((doc: any) => {
-            // We return a proxy URL that the frontend can use (with auth)
-            // or if we switch the frontend to fetch blob, we might not strictly need 'url' here 
-            // but it helps to have a reference.
-            // Note: Since we encrypt, we CANNOT give a direct Storage URL.
             return {
                 ...doc,
                 url: `/api/documents/${doc.id}/content`
@@ -128,11 +166,7 @@ export class DocumentsService {
     }
 
     async findOne(userId: string, id: string) {
-        const doc = await this.prisma.document.findUnique({
-            where: { id },
-        });
-
-        if (!doc) throw new NotFoundException('Document not found');
+        const doc = await this.findById(id);
         if (doc.userId !== userId) throw new ForbiddenException('You do not have permission to access this document');
 
         if (doc.s3Key) {
@@ -143,11 +177,8 @@ export class DocumentsService {
     }
 
     async updateMetadata(userId: string, id: string, dto: UpdateDocumentDto) {
-        const doc = await this.prisma.document.findFirst({
-            where: { id, userId },
-        });
-
-        if (!doc) throw new NotFoundException('Document not found');
+        // Verify ownership
+        await this.findOne(userId, id);
 
         return this.prisma.document.update({
             where: { id },
@@ -156,11 +187,8 @@ export class DocumentsService {
     }
 
     async deleteDocument(userId: string, id: string) {
-        const doc = await this.prisma.document.findFirst({
-            where: { id, userId },
-        });
-
-        if (!doc) throw new NotFoundException('Document not found');
+        // Verify ownership
+        const doc = await this.findOne(userId, id);
 
         if (doc.s3Key) {
             await this.storageService.deleteFile(doc.s3Key);
@@ -172,7 +200,7 @@ export class DocumentsService {
     }
 
     async downloadDecryptedDocument(userId: string, id: string) {
-        const doc = await this.findOne(userId, id);
+        const doc = await this.findOne(userId, id); // check ownership
 
         if (!doc.s3Key) {
             throw new NotFoundException('Document file not found');
@@ -206,10 +234,6 @@ export class DocumentsService {
     }
 
     async getSignedUrl(userId: string, id: string) {
-        // Should preferably use downloadDecryptedDocument via controller instead of direct URL
-        // But keeping this if needed for non-encrypted generic files?
-        // For now, encryption is enforced, so this might return garbage if used directly.
-        // We should probably rely on the controller proxy.
         const doc = await this.findOne(userId, id);
         if (!doc.s3Key) throw new Error('Document has no storage key');
         return this.storageService.getSignedUrl(doc.s3Key);
