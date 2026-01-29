@@ -271,12 +271,10 @@ export class AuthService {
      * Required fields: firstName, lastName, dateOfBirth, countryOfBirth, primaryLanguage, ssnEncrypted, termsAcceptedAt
      */
     private calculateProfileCompletion(user: any): boolean {
+        // Critical fields only: Identity, Tax ID, and Consent
         const checks = {
             firstName: !!user.firstName,
             lastName: !!user.lastName,
-            dateOfBirth: !!user.dateOfBirth,
-            countryOfBirth: !!user.countryOfBirth,
-            primaryLanguage: !!user.primaryLanguage,
             ssnEncrypted: !!user.ssnEncrypted,
             termsAcceptedAt: !!user.termsAcceptedAt,
         };
@@ -286,7 +284,10 @@ export class AuthService {
             .map(([key]) => key);
 
         if (missing.length > 0) {
-            console.log(`[Profile Completion] User ${user.id} is missing:`, missing.join(', '));
+            console.log(`[Profile Completion] User ${user.id} is missing critical fields:`, missing.join(', '));
+            // Also log non-critical but useful fields for debugging
+            if (!user.dateOfBirth) console.log(`[Profile Completion] Note: User ${user.id} missing DOB (non-critical)`);
+            if (!user.countryOfBirth) console.log(`[Profile Completion] Note: User ${user.id} missing Country (non-critical)`);
         } else {
             console.log(`[Profile Completion] User ${user.id} profile is COMPLETE.`);
         }
