@@ -199,21 +199,19 @@ export class DocumentsService {
                 mimeType: doc.mimeType,
                 filename: doc.title // or construct from s3Key
             };
-            filename: doc.title // or construct from s3Key
-        };
-    } catch(error) {
-        console.error('Error downloading/decrypting document:', error);
-        throw new InternalServerErrorException('Failed to retrieve document');
+        } catch (error) {
+            console.error('Error downloading/decrypting document:', error);
+            throw new InternalServerErrorException('Failed to retrieve document');
+        }
     }
-}
 
     async getSignedUrl(userId: string, id: string) {
-    // Should preferably use downloadDecryptedDocument via controller instead of direct URL
-    // But keeping this if needed for non-encrypted generic files?
-    // For now, encryption is enforced, so this might return garbage if used directly.
-    // We should probably rely on the controller proxy.
-    const doc = await this.findOne(userId, id);
-    if (!doc.s3Key) throw new Error('Document has no storage key');
-    return this.storageService.getSignedUrl(doc.s3Key);
-}
+        // Should preferably use downloadDecryptedDocument via controller instead of direct URL
+        // But keeping this if needed for non-encrypted generic files?
+        // For now, encryption is enforced, so this might return garbage if used directly.
+        // We should probably rely on the controller proxy.
+        const doc = await this.findOne(userId, id);
+        if (!doc.s3Key) throw new Error('Document has no storage key');
+        return this.storageService.getSignedUrl(doc.s3Key);
+    }
 }
