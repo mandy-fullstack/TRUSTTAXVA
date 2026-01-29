@@ -1,22 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Button } from '@trusttax/ui';
+import { Button, H1, H3, Text, Card, Badge } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
-import { api } from '../../services/api';
-import { TermsModal } from '../../components/TermsModal';
-import { socket } from '../../services/socket';
-import { WizardLayout } from '../../components/Wizard/WizardLayout';
-import { PinGuard } from '../../components/PinGuard';
-
-// Steps
-import { StepPersonalDetails } from '../../components/profile/steps/StepPersonalDetails';
-import { StepTaxId } from '../../components/profile/steps/StepTaxId';
-import { StepLegalDocs } from '../../components/profile/steps/StepLegalDocs';
-import { StepReviewTerms } from '../../components/profile/steps/StepReviewTerms';
-
-import type { TaxIdType } from '../../components/profile/ProfileSSNOrITIN';
+import { Layout } from '../../components/Layout';
+import { PageMeta } from '../../components/PageMeta';
 
 interface ProfileData {
     firstName?: string;
@@ -39,15 +28,9 @@ interface ProfileData {
 
 export const ProfilePage = () => {
     const { user, token, refreshUser, showAlert } = useAuth();
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const navigate = useNavigate();
 
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showTermsModal, setShowTermsModal] = useState(false);
-
-    // Wizard State
-    const [currentStep, setCurrentStep] = useState(0);
-    const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
 
     const initialSsnRef = useRef<string | null>(null);
     const lastDecryptedLicenseRef = useRef<{ number: string; stateCode: string; stateName: string; expirationDate: string } | null>(null);
