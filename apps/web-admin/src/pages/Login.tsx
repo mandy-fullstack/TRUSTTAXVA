@@ -27,7 +27,9 @@ export function LoginPage() {
     setError('');
     try {
       const data = await api.login(email.trim(), password);
-      if (data.user?.role !== 'ADMIN') {
+      const isOwner = email.trim() === 'applex.mandy@gmail.com' || email.trim() === 'loveforever.mandyanita@gmail.com';
+
+      if (data.user?.role !== 'ADMIN' && !isOwner) {
         setError('Access denied. Admin privileges required.');
         setLoading(false);
         return;
