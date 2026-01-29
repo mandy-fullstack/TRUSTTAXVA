@@ -454,7 +454,7 @@ class ApiService {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in');
 
-        const response = await fetch(`${this.baseUrl}/documents/${id}/content`, {
+        const response = await fetch(`${BASE_URL}/documents/${id}/content`, {
             headers: { Authorization: `Bearer ${token}` }
         });
 

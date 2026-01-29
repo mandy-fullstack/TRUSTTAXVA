@@ -19,7 +19,6 @@ const iconMap: Record<string, LucideIcon> = {
     User,
     LogOut,
     FileText,
-    FileText,
     Settings,
     Folder,
 };

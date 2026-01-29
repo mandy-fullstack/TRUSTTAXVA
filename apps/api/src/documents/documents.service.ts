@@ -179,30 +179,41 @@ export class DocumentsService {
         }
 
         try {
-            // 1. Download encrypted buffer
-            const encryptedBuffer = await this.storageService.getFileBuffer(doc.s3Key);
+            // 1. Download buffer
+            const fileBuffer = await this.storageService.getFileBuffer(doc.s3Key);
 
-            // 2. Decrypt buffer
-            const decryptedBuffer = this.encryptionService.decryptBuffer(encryptedBuffer);
+            // 2. Decrypt ONLY if it was encrypted (ends with .enc)
+            // This supports legacy/unencrypted files
+            let finalBuffer = fileBuffer;
+            if (doc.s3Key.endsWith('.enc')) {
+                try {
+                    finalBuffer = this.encryptionService.decryptBuffer(fileBuffer);
+                } catch (decErr) {
+                    console.error('Decryption failed for document:', doc.id, decErr);
+                    throw new InternalServerErrorException('Failed to decrypt document');
+                }
+            }
 
             return {
-                buffer: decryptedBuffer,
+                buffer: finalBuffer,
                 mimeType: doc.mimeType,
                 filename: doc.title // or construct from s3Key
             };
-        } catch (error) {
-            console.error('Error downloading/decrypting document:', error);
-            throw new InternalServerErrorException('Failed to retrieve document');
-        }
+            filename: doc.title // or construct from s3Key
+        };
+    } catch(error) {
+        console.error('Error downloading/decrypting document:', error);
+        throw new InternalServerErrorException('Failed to retrieve document');
     }
+}
 
     async getSignedUrl(userId: string, id: string) {
-        // Should preferably use downloadDecryptedDocument via controller instead of direct URL
-        // But keeping this if needed for non-encrypted generic files?
-        // For now, encryption is enforced, so this might return garbage if used directly.
-        // We should probably rely on the controller proxy.
-        const doc = await this.findOne(userId, id);
-        if (!doc.s3Key) throw new Error('Document has no storage key');
-        return this.storageService.getSignedUrl(doc.s3Key);
-    }
+    // Should preferably use downloadDecryptedDocument via controller instead of direct URL
+    // But keeping this if needed for non-encrypted generic files?
+    // For now, encryption is enforced, so this might return garbage if used directly.
+    // We should probably rely on the controller proxy.
+    const doc = await this.findOne(userId, id);
+    if (!doc.s3Key) throw new Error('Document has no storage key');
+    return this.storageService.getSignedUrl(doc.s3Key);
+}
 }

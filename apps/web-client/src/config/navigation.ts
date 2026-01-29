@@ -19,7 +19,7 @@ export const publicNavItems: PublicNavItem[] = [
 ];
 
 export interface DashboardNavItem extends PublicNavItem {
-    icon?: 'LayoutDashboard' | 'ShoppingBag' | 'FileText' | 'Settings';
+    icon?: 'LayoutDashboard' | 'ShoppingBag' | 'FileText' | 'Settings' | 'Folder';
     /** Show this item only when pathname matches (e.g. /dashboard). */
     showOnlyWhen?: string;
 }

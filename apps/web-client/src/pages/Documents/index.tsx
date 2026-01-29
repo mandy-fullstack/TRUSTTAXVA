@@ -86,7 +86,7 @@ export const DocumentsPage = () => {
                 // or better: add download method to api.ts?
                 // Let's try adding a helper method to DocumentsPage or use api.ts
 
-                const token = localStorage.getItem('token') || document.cookie.match(/token=([^;]+)/)?.[1]; // rudimentary token get, ideally use api getToken()
+                // Rudimentary token check removed as not needed with api.downloadDocument
                 // Actually, let used api.downloadFile if it existed.
 
                 // Let's assume we can add download method to api.ts or do it inline here:
