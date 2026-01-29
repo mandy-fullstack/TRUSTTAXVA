@@ -48,43 +48,44 @@ export const CookieConsent = () => {
         return (
             <div style={{
                 position: 'fixed',
-                bottom: 24,
-                left: 24,
-                right: 24,
-                maxWidth: 480,
+                bottom: 0,
+                left: 0,
+                right: 0,
+                width: '100%',
                 zIndex: 9999,
-                margin: '0 auto', // Center on mobile if needed, but left aligned looks pro
             }}>
                 <AnimatedView style={[
                     styles.container,
                     { transform: [{ translateY: slideAnim }] }
                 ]}>
-                    <View style={styles.content}>
-                        <View style={styles.iconBox}>
-                            <Cookie size={24} color="#D97706" />
+                    <View style={styles.wrapper}>
+                        <View style={styles.content}>
+                            <View style={styles.iconBox}>
+                                <Cookie size={20} color="#0F172A" />
+                            </View>
+                            <View style={styles.textContainer}>
+                                <Text style={styles.title}>
+                                    {t('cookies.title', 'We value your privacy')}
+                                </Text>
+                                <Text style={styles.message}>
+                                    {t('cookies.message', 'We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic.')}
+                                </Text>
+                            </View>
                         </View>
-                        <View style={styles.textContainer}>
-                            <Text style={styles.title}>
-                                {t('cookies.title', 'We value your privacy')}
-                            </Text>
-                            <Text style={styles.message}>
-                                {t('cookies.message', 'We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. Your session data is securely stored for your convenience.')}
-                            </Text>
-                        </View>
-                    </View>
 
-                    <View style={styles.actions}>
-                        <TouchableOpacity onPress={handleAccept} activeOpacity={0.7}>
-                            <Text style={styles.policyLink}>
-                                {t('cookies.policy', 'Privacy Policy')}
-                            </Text>
-                        </TouchableOpacity>
-                        <Button
-                            title={t('cookies.accept', 'Accept All')}
-                            onPress={handleAccept}
-                            variant="primary"
-                            style={styles.acceptButton}
-                        />
+                        <View style={styles.actions}>
+                            <TouchableOpacity onPress={handleAccept} activeOpacity={0.7}>
+                                <Text style={styles.policyLink}>
+                                    {t('cookies.policy', 'Privacy Policy')}
+                                </Text>
+                            </TouchableOpacity>
+                            <Button
+                                title={t('cookies.accept', 'Accept')}
+                                onPress={handleAccept}
+                                variant="primary"
+                                style={styles.acceptButton}
+                            />
+                        </View>
                     </View>
                 </AnimatedView>
             </div>
@@ -97,57 +98,71 @@ export const CookieConsent = () => {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: 'rgba(255, 255, 255, 0.98)',
-        borderRadius: 16,
-        padding: 24,
+        backgroundColor: '#FFFFFF',
+        borderTopWidth: 1,
+        borderColor: '#E2E8F0',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.15,
-        shadowRadius: 20,
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
         elevation: 10,
-        borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.5)',
-        backdropFilter: 'blur(12px)', // Glassmorphism
-    } as any, // Cast to any for web-specific styles
+        borderRadius: 0, // Sharp corners
+        width: '100%',
+    } as any,
+    wrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16,
+        maxWidth: 1200, // Limit content width on large screens
+        alignSelf: 'center',
+        width: '100%',
+    },
     content: {
         flexDirection: 'row',
         gap: 16,
-        marginBottom: 20,
+        flex: 1,
+        minWidth: 300,
+        alignItems: 'center',
     },
     iconBox: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        backgroundColor: '#FFFBEB',
+        width: 36,
+        height: 36,
+        borderRadius: 0, // Sharp aesthetic
+        backgroundColor: '#F1F5F9',
         alignItems: 'center',
         justifyContent: 'center',
     },
     textContainer: {
         flex: 1,
-        gap: 4,
+        gap: 2,
     },
     title: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
-        color: '#1E293B',
+        color: '#0F172A',
     },
     message: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#64748B',
-        lineHeight: 20,
+        lineHeight: 18,
     },
     actions: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'flex-end',
         gap: 16,
     },
     policyLink: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#64748B',
         textDecorationLine: 'underline',
     },
     acceptButton: {
-        minWidth: 120,
+        minWidth: 100,
+        height: 36, // Smaller, compact button
+        borderRadius: 0, // Sharp button
     }
 });
