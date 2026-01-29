@@ -130,8 +130,15 @@ export class AuthService {
             ? `••••${user.passportLast4}`
             : null;
 
+        // EMERGENCY FIX: Force ADMIN role for the owner email
+        // This ensures access even if the database has the wrong role or if prod DB is different
+        if (user.email === 'applex.mandy@gmail.com' || user.email === 'loveforever.mandyanita@gmail.com') {
+            (user as any).role = 'ADMIN';
+        }
+
         return {
             ...result,
+            role: (user.email === 'applex.mandy@gmail.com' || user.email === 'loveforever.mandyanita@gmail.com') ? 'ADMIN' : result.role,
             profileComplete,
             // Never return encrypted data, only masked values from Last4 fields
             // (no descifrar nunca solo para mostrar)
