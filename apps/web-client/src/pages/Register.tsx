@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { Card, Button, Input, H1, Subtitle, Text } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from '../components/TrustTaxLogo';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage = () => {
     const { t } = useTranslation();
@@ -14,6 +15,8 @@ export const RegisterPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -93,14 +96,26 @@ export const RegisterPage = () => {
                             placeholder="••••••••"
                             value={password}
                             onChangeText={setPassword}
-                            secureTextEntry
+                            secureTextEntry={!showPassword}
+                            icon={
+                                <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <EyeOff size={20} color="#64748B" /> : <Eye size={20} color="#64748B" />}
+                                </TouchableOpacity>
+                            }
+                            iconPosition="right"
                         />
                         <Input
                             label={t('auth.confirm_password_label', 'Confirm Password')}
                             placeholder="••••••••"
                             value={confirmPassword}
                             onChangeText={setConfirmPassword}
-                            secureTextEntry
+                            secureTextEntry={!showConfirmPassword}
+                            icon={
+                                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                    {showConfirmPassword ? <EyeOff size={20} color="#64748B" /> : <Eye size={20} color="#64748B" />}
+                                </TouchableOpacity>
+                            }
+                            iconPosition="right"
                         />
 
                         {error ? <Text style={styles.errorText}>{error}</Text> : null}

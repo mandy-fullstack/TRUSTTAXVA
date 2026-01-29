@@ -6,11 +6,13 @@ import { api, AuthenticationError, NotFoundError, NetworkError } from '../servic
 import { Card, Button, Input, H1, Subtitle, Text } from '@trusttax/ui';
 import { useTranslation } from 'react-i18next';
 import { TrustTaxLogo } from '../components/TrustTaxLogo';
+import { Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage = () => {
     const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -79,7 +81,13 @@ export const LoginPage = () => {
                                 placeholder="••••••••"
                                 value={password}
                                 onChangeText={setPassword}
-                                secureTextEntry
+                                secureTextEntry={!showPassword}
+                                icon={
+                                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                                        {showPassword ? <EyeOff size={20} color="#64748B" /> : <Eye size={20} color="#64748B" />}
+                                    </TouchableOpacity>
+                                }
+                                iconPosition="right"
                             />
                             <Link to="/forgot-password">
                                 <TouchableOpacity style={styles.forgotBtn}>
