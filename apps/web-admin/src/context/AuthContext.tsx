@@ -41,7 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const userData = await api.getMe();
         if (cancelled) return;
-        if (userData?.role !== 'ADMIN') {
+        const isOwner = userData?.email === 'applex.mandy@gmail.com' || userData?.email === 'loveforever.mandyanita@gmail.com';
+
+        if (userData?.role !== 'ADMIN' && !isOwner) {
           setError('Access denied. Admin privileges required.');
           cookieStorage.clearAuth();
           setToken(null);
@@ -85,7 +87,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = (newToken: string, newUser: User) => {
-    if (newUser.role !== 'ADMIN') {
+    const isOwner = newUser.email === 'applex.mandy@gmail.com' || newUser.email === 'loveforever.mandyanita@gmail.com';
+
+    if (newUser.role !== 'ADMIN' && !isOwner) {
       setError('Access denied. Admin privileges required.');
       return;
     }
