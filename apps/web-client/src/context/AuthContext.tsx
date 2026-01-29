@@ -5,23 +5,7 @@ import * as cookieStorage from '../lib/cookies';
 import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
 import { AlertDialog } from '../components/AlertDialog';
 
-interface User {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    countryOfBirth?: string;
-    primaryLanguage?: string;
-    ssnMasked?: string | null;
-    driverLicenseMasked?: string | null;
-    passportMasked?: string | null;
-    profileComplete?: boolean;
-    termsAcceptedAt?: string;
-}
+import type { User } from '../types';
 
 interface GlobalAlert {
     isOpen: boolean;

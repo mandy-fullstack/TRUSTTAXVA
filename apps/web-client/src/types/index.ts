@@ -89,6 +89,16 @@ export interface User {
     role: 'ADMIN' | 'CLIENT' | 'PREPARER';
     isProfileComplete?: boolean;
     profileCompleted?: boolean;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    dateOfBirth?: string;
+    countryOfBirth?: string;
+    primaryLanguage?: string;
+    ssnMasked?: string | null;
+    driverLicenseMasked?: string | null;
+    passportMasked?: string | null;
+    termsAcceptedAt?: string;
 }
 
 export interface AuthResponse {
