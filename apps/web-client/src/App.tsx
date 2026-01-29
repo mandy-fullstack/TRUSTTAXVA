@@ -13,6 +13,7 @@ import { LandingPage } from './pages/Landing';
 import { AboutPage } from './pages/About';
 import { ContactPage } from './pages/Contact';
 import { WizardPage } from './pages/Wizard';
+import { ProfilePage } from './pages/Profile';
 import { OrderDetailPage } from './pages/Dashboard/OrderDetail';
 import { AdminOrderDetailPage } from './pages/Admin/AdminOrderDetail';
 import { AdminServicesPage } from './pages/Admin/AdminServices';
@@ -110,6 +111,7 @@ function App() {
                   <Route path="/dashboard/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
                   <Route path="/dashboard/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
                   <Route path="/dashboard/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+                  <Route path="/dashboard/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                   <Route path="/dashboard/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
                   {/* Admin Routes */}
