@@ -11,6 +11,7 @@ const MOBILE_BREAKPOINT = 768;
 const navItems: { path: string; label: string; icon: typeof LayoutDashboard; match?: 'startsWith' }[] = [
   { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/clients', label: 'Clients', icon: Users },
+  { path: '/staff', label: 'Staff', icon: Users },
   { path: '/orders', label: 'Orders', icon: FileText, match: 'startsWith' },
   { path: '/services', label: 'Services', icon: Briefcase, match: 'startsWith' },
   { path: '/forms', label: 'Forms', icon: ClipboardList, match: 'startsWith' },

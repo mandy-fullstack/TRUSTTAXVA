@@ -20,6 +20,11 @@ export class AdminController {
         return this.adminService.getAllClients();
     }
 
+    @Get('staff')
+    async getStaff() {
+        return this.adminService.getStaff();
+    }
+
     @Get('clients/:id/sensitive')
     async getClientSensitive(@Param('id') id: string) {
         return this.adminService.getClientSensitiveData(id);

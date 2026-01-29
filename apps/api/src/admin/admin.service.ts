@@ -45,6 +45,31 @@ export class AdminService {
         return clients;
     }
 
+    async getStaff() {
+        const staff = await (this.prisma.user as any).findMany({
+            where: {
+                role: {
+                    in: ['ADMIN', 'PREPARER']
+                }
+            },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                firstName: true,
+                lastName: true,
+                createdAt: true,
+                updatedAt: true,
+                _count: {
+                    select: { preparedAppointments: true, preparedTaxReturns: true }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+        return staff;
+    }
+
     async getClientDetails(clientId: string) {
         const client = await (this.prisma.user as any).findUnique({
             where: { id: clientId },

@@ -116,6 +116,8 @@ export const api = {
     }>(`/admin/clients/${id}/sensitive`),
   getUserDocuments: (userId: string) => request<any[]>(`/documents/admin/user/${userId}`),
 
+  getStaff: () => request<any[]>('/admin/staff'),
+
   getOrders: () => request<any[]>('/admin/orders'),
   getOrderDetails: (id: string) => request<any>(`/admin/orders/${id}`),
   updateOrderStatus: (id: string, status: string, notes?: string) =>
