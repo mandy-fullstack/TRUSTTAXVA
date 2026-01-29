@@ -78,7 +78,6 @@ export function ClientDetailPage() {
   const [pushError, setPushError] = useState('');
   // Documents
   const [documents, setDocuments] = useState<any[]>([]);
-  const [docsLoading, setDocsLoading] = useState(false);
 
   useEffect(() => {
     setSensitiveData(null);
@@ -126,7 +125,6 @@ export function ClientDetailPage() {
       // We can use the api.ts `request` but it expects JSON usually.
       // We'll interpret this locally for now or add a blob method to api.
       // Let's use standard fetch with the token from cookie/storage
-      const token = document.cookie.split('; ').find(row => row.startsWith('admin_token='))?.split('=')[1];
       // fallback to just trying window.open if we rely on cookie auth (if set)
 
       // Actually, safest is to use the `api` helper which I should probably expose a `download` method on.
@@ -544,9 +542,7 @@ export function ClientDetailPage() {
             <H4 style={styles.sectionTitle}>Documents & Files ({documents.length})</H4>
           </View>
           <View style={styles.card}>
-            {docsLoading ? (
-              <ActivityIndicator size="small" color="#0F172A" />
-            ) : documents.length === 0 ? (
+            {documents.length === 0 ? (
               <Text style={styles.emptyText}>No documents uploaded yet.</Text>
             ) : (
               <View style={styles.docsGrid}>
