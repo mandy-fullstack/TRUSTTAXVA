@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { Text, Card, Badge } from '@trusttax/ui';

@@ -87,6 +87,8 @@ export interface User {
     email: string;
     name?: string;
     role: 'ADMIN' | 'CLIENT' | 'PREPARER';
+    isProfileComplete?: boolean;
+    profileCompleted?: boolean;
 }
 
 export interface AuthResponse {

@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Button } from '@trusttax/ui';
+import { Check } from 'lucide-react';
+
+interface Step4Props {
+    onSubmit: (data: any) => void;
+    onBack: () => void;
+    isSubmitting: boolean;
+}
+
 export const Step4TermsAgreement: React.FC<Step4Props> = ({ onSubmit, onBack, isSubmitting }) => {
     const [accepted, setAccepted] = useState(false);
 

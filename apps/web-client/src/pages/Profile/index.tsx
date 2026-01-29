@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
