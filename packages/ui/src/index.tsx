@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { View, Text as RNText, StyleSheet, TouchableOpacity as RNTouchableOpacity, ActivityIndicator, TextInput, Animated, Easing } from 'react-native';
+import { View, Text as RNText, StyleSheet, TouchableOpacity as RNTouchableOpacity, ActivityIndicator, TextInput, Animated } from 'react-native';
 import { spacing, space, type SpaceKey } from './spacing';
 
 export { spacing, space } from './spacing';

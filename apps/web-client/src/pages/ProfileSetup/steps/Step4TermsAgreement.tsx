@@ -1,18 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@trusttax/ui';
-import { Check } from 'lucide-react';
-
-interface Step4Props {
-    onSubmit: (data: any) => void;
-    onBack: () => void;
-    isSubmitting: boolean;
-    initialData?: any;
-}
-
 export const Step4TermsAgreement: React.FC<Step4Props> = ({ onSubmit, onBack, isSubmitting }) => {
-    const { t } = useTranslation();
     const [accepted, setAccepted] = useState(false);
 
     const handleSubmit = () => {

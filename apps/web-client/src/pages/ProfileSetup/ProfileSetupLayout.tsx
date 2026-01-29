@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 interface ProfileSetupLayoutProps {

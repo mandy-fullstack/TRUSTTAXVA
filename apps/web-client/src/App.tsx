@@ -13,7 +13,6 @@ import { LandingPage } from './pages/Landing';
 import { AboutPage } from './pages/About';
 import { ContactPage } from './pages/Contact';
 import { WizardPage } from './pages/Wizard';
-import { ProfilePage } from './pages/Profile';
 import { OrderDetailPage } from './pages/Dashboard/OrderDetail';
 import { AdminOrderDetailPage } from './pages/Admin/AdminOrderDetail';
 import { AdminServicesPage } from './pages/Admin/AdminServices';

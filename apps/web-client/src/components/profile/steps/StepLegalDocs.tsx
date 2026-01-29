@@ -1,7 +1,7 @@
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Card, H3, Text } from '@trusttax/ui';
-import { Lock, FileText } from 'lucide-react';
+import { Lock } from 'lucide-react';
 import { ProfileDriverLicense } from '../ProfileDriverLicense';
 import { ProfilePassport } from '../ProfilePassport';
 

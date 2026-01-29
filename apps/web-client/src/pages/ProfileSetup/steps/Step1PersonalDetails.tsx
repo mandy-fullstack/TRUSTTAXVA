@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@trusttax/ui';
-
-interface Step1Props {
-    onNext: (data: any) => void;
-    initialData?: any;
-}
-
 export const Step1PersonalDetails: React.FC<Step1Props> = ({ onNext, initialData }) => {
-    const { t } = useTranslation();
     const [firstName, setFirstName] = useState(initialData?.firstName || '');
     const [lastName, setLastName] = useState(initialData?.lastName || '');
 

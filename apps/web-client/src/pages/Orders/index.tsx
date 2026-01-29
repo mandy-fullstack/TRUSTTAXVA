@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Layout } from '../../components/Layout';
 import { PageMeta } from '../../components/PageMeta';
 import { api } from '../../services/api';
-import { FileText, ChevronRight, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { FileText, ChevronRight, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const OrdersPage = () => {

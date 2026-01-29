@@ -10,7 +10,7 @@ interface StepReviewTermsProps {
     onShowTerms: () => void;
 }
 
-export const StepReviewTerms = ({ data, onChange, errors, onShowTerms }: StepReviewTermsProps) => {
+export const StepReviewTerms = ({ data, errors, onShowTerms }: StepReviewTermsProps) => {
     const { t } = useTranslation();
 
     return (

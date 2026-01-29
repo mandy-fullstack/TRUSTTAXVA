@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
-import { ShieldCheck, X, Lock, Info } from 'lucide-react';
+import { X, Lock, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { Button } from '@trusttax/ui';

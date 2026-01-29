@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Text } from '@trusttax/ui';
-import { ChevronDown, Check, Search } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 import { Country } from 'country-state-city';
 
 interface WizardCountrySelectProps {

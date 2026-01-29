@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@trusttax/ui';
-
-interface Step3Props {
-    onNext: (data: any) => void;
-    onBack: () => void;
-    initialData?: any;
-}
-
 export const Step3GovernmentID: React.FC<Step3Props> = ({ onNext, onBack, initialData }) => {
-    const { t } = useTranslation();
     const [idType, setIdType] = useState<'DL' | 'PASSPORT'>(initialData?.passportNumber ? 'PASSPORT' : 'DL');
 
     // DL State

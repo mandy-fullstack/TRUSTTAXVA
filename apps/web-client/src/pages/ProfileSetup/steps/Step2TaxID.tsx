@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import { Button } from '@trusttax/ui';
-
-interface Step2Props {
-    onNext: (data: any) => void;
-    onBack: () => void;
-    initialData?: any;
-}
-
 export const Step2TaxID: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
-    const { t } = useTranslation();
     const [taxIdType, setTaxIdType] = useState(initialData?.taxIdType || 'SSN');
     const [ssn, setSsn] = useState(initialData?.ssn || '');
 
