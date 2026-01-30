@@ -23,6 +23,7 @@ export interface ServerToClientEvents {
     error: (error: { message: string }) => void;
     notification: (notification: any) => void; // TODO: Define strict Notification payload
     profile_completed: (data: { userId: string; completedAt: Date }) => void;
+    document_received: (data: { id: string; title: string; type: string; uploadedAt: Date; fromAdmin: boolean }) => void;
 }
 
 export interface ClientToServerEvents {

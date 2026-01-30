@@ -327,4 +327,49 @@ export class EmailService {
             // Just log the error
         }
     }
+
+    /**
+     * Send document uploaded notification
+     */
+    async sendDocumentUploaded(email: string, documentTitle: string, userName?: string, origin?: string) {
+        // Direct to documents page
+        const actionUrl = `${origin || process.env.CLIENT_URL || 'http://localhost:5173'}/documents`;
+
+        const htmlContent = this.loadTemplate('document-uploaded', {
+            userName: userName || 'Customer',
+            documentTitle: documentTitle,
+            itemType: 'document', // For tracking
+            actionUrl: actionUrl,
+            uploadDate: new Date().toLocaleDateString(),
+            year: new Date().getFullYear().toString()
+        });
+
+        const mailOptions = {
+            from: process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+            to: email,
+            subject: 'New Document Available - TrustTax',
+            html: htmlContent,
+            text: this.htmlToText(htmlContent)
+        };
+
+        try {
+            const info = await this.transporter.sendMail(mailOptions);
+
+            if (!process.env.SMTP_USER) {
+                console.log('\n📧 DOCUMENT UPLOADED NOTIFICATION (DEV MODE)');
+                console.log('═══════════════════════════════════════════');
+                console.log(`To: ${email}`);
+                console.log(`Document: ${documentTitle}`);
+                console.log(`Action URL: ${actionUrl}`);
+                console.log('═══════════════════════════════════════════\n');
+            } else {
+                console.log(`✅ Document notification sent to ${email}`);
+            }
+
+            return info;
+        } catch (error) {
+            console.error('❌ Error sending document notification:', error);
+            // Don't block upload if email fails
+        }
+    }
 }

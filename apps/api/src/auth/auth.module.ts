@@ -10,6 +10,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { TwoFactorService } from './two-factor.service';
 import { ChatModule } from '../chat/chat.module';
 import { PinModule } from './pin/pin.module';
+import { TokenService } from './token.service';
 
 @Module({
     imports: [
@@ -22,7 +23,7 @@ import { PinModule } from './pin/pin.module';
         ChatModule,
         PinModule,
     ],
-    providers: [AuthService, PrismaService, EncryptionService, JwtStrategy, TwoFactorService],
+    providers: [AuthService, PrismaService, EncryptionService, JwtStrategy, TwoFactorService, TokenService],
     controllers: [AuthController],
     exports: [AuthService],
 })

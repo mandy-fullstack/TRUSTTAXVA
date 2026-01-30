@@ -10,6 +10,7 @@ import * as crypto from 'crypto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChatGateway } from '../chat/chat.gateway';
 import { StorageService } from '../common/services/storage.service';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
         private twoFactorService: TwoFactorService,
         private chatGateway: ChatGateway,
         private storageService: StorageService,
+        private tokenService: TokenService,
     ) { }
 
     async register(data: {
@@ -49,8 +51,13 @@ export class AuthService {
         }
 
         // Email is new - proceed with registration
-        const verificationToken = crypto.randomBytes(32).toString('hex');
         const hashedPassword = await bcrypt.hash(data.password, 10);
+
+        // Generate Secure URL Token
+        const verificationToken = this.tokenService.createUrlToken({
+            email: data.email,
+            type: 'email_verification'
+        });
 
         const user = await this.prisma.user.create({
             data: {
@@ -427,8 +434,11 @@ export class AuthService {
             return { message: 'If an account exists with this email, you will receive a password reset link.' };
         }
 
-        // Generate secure random token
-        const resetToken = crypto.randomBytes(32).toString('hex');
+        // Generate Secure URL Token
+        const resetToken = this.tokenService.createUrlToken({
+            sub: user.id,
+            type: 'password_reset'
+        });
         const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
 
         // Save token to database
@@ -456,8 +466,17 @@ export class AuthService {
      * Verify reset token validity
      */
     async verifyResetToken(token: string) {
+        // 1. Decrypt and validate format
+        const payload = this.tokenService.verifyUrlToken<{ sub: string; type: string }>(token);
+        if (!payload || payload.type !== 'password_reset') {
+            throw new BadRequestException('Invalid or expired password reset token');
+        }
+
+        // 2. Check against database state (ensure token matches and expiry matches)
+        // Note: We still check against DB to prevent replay attacks if user re-requested
         const user = await this.prisma.user.findFirst({
             where: {
+                id: payload.sub,
                 passwordResetToken: token,
                 passwordResetExpires: {
                     gte: new Date(), // Token hasn't expired
@@ -476,9 +495,20 @@ export class AuthService {
      * Reset password with token
      */
     async resetPassword(token: string, newPassword: string) {
-        // Find user with valid token
+        // 1. Decrypt
+        console.log('   [DEBUG] Verifying Token in AuthService...');
+        const payload = this.tokenService.verifyUrlToken<{ sub: string; type: string }>(token);
+        console.log('   [DEBUG] Token Payload:', payload);
+
+        if (!payload || payload.type !== 'password_reset') {
+            console.error('   [DEBUG] Invalid Token Payload or Type mismatch');
+            throw new BadRequestException('Invalid or expired password reset token');
+        }
+
+        // 2. Verify against DB
         const user = await this.prisma.user.findFirst({
             where: {
+                id: payload.sub,
                 passwordResetToken: token,
                 passwordResetExpires: {
                     gte: new Date(),
@@ -518,9 +548,16 @@ export class AuthService {
      * Verify email and auto-login
      */
     async verifyEmail(token: string) {
-        // Find user with this verification token
+        // 1. Decrypt
+        const payload = this.tokenService.verifyUrlToken<{ email: string; type: string }>(token);
+        if (!payload || payload.type !== 'email_verification') {
+            throw new BadRequestException('Invalid or expired verification link');
+        }
+
+        // 2. Find by token AND email (double verification)
         const user = await this.prisma.user.findFirst({
             where: {
+                email: payload.email,
                 emailVerificationToken: token,
                 emailVerified: false,
             },
@@ -541,8 +578,8 @@ export class AuthService {
         });
 
         // Auto-login: generate JWT token
-        const payload = { email: user.email, sub: user.id, role: user.role };
-        const access_token = this.jwtService.sign(payload);
+        const jwtPayload = { email: user.email, sub: user.id, role: user.role };
+        const access_token = this.jwtService.sign(jwtPayload);
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password, ...userWithoutPassword } = user;

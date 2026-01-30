@@ -86,7 +86,15 @@ export class AuthController {
     @Post('reset-password')
     @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 requests per hour
     async resetPassword(@Body() dto: ResetPasswordDto) {
-        return this.authService.resetPassword(dto.token, dto.password);
+        console.log('🔄 [DEBUG] Reset Password Request Received');
+        console.log('   Token Length:', dto.token.length);
+        console.log('   Token Preview:', dto.token.substring(0, 20) + '...');
+        try {
+            return await this.authService.resetPassword(dto.token, dto.password);
+        } catch (error) {
+            console.error('❌ [DEBUG] Reset Password Failed:', error);
+            throw error;
+        }
     }
 
     @Get('verify-email/:token')

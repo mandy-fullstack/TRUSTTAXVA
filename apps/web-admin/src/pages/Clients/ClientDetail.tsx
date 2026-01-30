@@ -28,6 +28,8 @@ import {
   Download,
   Trash2,
   Edit2, // Added for rename
+  Upload, // Added for upload
+  X, // Added for modal
   // Eye, // Removed duplicate
 } from 'lucide-react';
 import { api } from '../../services/api';
@@ -85,8 +87,12 @@ export function ClientDetailPage() {
   // Documents
   const [documents, setDocuments] = useState<any[]>([]);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadType, setUploadType] = useState('OTHER');
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setSensitiveData(null);
@@ -204,6 +210,38 @@ export function ClientDetailPage() {
       alert('Failed to delete document');
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleUploadClick = () => {
+    setUploadFile(null);
+    setUploadType('OTHER');
+    setUploadModalOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setUploadFile(e.target.files[0]);
+    }
+  };
+
+  const handleUploadSubmit = async () => {
+    if (!uploadFile || !id) return;
+    try {
+      setIsUploading(true);
+      await api.adminUploadDocument(id, uploadFile, uploadFile.name, uploadType);
+
+      // Refresh documents
+      const docsData = await api.getUserDocuments(id);
+      setDocuments(docsData);
+
+      setUploadModalOpen(false);
+      setUploadFile(null);
+      alert('Document uploaded and client notified.');
+    } catch (e: any) {
+      alert(e.message || 'Upload failed');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -591,7 +629,13 @@ export function ClientDetailPage() {
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Folder size={18} color="#334155" />
-            <H4 style={styles.sectionTitle}>Documents & Files ({documents.length})</H4>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <H4 style={styles.sectionTitle}>Documents & Files ({documents.length})</H4>
+              <TouchableOpacity style={styles.uploadBtn} onPress={handleUploadClick}>
+                <Upload size={14} color="#FFF" />
+                <Text style={styles.uploadBtnText}>Upload</Text>
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.card}>
             {documents.length === 0 ? (
@@ -678,6 +722,59 @@ export function ClientDetailPage() {
             )}
           </View>
         </View>
+
+        {/* Upload Modal */}
+        {uploadModalOpen && (
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Upload Document</Text>
+                <TouchableOpacity onPress={() => setUploadModalOpen(false)}>
+                  <X size={24} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Select File</Text>
+                  <input
+                    type="file"
+                    onChange={handleFileSelect}
+                    style={styles.fileInput}
+                  />
+                </View>
+
+                {uploadFile && (
+                  <View style={styles.formGroup}>
+                    <Text style={styles.label}>Document Type</Text>
+                    <select
+                      value={uploadType}
+                      onChange={(e) => setUploadType(e.target.value)}
+                      style={styles.selectInput}
+                    >
+                      <option value="OTHER">Other / General</option>
+                      <option value="TAX_RETURN">Tax Return</option>
+                      <option value="LEGAL">Legal Document</option>
+                      <option value="INVOICE">Invoice</option>
+                    </select>
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={[styles.primaryButton, (!uploadFile || isUploading) && styles.disabledButton]}
+                  onPress={handleUploadSubmit}
+                  disabled={!uploadFile || isUploading}
+                >
+                  {isUploading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={styles.primaryButtonText}>Upload & Notify</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
 
         <RenameModal
           isOpen={renameModalOpen}
@@ -798,7 +895,25 @@ const styles = StyleSheet.create({
   countdown: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   countdownText: { fontSize: 14, color: '#F59E0B', fontWeight: '600' },
   hideNowButton: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: '#F1F5F9', borderRadius: 0 },
-  hideNowText: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  hideNowText: { fontSize: 13, color: '#64748B', fontWeight: '500' },
+
+  // New Styles
+  uploadBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#0F172A', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 0 },
+  uploadBtnText: { color: '#FFF', fontSize: 13, fontWeight: '500' },
+
+  modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000, height: '100%' },
+  modalContent: { width: '90%', maxWidth: 400, backgroundColor: '#FFF', borderRadius: 0, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: '#0F172A' },
+  modalBody: { gap: 16 },
+  formGroup: { gap: 8 },
+  label: { fontSize: 13, fontWeight: '500', color: '#64748B' },
+  fileInput: { fontSize: 14, color: '#0F172A' },
+  selectInput: { width: '100%', padding: 8, fontSize: 14, borderRadius: 0, borderColor: '#E2E8F0', borderWidth: 1 },
+  primaryButton: { backgroundColor: '#2563EB', padding: 12, alignItems: 'center', borderRadius: 0, marginTop: 8 },
+  primaryButtonText: { color: '#FFF', fontWeight: '600', fontSize: 14 },
+  disabledButton: { opacity: 0.5 },
+
   sensitiveError: { fontSize: 13, color: '#EF4444', marginTop: 8, marginBottom: 8 },
   revealButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#0F172A', paddingVertical: 12, paddingHorizontal: 20, marginTop: 16, borderRadius: 0 },
   revealButtonDisabled: { opacity: 0.7 },

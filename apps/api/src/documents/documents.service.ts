@@ -5,6 +5,8 @@ import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpdateDocumentDto } from './dto/update-document.dto';
 import { DocType } from '@trusttax/database';
 import { EncryptionService } from '../common/services/encryption.service';
+import { EmailService } from '../email/email.service';
+import { ChatGateway } from '../chat/chat.gateway';
 
 @Injectable()
 export class DocumentsService {
@@ -12,6 +14,8 @@ export class DocumentsService {
         private prisma: PrismaService,
         private storageService: StorageService,
         private encryptionService: EncryptionService,
+        private emailService: EmailService,
+        private chatGateway: ChatGateway,
     ) { }
 
     async uploadDocument(
@@ -98,6 +102,102 @@ export class DocumentsService {
             throw new InternalServerErrorException(
                 `Error uploading document: ${error.message}`
             );
+        }
+    }
+
+    async adminUploadDocument(
+        adminId: string,
+        userId: string,
+        file: Express.Multer.File,
+        dto: UploadDocumentDto
+    ) {
+        try {
+            // Get user details
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { email: true, firstName: true, lastName: true }
+            });
+
+            if (!user) throw new NotFoundException('User not found');
+
+            // 1. Prepare standardized filename
+            const year = new Date().getFullYear();
+            const fName = (user.firstName || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const lName = (user.lastName || 'UNKNOWN').toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const docType = dto.type || 'DOCUMENT';
+            const originalExt = file.originalname.split('.').pop() || 'bin';
+
+            // Add .enc extension
+            const newFileName = `${year}_${docType}_${fName}_${lName}_ADMIN.${originalExt}.enc`;
+
+            // 2. Encrypt buffer
+            const encryptedBuffer = this.encryptionService.encryptBuffer(file.buffer);
+
+            // 3. Prepare encrypted file object
+            const encryptedFile = {
+                ...file,
+                buffer: encryptedBuffer,
+                originalname: newFileName,
+                mimetype: 'application/octet-stream',
+                size: encryptedBuffer.length
+            };
+
+            // 4. Determine folder
+            let folder = 'admin_uploads';
+            if (dto.type) {
+                folder = String(dto.type).toLowerCase();
+            }
+
+            const storagePath = `users/${userId}/documents/${folder}`;
+
+            // 5. Upload to Storage
+            const uploadResult = await this.storageService.uploadFile(
+                encryptedFile,
+                storagePath,
+                false,
+                newFileName
+            );
+
+            // 6. Create record
+            const doc = await this.prisma.document.create({
+                data: {
+                    title: dto.title || newFileName.replace('.enc', ''),
+                    type: dto.type || DocType.OTHER,
+                    url: uploadResult.url,
+                    s3Key: uploadResult.fileName,
+                    mimeType: file.mimetype,
+                    size: file.size,
+                    userId: userId, // Document belongs to the CLIENT
+                    taxReturnId: dto.taxReturnId,
+                    immigrationCaseId: dto.immigrationCaseId,
+                    orderId: dto.orderId,
+                    // Track that admin uploaded it? Maybe in future schema update.
+                },
+            });
+
+            // 7. NOTIFICATIONS
+            // Send Email
+            this.emailService.sendDocumentUploaded(
+                user.email,
+                doc.title,
+                user.firstName || undefined
+            ).catch(err => console.error('Failed to send upload email:', err));
+
+            // Emit Socket Event
+            // Emit to specific user room: "user_{userId}"
+            this.chatGateway.server.to(`user_${userId}`).emit('document_received', {
+                id: doc.id,
+                title: doc.title,
+                type: doc.type,
+                uploadedAt: doc.uploadedAt,
+                fromAdmin: true
+            } as any); // Type cast if strictly typed
+
+            return doc;
+
+        } catch (error: any) {
+            console.error('Error in adminUploadDocument:', error);
+            throw new InternalServerErrorException(`Error uploading document: ${error.message}`);
         }
     }
 

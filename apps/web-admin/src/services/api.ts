@@ -150,6 +150,13 @@ export const api = {
     formData.append('type', type);
     return request<any>('/documents/upload', { method: 'POST', body: formData });
   },
+  adminUploadDocument: (userId: string, file: File, title?: string, type: string = 'OTHER') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    formData.append('type', type);
+    return request<any>(`/documents/admin/upload/${userId}`, { method: 'POST', body: formData });
+  },
   deleteConversation: (id: string) => request<void>(`/chat/conversations/${id}`, { method: 'DELETE' }),
 
   getDashboardMetrics: () => request<any>('/admin/dashboard/metrics'),

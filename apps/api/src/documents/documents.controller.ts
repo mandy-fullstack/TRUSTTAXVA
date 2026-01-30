@@ -120,6 +120,19 @@ export class DocumentsController {
     }
 
     @UseGuards(AuthGuard('jwt'))
+    @Post('admin/upload/:userId')
+    @UseInterceptors(FileInterceptor('file'))
+    async adminUpload(
+        @Request() req: any,
+        @Param('userId') userId: string,
+        @UploadedFile() file: Express.Multer.File,
+        @Body() dto: UploadDocumentDto
+    ) {
+        if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
+        return this.documentsService.adminUploadDocument(req.user.userId, userId, file, dto);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
     @Get('admin/download/:id')
     async adminDownload(
         @Request() req: any,

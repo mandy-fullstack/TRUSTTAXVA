@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 export class ResetPasswordDto {
     @IsString({ message: 'Token is required' })
     @MinLength(32, { message: 'Invalid token' })
-    @MaxLength(64, { message: 'Invalid token' })
+    @MaxLength(1024, { message: 'Invalid token' })
     token: string;
 
     @IsString({ message: 'Password must be a string' })
