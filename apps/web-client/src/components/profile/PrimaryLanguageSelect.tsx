@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
     },
     optionText: {
-        fontSize: 15,
+        fontSize: 16,
         color: '#1E293B',
     },
 });

@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#0F172A',
     },
     optText: {
-        fontSize: 12,
+        fontSize: 16,
         fontWeight: '700',
         color: '#0F172A',
         letterSpacing: 1,
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     info: {
-        fontSize: 10,
+        fontSize: 12,
         color: '#94A3B8',
         marginTop: 12,
         fontWeight: '500',
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
     },
     backText: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: '700',
         color: '#94A3B8',
         letterSpacing: 1,

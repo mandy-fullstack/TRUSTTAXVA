@@ -176,11 +176,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#EFF6FF',
     },
     optionText: {
-        fontSize: 15,
+        fontSize: 16,
         color: '#1E293B',
     },
     empty: {
-        fontSize: 14,
+        fontSize: 16,
         color: '#94A3B8',
         padding: 20,
         textAlign: 'center',

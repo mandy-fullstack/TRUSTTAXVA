@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         height: '100%',
-        fontSize: 13,
+        fontSize: 16,
         fontWeight: '600',
         color: '#0F172A',
         fontFamily: 'Inter',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#0F172A',
     },
     optionText: {
-        fontSize: 12,
+        fontSize: 16,
         fontWeight: '600',
         color: '#475569',
         fontFamily: 'Inter',
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     },
     empty: {
         padding: 16,
-        fontSize: 12,
+        fontSize: 16,
         color: '#94A3B8',
         textAlign: 'center',
         fontFamily: 'Inter',
