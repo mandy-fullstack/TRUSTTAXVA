@@ -27,10 +27,15 @@ import {
   Folder,
   Download,
   Trash2,
+  Edit2, // Added for rename
+  // Eye, // Removed duplicate
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
+import { FileIcon } from '../../components/FileIcon';
+import { RenameModal } from '../../components/RenameModal';
+// import { ConfirmDialog } from '../../components/ConfirmDialog'; // Removed unused
 
 const MOBILE_BREAKPOINT = 768;
 
@@ -79,6 +84,9 @@ export function ClientDetailPage() {
   const [pushError, setPushError] = useState('');
   // Documents
   const [documents, setDocuments] = useState<any[]>([]);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     setSensitiveData(null);
@@ -116,25 +124,8 @@ export function ClientDetailPage() {
 
   const handleDownload = async (doc: any) => {
     try {
-      // Direct open won't work with Header-based JWT.
-      // We need to fetch blob with auth headers.
-      // Since our API client handles auth, we can use a raw fetch with the client's token logic 
-      // OR extending the api client.
-      // Constructing the full URL:
-      const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${doc.url}`;
-
-      // We can use the api.ts `request` but it expects JSON usually.
-      // We'll interpret this locally for now or add a blob method to api.
-      // Let's use standard fetch with the token from cookie/storage
-      // fallback to just trying window.open if we rely on cookie auth (if set)
-
-      // Actually, safest is to use the `api` helper which I should probably expose a `download` method on.
-      // But for now, I'll alert the user I'm doing a trick.
-      // Wait, api.ts has `getToken`.
-      // Let's try opening in new window first? No, 401.
-
-      // WORKAROUND: Use `fetch` with header, then blob.
-      const res = await fetch(fullUrl, {
+      setProcessingId(doc.id);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/documents/admin/download/${doc.id}`, {
         headers: {
           'Authorization': `Bearer ${api.getToken ? api.getToken() : ''}`
         }
@@ -145,24 +136,74 @@ export function ClientDetailPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = doc.title || 'document'; // backend sets filename in content-disposition usually
+      a.download = doc.title || 'document';
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
     } catch (e) {
       alert('Failed to download document');
+    } finally {
+      setProcessingId(null);
     }
   };
 
-  const handleDeleteDocument = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
+  const handlePreview = async (doc: any) => {
     try {
-      await api.adminDeleteDocument(id);
-      setDocuments((prev) => prev.filter((d) => d.id !== id));
+      setProcessingId(doc.id);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000'}/documents/admin/download/${doc.id}?disposition=inline`, {
+        headers: {
+          'Authorization': `Bearer ${api.getToken ? api.getToken() : ''}`
+        }
+      });
+      if (!res.ok) throw new Error('Preview failed');
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Revoke after delay
+      setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      alert('Failed to preview document');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleRenameClick = (doc: any) => {
+    setSelectedDoc(doc);
+    setRenameModalOpen(true);
+  };
+
+  const confirmRename = async (newTitle: string) => {
+    if (!selectedDoc) return;
+    try {
+      setProcessingId(selectedDoc.id);
+      await api.adminRenameDocument(selectedDoc.id, newTitle);
+
+      // Update local state
+      setDocuments(prev => prev.map(d => d.id === selectedDoc.id ? { ...d, title: newTitle } : d));
+
+      setRenameModalOpen(false);
+      setSelectedDoc(null);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to rename document');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (doc: any) => {
+    if (!window.confirm(`Are you sure you want to delete "${doc.title || 'this document'}"?`)) return;
+    try {
+      setProcessingId(doc.id);
+      await api.adminDeleteDocument(doc.id);
+      setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
     } catch (e) {
       alert('Failed to delete document');
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -582,32 +623,52 @@ export function ClientDetailPage() {
                           <Text style={styles.docCountText}>{groupDocs.length}</Text>
                         </View>
                       </View>
-                      <View style={styles.docList}>
+                      <View style={styles.docGrid}>
                         {groupDocs.map(doc => (
-                          <TouchableOpacity
-                            key={doc.id}
-                            style={styles.docRow}
-                            onPress={() => handleDownload(doc)}
-                            activeOpacity={0.6}
-                          >
-                            <View style={[styles.docIcon, { backgroundColor: groupKey === 'TAX' ? '#ECFDF5' : '#F1F5F9' }]}>
-                              <FileText size={16} color={groupKey === 'TAX' ? '#059669' : '#475569'} />
+                          <View key={doc.id} style={styles.fileCard}>
+                            <View style={styles.fileCardHeader}>
+                              <FileIcon fileName={doc.title} mimeType={doc.mimeType || ''} size={20} />
+                              <View style={styles.fileActions}>
+                                <TouchableOpacity
+                                  style={styles.actionIcon}
+                                  onPress={() => handlePreview(doc)}
+                                  disabled={!!processingId}
+                                >
+                                  <Eye size={16} color="#64748B" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.actionIcon}
+                                  onPress={() => handleDownload(doc)}
+                                  disabled={!!processingId}
+                                >
+                                  <Download size={16} color="#64748B" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.actionIcon}
+                                  onPress={() => handleRenameClick(doc)}
+                                  disabled={!!processingId}
+                                >
+                                  <Edit2 size={16} color="#64748B" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={[styles.actionIcon, styles.deleteAction]}
+                                  onPress={() => handleDeleteDocument(doc)}
+                                  disabled={!!processingId}
+                                >
+                                  <Trash2 size={16} color="#EF4444" />
+                                </TouchableOpacity>
+                              </View>
                             </View>
-                            <View style={styles.docInfo}>
-                              <Text style={styles.docName} numberOfLines={1}>{doc.title || doc.s3Key?.split('/').pop() || 'Untitled'}</Text>
-                              <Text style={styles.docMeta}>
-                                {formatDate(doc.uploadedAt)} • {(doc.size / 1024).toFixed(0)}KB
+
+                            <View style={styles.fileMain}>
+                              <Text style={styles.fileCardName} numberOfLines={2}>
+                                {doc.title || doc.s3Key?.split('/').pop() || 'Untitled'}
+                              </Text>
+                              <Text style={styles.fileMetaText}>
+                                {formatDate(doc.uploadedAt)} • {(doc.size / 1024).toFixed(0)} KB
                               </Text>
                             </View>
-                            <View style={styles.docActions}>
-                              <TouchableOpacity onPress={() => handleDownload(doc)} style={styles.docBtn} activeOpacity={0.7}>
-                                <Download size={16} color="#2563EB" />
-                              </TouchableOpacity>
-                              <TouchableOpacity onPress={() => handleDeleteDocument(doc.id)} style={styles.docBtn} activeOpacity={0.7}>
-                                <Trash2 size={16} color="#EF4444" />
-                              </TouchableOpacity>
-                            </View>
-                          </TouchableOpacity>
+                          </View>
                         ))}
                       </View>
                     </View>
@@ -617,6 +678,14 @@ export function ClientDetailPage() {
             )}
           </View>
         </View>
+
+        <RenameModal
+          isOpen={renameModalOpen}
+          onClose={() => { setRenameModalOpen(false); setSelectedDoc(null); }}
+          onRename={confirmRename}
+          currentName={selectedDoc?.title || ''}
+          title="Rename Document"
+        />
 
         {/* Invoices */}
         <View style={styles.section}>
@@ -791,13 +860,29 @@ const styles = StyleSheet.create({
   docsGrid: { gap: 24 },
   docGroup: {},
   docGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  docGroupTitle: { fontSize: 14, fontWeight: '700', color: '#334155' },
-  docCountBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 99 },
+  docGroupTitle: { fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5 },
+  docCountBadge: { backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 0 },
   docCountText: { fontSize: 11, fontWeight: '700', color: '#64748B' },
-  docList: { gap: 8 },
-  docRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, backgroundColor: '#F8FAFC', borderRadius: 6, borderWidth: 1, borderColor: 'transparent' },
-  docIcon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 4 },
-  docInfo: { flex: 1, minWidth: 0 },
+
+  docGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  fileCard: {
+    width: 200,
+    flexGrow: 1,
+    maxWidth: 240,
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 0,
+    flexDirection: 'column'
+  },
+  fileCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  fileMain: { flex: 1 },
+  fileCardName: { fontSize: 13, fontWeight: '700', color: '#0F172A', marginBottom: 4, lineHeight: 18 },
+  fileMetaText: { fontSize: 11, color: '#94A3B8', fontWeight: '500' },
+  fileActions: { flexDirection: 'row', gap: 4 },
+  actionIcon: { padding: 6, borderRadius: 0, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+  deleteAction: { backgroundColor: '#FEF2F2' },
   docName: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
   docMeta: { fontSize: 11, color: '#64748B', marginTop: 2 },
   docActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -211,6 +211,15 @@ export class DocumentsService {
         });
     }
 
+    async adminUpdateMetadata(id: string, dto: UpdateDocumentDto) {
+        await this.findById(id); // verify existence
+
+        return this.prisma.document.update({
+            where: { id },
+            data: dto,
+        });
+    }
+
     async downloadDecryptedDocument(userId: string, id: string) {
         const doc = await this.findOne(userId, id); // check ownership
 

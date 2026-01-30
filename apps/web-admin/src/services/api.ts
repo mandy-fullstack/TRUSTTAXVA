@@ -116,6 +116,7 @@ export const api = {
     }>(`/admin/clients/${id}/sensitive`),
   getUserDocuments: (userId: string) => request<any[]>(`/documents/admin/user/${userId}`),
   adminDeleteDocument: (id: string) => request<void>(`/documents/admin/${id}`, { method: 'DELETE' }),
+  adminRenameDocument: (id: string, title: string) => request<void>(`/documents/admin/${id}`, { method: 'PATCH', body: JSON.stringify({ title }) }),
 
   getStaff: () => request<any[]>('/admin/staff'),
 

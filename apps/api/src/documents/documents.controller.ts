@@ -124,19 +124,33 @@ export class DocumentsController {
     async adminDownload(
         @Request() req: any,
         @Param('id') id: string,
+        @Query('disposition') disposition: string,
         @Res() res: Response
     ) {
         if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
 
         const fileData = await this.documentsService.adminDownloadDocument(id);
 
+        const contentDisposition = disposition === 'inline' ? 'inline' : 'attachment';
+
         res.set({
             'Content-Type': fileData.mimeType,
-            'Content-Disposition': `attachment; filename="${fileData.filename}"`, // Force download for admins
+            'Content-Disposition': `${contentDisposition}; filename="${fileData.filename}"`,
             'Content-Length': fileData.buffer.length,
         });
 
         res.send(fileData.buffer);
+    }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Patch('admin/:id')
+    async adminUpdate(
+        @Request() req: any,
+        @Param('id') id: string,
+        @Body() dto: UpdateDocumentDto
+    ) {
+        if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
+        return this.documentsService.adminUpdateMetadata(id, dto);
     }
 
     @UseGuards(AuthGuard('jwt'))
