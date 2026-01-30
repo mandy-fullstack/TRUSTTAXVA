@@ -138,4 +138,11 @@ export class DocumentsController {
 
         res.send(fileData.buffer);
     }
+
+    @UseGuards(AuthGuard('jwt'))
+    @Delete('admin/:id')
+    async adminRemove(@Request() req: any, @Param('id') id: string) {
+        if (req.user.role !== 'ADMIN') throw new ForbiddenException('Admin access required');
+        return this.documentsService.adminDeleteDocument(id);
+    }
 }

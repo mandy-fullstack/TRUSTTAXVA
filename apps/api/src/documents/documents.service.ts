@@ -199,6 +199,18 @@ export class DocumentsService {
         });
     }
 
+    async adminDeleteDocument(id: string) {
+        const doc = await this.findById(id);
+
+        if (doc.s3Key) {
+            await this.storageService.deleteFile(doc.s3Key);
+        }
+
+        return this.prisma.document.delete({
+            where: { id },
+        });
+    }
+
     async downloadDecryptedDocument(userId: string, id: string) {
         const doc = await this.findOne(userId, id); // check ownership
 

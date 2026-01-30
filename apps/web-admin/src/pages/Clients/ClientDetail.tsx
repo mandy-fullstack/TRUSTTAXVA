@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Folder,
   Download,
+  Trash2,
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -152,6 +153,16 @@ export function ClientDetailPage() {
 
     } catch (e) {
       alert('Failed to download document');
+    }
+  };
+
+  const handleDeleteDocument = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
+    try {
+      await api.adminDeleteDocument(id);
+      setDocuments((prev) => prev.filter((d) => d.id !== id));
+    } catch (e) {
+      alert('Failed to delete document');
     }
   };
 
@@ -427,7 +438,7 @@ export function ClientDetailPage() {
             <View style={styles.card}>
               <Row label="Terms accepted" value={client.termsAcceptedAt ? formatDateTime(client.termsAcceptedAt) : '—'} />
               <Row label="Terms version" value={orDash(client.termsVersion)} />
-              <Row label="Profile completed" value={client.profileCompleted ? 'Yes' : 'No'} />
+              <Row label="Profile completed" value={client.isProfileComplete ? 'Yes' : 'No'} />
               <Row label="Completed at" value={formatDateTime(client.profileCompletedAt)} />
             </View>
           </View>
@@ -588,7 +599,14 @@ export function ClientDetailPage() {
                                 {formatDate(doc.uploadedAt)} • {(doc.size / 1024).toFixed(0)}KB
                               </Text>
                             </View>
-                            <Download size={16} color="#94A3B8" />
+                            <View style={styles.docActions}>
+                              <TouchableOpacity onPress={() => handleDownload(doc)} style={styles.docBtn} activeOpacity={0.7}>
+                                <Download size={16} color="#2563EB" />
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => handleDeleteDocument(doc.id)} style={styles.docBtn} activeOpacity={0.7}>
+                                <Trash2 size={16} color="#EF4444" />
+                              </TouchableOpacity>
+                            </View>
                           </TouchableOpacity>
                         ))}
                       </View>
@@ -782,4 +800,6 @@ const styles = StyleSheet.create({
   docInfo: { flex: 1, minWidth: 0 },
   docName: { fontSize: 13, fontWeight: '600', color: '#1E293B' },
   docMeta: { fontSize: 11, color: '#64748B', marginTop: 2 },
+  docActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  docBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 0, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0' },
 });

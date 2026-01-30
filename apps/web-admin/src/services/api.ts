@@ -115,6 +115,7 @@ export const api = {
       passport: { number: string; countryOfIssue: string; expirationDate: string } | null;
     }>(`/admin/clients/${id}/sensitive`),
   getUserDocuments: (userId: string) => request<any[]>(`/documents/admin/user/${userId}`),
+  adminDeleteDocument: (id: string) => request<void>(`/documents/admin/${id}`, { method: 'DELETE' }),
 
   getStaff: () => request<any[]>('/admin/staff'),
 
