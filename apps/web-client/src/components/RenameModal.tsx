@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Platform, TextInput } from 'react-native';
 import { Text } from '@trusttax/ui';
 import { Edit2, X } from 'lucide-react';
