@@ -51,13 +51,11 @@ export const ProfilePage = () => {
                             label={user?.isProfileComplete ? 'VERIFIED' : 'PENDING COMPLETION'}
                             style={{ marginTop: 8 }}
                         />
-                        {!user?.isProfileComplete && (
-                            <Button
-                                title="Complete Profile Setup"
-                                onPress={() => navigate('/profile/complete')}
-                                style={{ marginTop: 16 }}
-                            />
-                        )}
+                        <Button
+                            title={user?.isProfileComplete ? t('profile.edit', 'Edit Profile') : t('profile.complete', 'Complete Profile Setup')}
+                            onPress={() => navigate('/profile/complete')}
+                            style={{ marginTop: 16 }}
+                        />
                     </View>
                 </Card>
             </View>

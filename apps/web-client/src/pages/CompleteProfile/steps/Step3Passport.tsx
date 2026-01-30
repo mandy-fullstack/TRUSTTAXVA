@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Button, Text, Input } from '@trusttax/ui';
 import { Shield, Camera, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { WizardCountrySelect } from '../components/WizardCountrySelect';
@@ -12,6 +12,7 @@ interface Step3PassportProps {
 }
 
 export const Step3Passport: React.FC<Step3PassportProps> = ({ onNext, onBack, initialData }) => {
+    const { width } = useWindowDimensions();
     const [passportNumber, setPassportNumber] = useState(initialData?.passportNumber || '');
     const [passportCountry, setPassportCountry] = useState(initialData?.passportCountryOfIssue || '');
     const [passportIssueDate, setPassportIssueDate] = useState(initialData?.passportIssueDate || '');
@@ -90,7 +91,7 @@ export const Step3Passport: React.FC<Step3PassportProps> = ({ onNext, onBack, in
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
             {Platform.OS === 'web' && (
                 <input
                     type="file"
@@ -131,7 +132,7 @@ export const Step3Passport: React.FC<Step3PassportProps> = ({ onNext, onBack, in
                     {!!error && !passportCountry && <Text style={{ color: '#EF4444', fontSize: 10, marginTop: 4, fontFamily: 'Inter' }}>REQUIRED</Text>}
                 </View>
 
-                <View style={[styles.row, { zIndex: 0 }]}>
+                <View style={[styles.row, { zIndex: 0, flexDirection: width < 600 ? 'column' : 'row' }]}>
                     <View style={{ flex: 1 }}>
                         <Input
                             label="ISSUED DATE"
@@ -211,7 +212,7 @@ export const Step3Passport: React.FC<Step3PassportProps> = ({ onNext, onBack, in
                     <Text style={styles.backText}>RETRACT STEP</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </View>
     );
 };
 
@@ -220,8 +221,8 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
     headerTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A', letterSpacing: 1, fontFamily: 'Inter' },
     form: { gap: 24, marginBottom: 40 },
-    row: { flexDirection: 'row', gap: 16 },
-    group: { width: '100%' },
+    row: { gap: 16 },
+    group: { flex: 1 },
     label: { fontSize: 12, fontWeight: '700', color: '#64748B', letterSpacing: 1.5, marginBottom: 10, fontFamily: 'Inter' },
     photoSection: { gap: 12, padding: 24, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#CBD5E1', backgroundColor: '#F8FAFC' },
     photoSectionSuccess: { borderColor: '#16A34A', backgroundColor: '#F0FDF4', borderStyle: 'solid' },

@@ -88,7 +88,6 @@ export interface User {
     name?: string;
     role: 'ADMIN' | 'CLIENT' | 'PREPARER';
     isProfileComplete?: boolean;
-    profileCompleted?: boolean;
     firstName?: string;
     middleName?: string;
     lastName?: string;

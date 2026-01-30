@@ -481,6 +481,27 @@ class ApiService {
         });
     }
 
+    async deleteDocument(id: string): Promise<void> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<void>(`/documents/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
+
+    async renameDocument(id: string, newTitle: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError('Please sign in to continue');
+
+        return this.request<any>(`/documents/${id}`, {
+            method: 'PATCH',
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ title: newTitle })
+        });
+    }
+
     async deleteConversation(id: string): Promise<void> {
         const token = getToken();
         if (!token) throw new AuthenticationError('Please sign in to continue');

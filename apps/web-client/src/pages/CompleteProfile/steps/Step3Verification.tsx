@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { Button, Text, Input } from '@trusttax/ui';
 import { Shield, Camera, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { WizardCountrySelect } from '../components/WizardCountrySelect';
@@ -13,6 +13,7 @@ interface Step3Props {
 }
 
 export const Step3Verification: React.FC<Step3Props> = ({ onNext, onBack, initialData }) => {
+    const { width } = useWindowDimensions();
     const [idType, setIdType] = useState<'DL' | 'PASSPORT'>(initialData?.passportNumber ? 'PASSPORT' : 'DL');
 
     const [dlNumber, setDlNumber] = useState(initialData?.driverLicenseNumber || '');
@@ -112,7 +113,7 @@ export const Step3Verification: React.FC<Step3Props> = ({ onNext, onBack, initia
     };
 
     return (
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.container}>
             {/* Hidden File Input */}
             {Platform.OS === 'web' && (
                 <input
@@ -161,7 +162,7 @@ export const Step3Verification: React.FC<Step3Props> = ({ onNext, onBack, initia
                                 placeholder="SELECT STATE"
                             />
                         </View>
-                        <View style={styles.row}>
+                        <View style={[styles.row, { flexDirection: width < 600 ? 'column' : 'row' }]}>
                             <View style={{ flex: 1 }}>
                                 <Input
                                     label="ISSUE DATE"
@@ -196,7 +197,7 @@ export const Step3Verification: React.FC<Step3Props> = ({ onNext, onBack, initia
                                 placeholder="SELECT COUNTRY"
                             />
                         </View>
-                        <View style={styles.row}>
+                        <View style={[styles.row, { flexDirection: width < 600 ? 'column' : 'row' }]}>
                             <View style={{ flex: 1 }}>
                                 <Input
                                     label="ISSUE DATE"
@@ -270,7 +271,7 @@ export const Step3Verification: React.FC<Step3Props> = ({ onNext, onBack, initia
                     <Text style={styles.backText}>RETRACT STEP</Text>
                 </TouchableOpacity>
             </View>
-        </ScrollView>
+        </View>
     );
 };
 

@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, useWindowDimensions, TouchableOpacity } from 'react-native';
 import { Text } from '@trusttax/ui';
 import { TrustTaxLogo } from '../../components/TrustTaxLogo';
+import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CompleteProfileLayoutProps {
     children: React.ReactNode;
@@ -18,20 +19,33 @@ export const CompleteProfileLayout: React.FC<CompleteProfileLayoutProps> = ({
     title,
     subtitle,
 }) => {
+    const { width } = useWindowDimensions();
+    const navigate = useNavigate();
+    const isMobile = width < 768;
+    const isNarrow = width < 480;
     return (
         <View style={styles.container}>
             <SafeAreaView style={styles.safeArea}>
                 {/* Elite Immersive Header - Synchronized with Main App */}
-                <View style={styles.topBar}>
-                    <View style={styles.brandGroup}>
-                        <TrustTaxLogo size={24} bgColor="#0F172A" color="#FFFFFF" />
-                        <Text style={styles.brandText}>TrustTax</Text>
+                <View style={[styles.topBar, isNarrow && { paddingHorizontal: 20 }]}>
+                    <View style={styles.leftGroup}>
+                        <TouchableOpacity
+                            onPress={() => navigate('/dashboard/profile')}
+                            style={styles.exitButton}
+                            activeOpacity={0.7}
+                        >
+                            <X size={20} color="#64748B" />
+                        </TouchableOpacity>
+                        <View style={styles.brandGroup}>
+                            <TrustTaxLogo size={isNarrow ? 20 : 24} bgColor="#0F172A" color="#FFFFFF" />
+                            <Text style={[styles.brandText, isNarrow && { fontSize: 16 }]}>TrustTax</Text>
+                        </View>
                     </View>
 
                     <View style={styles.rightGroup}>
                         <View style={styles.progressSection}>
-                            <Text style={styles.progressLabel}>STAGE {currentStep} OF {totalSteps}</Text>
-                            <View style={styles.track}>
+                            {!isNarrow && <Text style={styles.progressLabel}>STAGE {currentStep} OF {totalSteps}</Text>}
+                            <View style={[styles.track, isNarrow && { width: 60 }]}>
                                 <View
                                     style={[
                                         styles.fill,
@@ -42,8 +56,8 @@ export const CompleteProfileLayout: React.FC<CompleteProfileLayoutProps> = ({
                         </View>
 
                         {/* Language Selector */}
-                        <View style={styles.langSelector}>
-                            <Text style={styles.langText}>EN</Text>
+                        <View style={[styles.langSelector, isNarrow && { paddingVertical: 4, paddingHorizontal: 8 }]}>
+                            <Text style={[styles.langText, isNarrow && { fontSize: 10 }]}>EN</Text>
                         </View>
                     </View>
                 </View>
@@ -51,12 +65,24 @@ export const CompleteProfileLayout: React.FC<CompleteProfileLayoutProps> = ({
                 {/* Immersion Frame */}
                 <ScrollView
                     style={styles.main}
-                    contentContainerStyle={styles.mainContent}
+                    contentContainerStyle={[
+                        styles.mainContent,
+                        {
+                            justifyContent: isMobile ? 'flex-start' : 'center',
+                            paddingVertical: isMobile ? 32 : 60
+                        }
+                    ]}
                     showsVerticalScrollIndicator={false}
                 >
                     <View style={styles.frame}>
-                        <View style={styles.frameHeader}>
-                            <Text style={styles.frameTitle}>{title}</Text>
+                        <View style={[styles.frameHeader, isMobile && { marginBottom: 32 }]}>
+                            <Text style={[
+                                styles.frameTitle,
+                                {
+                                    fontSize: isNarrow ? 24 : isMobile ? 28 : 38,
+                                    lineHeight: isNarrow ? 30 : isMobile ? 34 : 48
+                                }
+                            ]}>{title}</Text>
                             {subtitle && <Text style={styles.frameSubtitle}>{subtitle}</Text>}
                         </View>
 
@@ -90,13 +116,28 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 40,
         backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1.5,
-        borderBottomColor: '#F1F5F9',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
     },
     brandGroup: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+    },
+    leftGroup: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+    },
+    exitButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 0,
+        backgroundColor: '#F8FAFC',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
     },
     brandText: {
         fontSize: 18,
@@ -138,13 +179,14 @@ const styles = StyleSheet.create({
     },
     track: {
         width: 120,
-        height: 4,
+        height: 6,
         backgroundColor: '#F1F5F9',
-        borderRadius: 0,
+        borderRadius: 3,
+        overflow: 'hidden',
     },
     fill: {
         height: '100%',
-        backgroundColor: '#0F172A',
+        backgroundColor: '#2563EB',
         borderRadius: 0,
     },
     main: {
@@ -165,21 +207,21 @@ const styles = StyleSheet.create({
         marginBottom: 48,
     },
     frameTitle: {
-        fontSize: 38,
+        fontSize: 32,
         fontWeight: '800',
         color: '#0F172A',
         textAlign: 'center',
-        lineHeight: 48,
+        lineHeight: 40,
         letterSpacing: -1,
-        marginBottom: 12,
+        marginBottom: 8,
         fontFamily: 'Inter',
     },
     frameSubtitle: {
-        fontSize: 14,
+        fontSize: 16,
         color: '#64748B',
         textAlign: 'center',
-        lineHeight: 22,
-        fontWeight: '500',
+        lineHeight: 24,
+        fontWeight: '400',
         fontFamily: 'Inter',
     },
     formArea: {

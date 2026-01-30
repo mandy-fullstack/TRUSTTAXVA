@@ -134,7 +134,7 @@ export class AuthService {
 
         return {
             ...result,
-            profileComplete,
+            isProfileComplete: profileComplete,
             // Never return encrypted data, only masked values from Last4 fields
             // (no descifrar nunca solo para mostrar)
             ssnMasked: user.ssnLast4 ? `XXX-XX-${user.ssnLast4}` : null,
@@ -254,7 +254,7 @@ export class AuthService {
 
         return {
             ...result,
-            profileComplete,
+            isProfileComplete: profileComplete,
             ssnMasked: updatedUser.ssnLast4 ? `XXX-XX-${updatedUser.ssnLast4}` : null,
             driverLicenseMasked,
             passportMasked,
@@ -549,7 +549,7 @@ export class AuthService {
 
         return {
             access_token,
-            user: { ...userWithoutPassword, emailVerified: true },
+            user: { ...userWithoutPassword, emailVerified: true, isProfileComplete: userWithoutPassword.profileCompleted },
             message: 'Email verified successfully! You are now logged in.',
         };
     }
@@ -752,7 +752,7 @@ export class AuthService {
 
             return {
                 access_token: this.jwtService.sign(finalPayload),
-                user: userWithoutPassword,
+                user: { ...userWithoutPassword, isProfileComplete: userWithoutPassword.profileCompleted },
             };
         } catch (error) {
             throw new UnauthorizedException('Invalid or expired temp token');
@@ -898,9 +898,38 @@ export class AuthService {
             const path = `users/${userId}/documents/${docType.toLowerCase()}`;
 
             // Pass the custom file name to the storage service
+            // --- CLEANUP OLD DOCUMENT IF EXISTS ---
+            const oldIdDocs = await this.prisma.document.findMany({
+                where: {
+                    userId,
+                    type: docType === 'DL' ? 'DRIVER_LICENSE' : 'PASSPORT' as any
+                }
+            });
+
+            for (const oldDoc of oldIdDocs) {
+                if (oldDoc.s3Key) {
+                    await this.storageService.deleteFile(oldDoc.s3Key);
+                }
+                await this.prisma.document.delete({ where: { id: oldDoc.id } });
+            }
+            // ---------------------------------------
+
             const uploadResult = await this.storageService.uploadFile(encryptedFile, path, false, newFileName);
 
-            // 4. Update the profile with the storage key
+            // 4. Create record in Document table for unified view
+            await this.prisma.document.create({
+                data: {
+                    title: newFileName.replace('.enc', ''),
+                    type: docType === 'DL' ? 'DRIVER_LICENSE' : 'PASSPORT' as any,
+                    url: uploadResult.url,
+                    s3Key: uploadResult.fileName,
+                    mimeType: file.mimetype,
+                    size: file.size,
+                    userId: userId,
+                }
+            });
+
+            // 5. Update the profile with the storage key
             const decryptedProfile = docType === 'DL'
                 ? await this.decryptDriverLicense(userId)
                 : await this.decryptPassport(userId);

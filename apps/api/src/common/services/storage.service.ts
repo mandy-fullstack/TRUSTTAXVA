@@ -107,7 +107,24 @@ export class StorageService {
     }
 
     async deleteFile(fileName: string): Promise<void> {
-        const bucket = this.getBucket();
-        await bucket.file(fileName).delete();
+        try {
+            const bucket = this.getBucket();
+            const file = bucket.file(fileName);
+            const [exists] = await file.exists();
+            if (exists) {
+                await file.delete();
+                console.log(`[StorageService] Successfully deleted file: ${fileName}`);
+            } else {
+                console.warn(`[StorageService] Attempted to delete non-existent file: ${fileName}`);
+            }
+        } catch (error: any) {
+            // If it's a 404, we don't want to crash, but other errors might be important
+            if (error.code === 404) {
+                console.warn(`[StorageService] File not found during deletion (404): ${fileName}`);
+                return;
+            }
+            console.error(`[StorageService] Failed to delete file ${fileName}:`, error);
+            throw error;
+        }
     }
 }

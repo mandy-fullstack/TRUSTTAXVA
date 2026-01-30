@@ -19,7 +19,7 @@ interface UserWithRelations {
     name?: string;
     email?: string;
     role?: string;
-    profileComplete?: boolean;
+    isProfileComplete?: boolean;
     orders?: Array<{
         id: string;
         createdAt: string;
@@ -120,7 +120,7 @@ export const DashboardPage = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {userData?.profileComplete !== true && (
+                {!userData?.isProfileComplete && (
                     <ProfileIncompleteBanner profileComplete={false} />
                 )}
 
