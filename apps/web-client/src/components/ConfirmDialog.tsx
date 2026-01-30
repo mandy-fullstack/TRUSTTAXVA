@@ -13,7 +13,9 @@ interface ConfirmDialogProps {
     confirmText?: string;
     cancelText?: string;
     variant?: 'danger' | 'warning' | 'info';
+    showCancel?: boolean;
 }
+
 
 export const ConfirmDialog = ({
     isOpen,
@@ -24,6 +26,7 @@ export const ConfirmDialog = ({
     confirmText,
     cancelText,
     variant = 'warning',
+    showCancel = true,
 }: ConfirmDialogProps) => {
     const { t } = useTranslation();
 
@@ -59,11 +62,11 @@ export const ConfirmDialog = ({
     };
 
     const colors = variantColors[variant];
-    
+
     // Detectar si es un diálogo de logout (botón rojo)
-    const isLogoutDialog = confirmText?.toLowerCase().includes('logout') || 
-                           confirmText?.toLowerCase().includes('cerrar sesión') ||
-                           variant === 'danger';
+    const isLogoutDialog = confirmText?.toLowerCase().includes('logout') ||
+        confirmText?.toLowerCase().includes('cerrar sesión') ||
+        variant === 'danger';
 
     return (
         <>
@@ -110,15 +113,17 @@ export const ConfirmDialog = ({
 
                 {/* Actions */}
                 <View style={styles.actions}>
-                    <TouchableOpacity
-                        onPress={onClose}
-                        style={styles.cancelButton}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.cancelButtonText}>
-                            {cancelText || t('dialog.cancel', 'Cancel')}
-                        </Text>
-                    </TouchableOpacity>
+                    {showCancel && (
+                        <TouchableOpacity
+                            onPress={onClose}
+                            style={styles.cancelButton}
+                            activeOpacity={0.7}
+                        >
+                            <Text style={styles.cancelButtonText}>
+                                {cancelText || t('dialog.cancel', 'Cancel')}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
                         onPress={handleConfirm}
                         style={[

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Platform, ActivityIndicator, useWindowDimensions, TextInput } from 'react-native';
 import { Layout } from '../../components/Layout';
 import { Text, Button } from '@trusttax/ui';
-import { Folder, FileText, CloudUpload, ChevronRight, ArrowLeft, Download, Image as ImageIcon, File, User, Shield, Search, Info, Clock, Hash, Trash2, Edit2, Eye } from 'lucide-react';
+import { Folder, FileText, CloudUpload, ChevronRight, ArrowLeft, Download, User, Shield, Search, Info, Clock, Hash, Trash2, Edit2, Eye } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTranslation } from 'react-i18next';
 import { PageMeta } from '../../components/PageMeta';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { RenameModal } from '../../components/RenameModal';
+import { FileIcon } from '../../components/FileIcon';
 
 export const DocumentsPage = () => {
     const { t } = useTranslation();
@@ -23,7 +24,9 @@ export const DocumentsPage = () => {
     // Modal states
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [renameModalOpen, setRenameModalOpen] = useState(false);
+    const [successModalOpen, setSuccessModalOpen] = useState(false);
     const [selectedDoc, setSelectedDoc] = useState<any>(null);
+    const [pendingFile, setPendingFile] = useState<File | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { width } = useWindowDimensions();
@@ -65,37 +68,32 @@ export const DocumentsPage = () => {
         });
     };
 
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !currentGroup) return;
 
-        setUploading(true);
-        try {
-            let defaultType = 'OTHER';
-            if (currentGroup === 'IDENTITY') defaultType = 'ID_CARD';
-            if (currentGroup === 'TAX') defaultType = 'TAX_FORM';
-            if (currentGroup === 'LEGAL') defaultType = 'LEGAL_DOCUMENT';
-
-            await api.uploadDocument(file, file.name, defaultType);
-            fetchAllDocuments();
-        } catch (err) {
-            console.error('Upload failed', err);
-            setError(t('documents.upload_error', 'Failed to upload document'));
-        } finally {
-            setUploading(false);
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        }
+        setPendingFile(file);
+        setRenameModalOpen(true);
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleDownload = async (doc: any) => {
         try {
-            if (doc.url) {
-                const fullUrl = doc.url.startsWith('http') ? doc.url : `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${doc.url}`;
-                window.open(fullUrl, '_blank');
-            }
+            setProcessingId(doc.id);
+            const blob = await api.downloadDocument(doc.id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = doc.title || 'document';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
         } catch (err) {
             console.error('Download failed', err);
             alert(t('documents.download_error', 'Failed to download document'));
+        } finally {
+            setProcessingId(null);
         }
     };
 
@@ -128,37 +126,70 @@ export const DocumentsPage = () => {
     };
 
     const confirmRename = async (newTitle: string) => {
-        if (!selectedDoc) return;
-        const { id } = selectedDoc;
-
-        try {
-            setProcessingId(id);
-            await api.renameDocument(id, newTitle);
-            fetchAllDocuments();
-        } catch (err) {
-            console.error('Rename failed', err);
-            alert(t('documents.rename_error', 'Failed to rename document'));
-        } finally {
-            setProcessingId(null);
+        if (pendingFile) {
+            // Handle New Upload
             setRenameModalOpen(false);
-            setSelectedDoc(null);
+            setUploading(true);
+            try {
+                let defaultType = 'OTHER';
+                if (currentGroup === 'IDENTITY') defaultType = 'ID_CARD';
+                if (currentGroup === 'TAX') defaultType = 'TAX_FORM';
+                if (currentGroup === 'LEGAL') defaultType = 'LEGAL_DOCUMENT';
+
+                await api.uploadDocument(pendingFile, newTitle, defaultType);
+                await fetchAllDocuments();
+                setSuccessModalOpen(true);
+            } catch (err) {
+                console.error('Upload failed', err);
+                setError(t('documents.upload_error', 'Failed to upload document'));
+            } finally {
+                setUploading(false);
+                setPendingFile(null);
+            }
+        } else if (selectedDoc) {
+            // Handle Existing Rename
+            const { id } = selectedDoc;
+            try {
+                setProcessingId(id);
+                await api.renameDocument(id, newTitle);
+                fetchAllDocuments();
+            } catch (err) {
+                console.error('Rename failed', err);
+                alert(t('documents.rename_error', 'Failed to rename document'));
+            } finally {
+                setProcessingId(null);
+                setRenameModalOpen(false);
+                setSelectedDoc(null);
+            }
         }
     };
 
-    const handlePreview = (doc: any) => {
-        if (doc.url) {
-            const fullUrl = doc.url.startsWith('http') ? doc.url : `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${doc.url}`;
-            window.open(fullUrl, '_blank');
+    const handlePreview = async (doc: any) => {
+        try {
+            setProcessingId(doc.id);
+            const blob = await api.downloadDocument(doc.id);
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            // Note: We can't easily revoke the URL immediately if we open it in a new tab, 
+            // as the new tab might strictly need it. Browsers handle this differently.
+            // For a preview, letting the browser handle the blob lifecycle or a timeout is common.
+            setTimeout(() => window.URL.revokeObjectURL(url), 60000);
+        } catch (err) {
+            console.error('Preview failed', err);
+            alert(t('documents.download_error', 'Failed to preview document'));
+        } finally {
+            setProcessingId(null);
         }
     };
 
     const getNumColumns = () => {
         if (width < 640) return 1;
-        return 2;
+        if (width < 1024) return 2;
+        return 3;
     };
 
     const numColumns = getNumColumns();
-    const gap = isMobile ? 12 : 24;
+    const gap = 16;
     const cardWidth = Platform.OS === 'web'
         ? `calc(${100 / numColumns}% - ${(gap * (numColumns - 1)) / numColumns}px)`
         : `${100 / numColumns}%`;
@@ -170,14 +201,7 @@ export const DocumentsPage = () => {
         { id: 'OTHER', label: t('documents.folders.general', 'General & Uploads'), subtitle: 'Receipts, Other', icon: <Folder size={isMobile ? 24 : 32} color="#0F172A" /> },
     ];
 
-    const getFileIcon = (mimeType: string, filename: string) => {
-        const ext = filename.split('.').pop()?.toLowerCase();
-        if (mimeType.includes('pdf') || ext === 'pdf') return <FileText size={24} color="#EF4444" />;
-        if (mimeType.includes('image') || ['jpg', 'jpeg', 'png', 'webp'].includes(ext || '')) return <ImageIcon size={24} color="#3B82F6" />;
-        if (['doc', 'docx'].includes(ext || '') || mimeType.includes('word')) return <FileText size={24} color="#2563EB" />;
-        if (['xls', 'xlsx'].includes(ext || '') || mimeType.includes('excel')) return <FileText size={24} color="#10B981" />;
-        return <File size={24} color="#64748B" />;
-    };
+
 
     const renderSearchBar = () => (
         <View style={styles.searchContainer}>
@@ -286,43 +310,32 @@ export const DocumentsPage = () => {
                         <Text style={styles.emptyStateSubtitle}>Click to upload your first {folderInfo?.label.toLowerCase()}</Text>
                     </TouchableOpacity>
                 ) : (
-                    <View style={styles.fileList}>
+                    <View style={[styles.grid, { gap }]}>
                         {groupDocs.map((doc) => (
-                            <View key={doc.id} style={styles.fileCard}>
-                                <View style={[styles.fileIconBox, isMobile && { width: 40, height: 40 }]}>
-                                    {getFileIcon(doc.mimeType || '', doc.title || '')}
-                                </View>
-                                <View style={styles.fileMain}>
-                                    <Text style={[styles.fileCardName, isMobile && { fontSize: 13 }]} numberOfLines={1}>{doc.title}</Text>
-                                    <View style={styles.fileMeta}>
-                                        <Text style={styles.fileMetaText}>
-                                            {new Date(doc.createdAt || doc.uploadedAt).toLocaleDateString()}
-                                        </Text>
-                                        <View style={styles.metaDivider} />
-                                        <Text style={styles.fileMetaText}>{(doc.size / 1024).toFixed(0)} KB</Text>
-                                        {!isMobile && (
-                                            <>
-                                                <View style={styles.metaDivider} />
-                                                <Text style={[styles.fileTag, { backgroundColor: '#F0F9FF', color: '#0369A1' }]}>
-                                                    {doc.type?.replace(/_/g, ' ') || 'OTHER'}
-                                                </Text>
-                                            </>
-                                        )}
+                            <View key={doc.id} style={[styles.fileCard, { width: cardWidth as any }]}>
+                                <View style={styles.fileCardHeader}>
+                                    <FileIcon fileName={doc.title} mimeType={doc.mimeType || ''} size={20} />
+                                    <View style={styles.fileActions}>
+                                        <TouchableOpacity style={styles.actionIcon} onPress={() => handlePreview(doc)} disabled={!!processingId}>
+                                            <Eye size={16} color="#64748B" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.actionIcon} onPress={() => handleDownload(doc)} disabled={!!processingId}>
+                                            <Download size={16} color="#64748B" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.actionIcon} onPress={() => handleRenameClick(doc)} disabled={!!processingId}>
+                                            <Edit2 size={16} color="#64748B" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={[styles.actionIcon, styles.deleteAction]} onPress={() => handleDeleteClick(doc)} disabled={!!processingId}>
+                                            <Trash2 size={16} color="#EF4444" />
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
-                                <View style={styles.fileActions}>
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => handlePreview(doc)} disabled={!!processingId}>
-                                        <Eye size={20} color={processingId ? "#94A3B8" : "#0F172A"} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleDownload(doc)} disabled={!!processingId}>
-                                        <Download size={20} color={processingId ? "#94A3B8" : "#0F172A"} />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.actionBtn} onPress={() => handleRenameClick(doc)} disabled={!!processingId}>
-                                        {processingId === doc.id ? <ActivityIndicator size="small" color="#0F172A" /> : <Edit2 size={18} color="#0F172A" />}
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteClick(doc)} disabled={!!processingId}>
-                                        {processingId === doc.id ? <ActivityIndicator size="small" color="#EF4444" /> : <Trash2 size={20} color="#EF4444" />}
-                                    </TouchableOpacity>
+
+                                <View style={styles.fileMain}>
+                                    <Text style={styles.fileCardName} numberOfLines={2}>{doc.title}</Text>
+                                    <Text style={styles.fileMetaText}>
+                                        {new Date(doc.createdAt || doc.uploadedAt).toLocaleDateString()} • {(doc.size / 1024).toFixed(0)} KB
+                                    </Text>
                                 </View>
                             </View>
                         ))}
@@ -350,27 +363,32 @@ export const DocumentsPage = () => {
                     </TouchableOpacity>
                 </View>
 
-                <View style={styles.fileList}>
+                <View style={[styles.grid, { gap }]}>
                     {filtered.map((doc) => (
-                        <View key={doc.id} style={styles.fileCard}>
-                            <View style={styles.fileIconBox}>{getFileIcon(doc.mimeType || '', doc.title || '')}</View>
-                            <View style={styles.fileMain}>
-                                <Text style={styles.fileCardName}>{doc.title}</Text>
-                                <Text style={styles.fileMetaText}>{new Date(doc.createdAt || doc.uploadedAt).toLocaleDateString()} • {(doc.size / 1024).toFixed(0)} KB</Text>
+                        <View key={doc.id} style={[styles.fileCard, { width: cardWidth as any }]}>
+                            <View style={styles.fileCardHeader}>
+                                <FileIcon fileName={doc.title} mimeType={doc.mimeType || ''} size={20} />
+                                <View style={styles.fileActions}>
+                                    <TouchableOpacity style={styles.actionIcon} onPress={() => handlePreview(doc)} disabled={!!processingId}>
+                                        <Eye size={16} color="#64748B" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.actionIcon} onPress={() => handleDownload(doc)} disabled={!!processingId}>
+                                        <Download size={16} color="#64748B" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={styles.actionIcon} onPress={() => handleRenameClick(doc)} disabled={!!processingId}>
+                                        <Edit2 size={16} color="#64748B" />
+                                    </TouchableOpacity>
+                                    <TouchableOpacity style={[styles.actionIcon, styles.deleteAction]} onPress={() => handleDeleteClick(doc)} disabled={!!processingId}>
+                                        <Trash2 size={16} color="#EF4444" />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                            <View style={styles.fileActions}>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => handlePreview(doc)} disabled={!!processingId}>
-                                    <Eye size={20} color={processingId ? "#94A3B8" : "#0F172A"} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => handleDownload(doc)} disabled={!!processingId}>
-                                    <Download size={20} color={processingId ? "#94A3B8" : "#0F172A"} />
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.actionBtn} onPress={() => handleRenameClick(doc)} disabled={!!processingId}>
-                                    {processingId === doc.id ? <ActivityIndicator size="small" color="#0F172A" /> : <Edit2 size={18} color="#0F172A" />}
-                                </TouchableOpacity>
-                                <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]} onPress={() => handleDeleteClick(doc)} disabled={!!processingId}>
-                                    {processingId === doc.id ? <ActivityIndicator size="small" color="#EF4444" /> : <Trash2 size={20} color="#EF4444" />}
-                                </TouchableOpacity>
+
+                            <View style={styles.fileMain}>
+                                <Text style={styles.fileCardName} numberOfLines={2}>{doc.title}</Text>
+                                <Text style={styles.fileMetaText}>
+                                    {new Date(doc.createdAt || doc.uploadedAt).toLocaleDateString()} • {(doc.size / 1024).toFixed(0)} KB
+                                </Text>
                             </View>
                         </View>
                     ))}
@@ -421,10 +439,21 @@ export const DocumentsPage = () => {
 
             <RenameModal
                 isOpen={renameModalOpen}
-                onClose={() => { setRenameModalOpen(false); setSelectedDoc(null); }}
+                onClose={() => { setRenameModalOpen(false); setSelectedDoc(null); setPendingFile(null); }}
                 onRename={confirmRename}
-                currentName={selectedDoc?.title || ''}
-                title={t('documents.rename_title', 'Rename Document')}
+                currentName={pendingFile ? pendingFile.name : (selectedDoc?.title || '')}
+                title={pendingFile ? t('documents.confirm_name', 'Confirm Document Name') : t('documents.rename_title', 'Rename Document')}
+            />
+
+            <ConfirmDialog
+                isOpen={successModalOpen}
+                onClose={() => setSuccessModalOpen(false)}
+                onConfirm={() => setSuccessModalOpen(false)}
+                title={t('documents.upload_success_title', 'Upload Complete')}
+                message={t('documents.upload_success_msg', 'Your document has been successfully uploaded and securely encrypted.')}
+                confirmText={t('common.ok', 'OK')}
+                variant="info"
+                showCancel={false}
             />
         </Layout>
     );
@@ -471,16 +500,19 @@ const styles = StyleSheet.create({
     emptyStateTitle: { fontSize: 18, fontWeight: '700', color: '#0F172A', marginTop: 16 },
     emptyStateSubtitle: { fontSize: 14, color: '#94A3B8', marginTop: 4 },
 
-    fileList: { gap: 4 },
-    fileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#F1F5F9' },
+    fileList: { gap: 16 },
+    fileCard: { backgroundColor: '#FFFFFF', padding: 16, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 0, flexDirection: 'column' },
+    fileCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
     fileIconBox: { width: 48, height: 48, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
     fileMain: { flex: 1 },
-    fileCardName: { fontSize: 15, fontWeight: '700', color: '#0F172A' },
+    fileCardName: { fontSize: 14, fontWeight: '700', color: '#0F172A', marginBottom: 4, lineHeight: 20 },
     fileMeta: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 10 },
-    fileMetaText: { fontSize: 11, color: '#64748B', fontWeight: '700' },
-    metaDivider: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1' },
+    fileMetaText: { fontSize: 12, color: '#94A3B8', fontWeight: '500' },
+    metaDivider: { width: 4, height: 4, borderRadius: 0, backgroundColor: '#CBD5E1' },
     fileTag: { fontSize: 10, fontWeight: '800', paddingHorizontal: 8, paddingVertical: 2 },
-    fileActions: { flexDirection: 'row', gap: 1 },
+    fileActions: { flexDirection: 'row', gap: 4 },
+    actionIcon: { padding: 8, borderRadius: 0, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center' },
+    deleteAction: { backgroundColor: '#FEF2F2' },
     actionBtn: { padding: 12, backgroundColor: '#F8FAFC' },
     deleteBtn: { backgroundColor: '#FEF2F2' },
 

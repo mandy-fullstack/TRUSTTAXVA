@@ -160,7 +160,7 @@ export class DocumentsService {
         return documents.map((doc: any) => {
             return {
                 ...doc,
-                url: `/api/documents/${doc.id}/content`
+                url: `/documents/${doc.id}/content`
             };
         });
     }

@@ -97,7 +97,7 @@ export class DocumentsController {
         // 
         // Let's assume frontend calls getDocuments() which returns objects with 'url'.
         // We should update findUserDocuments to return the proxy URL.
-        const url = `/api/documents/${id}/content`;
+        const url = `/documents/${id}/content`;
         return { url };
     }
     // --- Admin Endpoints ---
@@ -115,7 +115,7 @@ export class DocumentsController {
         // Map to admin download urls
         return docs.map((doc: any) => ({
             ...doc,
-            url: `/api/documents/admin/download/${doc.id}`
+            url: `/documents/admin/download/${doc.id}`
         }));
     }
 
