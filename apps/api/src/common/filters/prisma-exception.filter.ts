@@ -29,6 +29,17 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       `[${request.method}] ${request.url}`,
       exception?.stack || exception,
     );
+    
+    // Also log to console with more details for Render.com debugging
+    console.error('[PrismaExceptionFilter] Full error details:', {
+      method: request.method,
+      url: request.url,
+      errorName: exception?.name,
+      errorMessage: exception?.message,
+      errorStack: exception?.stack,
+      originalError: exception?.originalError || exception?.cause,
+      errorKeys: exception ? Object.keys(exception) : [],
+    });
 
     // Check if this is a NestJS HTTP Exception FIRST
     // This allows standard NestJS exceptions (like NotFound, Forbidden, InternalServerError) to pass through

@@ -20,12 +20,32 @@ export class ErrorInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       catchError((err) => {
+        const request = context.switchToHttp().getRequest();
+        const method = request.method;
+        const url = request.url;
+        
         // Log the full error to the console for debugging (especially on Render)
         console.error('[ErrorInterceptor] Caught error:', {
+          method,
+          url,
           message: err.message,
+          name: err.name,
           stack: err.stack,
           response: err.getResponse ? err.getResponse() : undefined,
+          // Log the original error if it exists
+          originalError: err.originalError || err.cause || undefined,
+          // Log all error properties
+          errorKeys: Object.keys(err),
         });
+        
+        // If there's an original error, log it separately
+        if (err.originalError) {
+          console.error('[ErrorInterceptor] Original error:', {
+            message: err.originalError.message,
+            stack: err.originalError.stack,
+            name: err.originalError.name,
+          });
+        }
 
         const status =
           err instanceof HttpException
@@ -38,6 +58,7 @@ export class ErrorInterceptor implements NestInterceptor {
             ? err.message
             : 'An unexpected error occurred';
 
+        // Preserve original error information in the new exception
         const response = {
           success: false,
           statusCode: status,
@@ -46,7 +67,12 @@ export class ErrorInterceptor implements NestInterceptor {
           path: context.switchToHttp().getRequest().url,
         };
 
-        return throwError(() => new HttpException(response, status));
+        // Create new exception but preserve original error
+        const httpException = new HttpException(response, status);
+        // Attach original error for logging purposes
+        (httpException as any).originalError = err;
+        
+        return throwError(() => httpException);
       }),
     );
   }
