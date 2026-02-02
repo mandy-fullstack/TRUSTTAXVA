@@ -28,7 +28,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { getDocumentProxyUrl, openDocumentWithAuth } from "../../utils/documentUrl";
+import { getDocumentProxyUrl, openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
 
 interface ConversationViewProps {
   messages: any[];
@@ -540,12 +540,20 @@ export const ConversationView = ({
               <X size={24} color="#FFF" />
             </TouchableOpacity>
           </View>
-          {previewImage && (
+          {previewImage ? (
             <Image
               source={{ uri: previewImage }}
               style={styles.fullImage}
               resizeMode="contain"
+              onError={() => {
+                console.error('Failed to load preview image');
+                setPreviewImage(null);
+              }}
             />
+          ) : (
+            <View style={styles.fullImage}>
+              <ActivityIndicator size="large" color="#FFF" />
+            </View>
           )}
         </View>
       </Modal>
