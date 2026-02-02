@@ -9,7 +9,7 @@ export class ChatService {
     private prisma: PrismaService,
     private firebaseService: FirebaseService,
     private redisService: RedisService,
-  ) {}
+  ) { }
 
   async createConversation(clientId: string, subject?: string) {
     const conversation = await this.prisma.conversation.create({
@@ -316,6 +316,27 @@ export class ChatService {
       throw new NotFoundException('Conversation not found'); // Hide existence
     }
 
+    // Delete messages first (required due to foreign key constraint)
+    await this.prisma.message.deleteMany({
+      where: { conversationId: id },
+    });
+
+    // Unlink documents from conversation (set conversationId to null)
+    await this.prisma.document.updateMany({
+      where: { conversationId: id },
+      data: { conversationId: null },
+    });
+
+    // Invalidate caches
+    await this.redisService.del(`conversations:${conversation.clientId}`);
+    await this.redisService.del(`conversations:admin`);
+    await this.redisService.del(`active_messages:${id}`);
+    await this.redisService.del(`unread_count:${conversation.clientId}`);
+    if (conversation.preparerId) {
+      await this.redisService.del(`unread_count:${conversation.preparerId}`);
+    }
+
+    // Now delete the conversation
     return this.prisma.conversation.delete({
       where: { id },
     });
