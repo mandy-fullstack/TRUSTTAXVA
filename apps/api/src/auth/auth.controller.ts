@@ -28,7 +28,7 @@ const JwtAuthGuard = AuthGuard('jwt');
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 requests per hour
@@ -44,22 +44,22 @@ export class AuthController {
       hasPassword: !!dto.password,
       passwordLength: dto.password?.length || 0,
     });
-    
+
     try {
       console.log('[AuthController] Calling validateUser...');
       const user = await this.authService.validateUser(dto.email, dto.password);
-      
+
       console.log('[AuthController] validateUser result:', {
         hasUser: !!user,
         hasEmail: !!user?.email,
         hasId: !!user?.id,
       });
-      
+
       if (!user) {
         console.log('[AuthController] User validation failed - invalid credentials');
         throw new UnauthorizedException('Invalid email or password');
       }
-      
+
       console.log('[AuthController] Calling login service...');
       const result = await this.authService.login(user);
       console.log('[AuthController] Login successful for:', dto.email);

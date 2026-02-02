@@ -4,6 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  Optional,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Role } from '@trusttax/database';
@@ -106,6 +107,17 @@ export class AuthService {
     console.log('[AuthService] validateUser called:', { email, hasPassword: !!pass });
     
     try {
+      // Verificar que PrismaService esté inicializado
+      if (!this.prisma) {
+        console.error('[AuthService] PrismaService no está inicializado');
+        throw new Error('PrismaService not initialized');
+      }
+      
+      if (!this.prisma.user) {
+        console.error('[AuthService] PrismaService.user no está disponible');
+        throw new Error('PrismaService.user not available');
+      }
+      
       console.log('[AuthService] Querying database for user...');
       const user = await this.prisma.user.findUnique({ where: { email } });
       
@@ -173,10 +185,18 @@ export class AuthService {
         throw new BadRequestException('Server configuration error');
       }
 
+      // Verificar que JwtService esté disponible
+      if (!this.jwtService) {
+        console.error('[AuthService] login: JwtService no está inicializado');
+        throw new BadRequestException('JwtService not initialized');
+      }
+
       const payload = { email: user.email, sub: user.id, role: user.role };
+      console.log('[AuthService] Signing JWT with payload:', { email: payload.email, sub: payload.sub, role: payload.role });
       
       // Sign JWT token
       const access_token = this.jwtService.sign(payload);
+      console.log('[AuthService] JWT token generated:', access_token ? '✅' : '❌');
       
       if (!access_token) {
         console.error('[AuthService] login: Failed to generate JWT token');
