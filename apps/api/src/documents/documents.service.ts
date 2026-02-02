@@ -603,7 +603,8 @@ export class DocumentsService {
 
   async getSignedUrl(userId: string, id: string) {
     const doc = await this.findOne(userId, id);
-    if (!doc.s3Key) throw new Error('Document has no storage key');
-    return this.storageService.getSignedUrl(doc.s3Key);
+    // Return proxy URL instead of direct Firebase Storage signed URL
+    // This ensures CORS headers are properly set by the backend
+    return `/documents/${doc.id}/content`;
   }
 }
