@@ -108,6 +108,8 @@ export interface User {
   driverLicenseMasked?: string | null;
   passportMasked?: string | null;
   termsAcceptedAt?: string;
+  phone?: string | null;
+  smsConsent?: boolean;
 }
 
 export interface AuthResponse {

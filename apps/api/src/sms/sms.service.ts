@@ -29,7 +29,7 @@ export class SMSService {
   private async authenticate(): Promise<string> {
     // Check if we have a valid cached access token
     if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-      return this.accessToken;
+      return this.accessToken as string;
     }
 
     // Use JWT token exclusively for security
@@ -66,14 +66,18 @@ export class SMSService {
       );
 
       // Cache the access token
-      this.accessToken = response.data.access_token;
+      const accessToken = response.data.access_token;
+      if (!accessToken) {
+        throw new Error('No access token received from RingCentral');
+      }
+      this.accessToken = accessToken;
       const expiresIn = response.data.expires_in || 3600;
       this.tokenExpiry = new Date(Date.now() + (expiresIn - 300) * 1000); // Refresh 5 min before expiry
 
       this.logger.log(
         'Successfully authenticated with RingCentral using JWT (exchanged for access token)',
       );
-      return this.accessToken;
+      return accessToken;
     } catch (error: any) {
       this.logger.error(
         'Failed to authenticate with RingCentral using JWT',

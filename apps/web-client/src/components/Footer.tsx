@@ -341,6 +341,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 24,
   },
+  legalLink: {
+    textDecorationLine: "none",
+  },
   legalText: {
     color: "#64748B",
     fontSize: 13,

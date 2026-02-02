@@ -5,14 +5,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Text } from "@trusttax/ui";
-import {
-  Download,
-  Eye,
-  ExternalLink,
-  ShieldCheck,
-  Clock,
-  FileText,
-} from "lucide-react";
+import { Download, Eye, ShieldCheck, Clock } from "lucide-react";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
 import {
   FaFilePdf,

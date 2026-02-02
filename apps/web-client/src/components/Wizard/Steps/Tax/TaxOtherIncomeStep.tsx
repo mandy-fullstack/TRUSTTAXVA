@@ -5,17 +5,9 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  ActivityIndicator,
 } from "react-native";
 import { H3, Text, spacing, Spacer, Stack, Button } from "@trusttax/ui";
-import {
-  ChevronDown,
-  ChevronUp,
-  X,
-  FileText,
-  CheckCircle,
-  Upload,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, X, CheckCircle, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../../services/api";
 import { useAuth } from "../../../../context/AuthContext";

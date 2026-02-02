@@ -11,7 +11,7 @@ import { Text } from "@trusttax/ui";
 import { MessageSquare, Check, AlertCircle, ExternalLink } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
-import * as api from "../services/api";
+import { api } from "../services/api";
 
 interface SMSOptInProps {
   onSuccess?: () => void;

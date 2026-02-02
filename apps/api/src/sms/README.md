@@ -5,7 +5,7 @@ Este módulo proporciona funcionalidad para enviar SMS a través de RingCentral.
 ## 🚀 Configuración Rápida
 
 1. **Crea una cuenta en RingCentral Developer Portal**
-   - Ve a https://developer.ringcentral.com/
+   - Ve a <https://developer.ringcentral.com/>
    - Crea una cuenta y una aplicación
 
 2. **Obtén tus credenciales**
@@ -23,7 +23,7 @@ Este módulo proporciona funcionalidad para enviar SMS a través de RingCentral.
    RINGCENTRAL_ACCOUNT_ID=~
    RINGCENTRAL_EXTENSION_ID=~
    RINGCENTRAL_PHONE_NUMBER=+16505551234
-   RINGCENTRAL_API_URL=https://platform.ringcentral.com
+   RINGCENTRAL_API_URL=<https://platform.ringcentral.com>
    ```
 
 4. **Reinicia el servidor backend**
