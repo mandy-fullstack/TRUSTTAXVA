@@ -103,24 +103,87 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user && (await bcrypt.compare(pass, user.password))) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      
+      if (!user) {
+        // User not found - return null (will be handled as invalid credentials)
+        return null;
+      }
+
+      // Check if user has a password (some users might not have passwords if created differently)
+      if (!user.password) {
+        console.warn(`[AuthService] User ${email} has no password set`);
+        return null;
+      }
+
+      // Compare password
+      const isPasswordValid = await bcrypt.compare(pass, user.password);
+      
+      if (!isPasswordValid) {
+        // Invalid password - return null (will be handled as invalid credentials)
+        return null;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;
+    } catch (error) {
+      console.error('[AuthService] validateUser error:', {
+        email,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Re-throw to be caught by error interceptor
+      throw error;
     }
-    return null;
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role };
-    return {
-      access_token: this.jwtService.sign(payload),
-      user: {
-        ...user,
-        isProfileComplete: user.profileCompleted,
-      },
-    };
+    try {
+      // Validate required fields
+      if (!user || !user.email || !user.id) {
+        console.error('[AuthService] login: Invalid user object', {
+          hasUser: !!user,
+          hasEmail: !!user?.email,
+          hasId: !!user?.id,
+        });
+        throw new BadRequestException('Invalid user data for login');
+      }
+
+      // Check if JWT_SECRET is configured
+      if (!process.env.JWT_SECRET) {
+        console.error('[AuthService] login: JWT_SECRET not configured');
+        throw new BadRequestException('Server configuration error');
+      }
+
+      const payload = { email: user.email, sub: user.id, role: user.role };
+      
+      // Sign JWT token
+      const access_token = this.jwtService.sign(payload);
+      
+      if (!access_token) {
+        console.error('[AuthService] login: Failed to generate JWT token');
+        throw new BadRequestException('Failed to generate authentication token');
+      }
+
+      return {
+        access_token,
+        user: {
+          ...user,
+          isProfileComplete: user.profileCompleted,
+        },
+      };
+    } catch (error) {
+      console.error('[AuthService] login error:', {
+        userId: user?.id,
+        email: user?.email,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Re-throw to be caught by error interceptor
+      throw error;
+    }
   }
 
   async findById(id: string) {

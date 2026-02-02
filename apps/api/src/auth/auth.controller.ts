@@ -39,11 +39,22 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 requests per 15 minutes
   async login(@Body() dto: LoginDto) {
-    const user = await this.authService.validateUser(dto.email, dto.password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+    try {
+      const user = await this.authService.validateUser(dto.email, dto.password);
+      if (!user) {
+        throw new UnauthorizedException('Invalid email or password');
+      }
+      return this.authService.login(user); // Returns access_token
+    } catch (error) {
+      // Log error for debugging
+      console.error('[AuthController] Login error:', {
+        email: dto.email,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      // Re-throw to let error interceptor handle it
+      throw error;
     }
-    return this.authService.login(user); // Returns access_token
   }
 
   @UseGuards(AuthGuard('jwt'))
