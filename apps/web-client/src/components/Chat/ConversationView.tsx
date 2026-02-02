@@ -28,7 +28,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { getDocumentProxyUrl, openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
+import { openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
 
 // Componente para cargar imágenes con autenticación
 const ImageWithAuth = ({

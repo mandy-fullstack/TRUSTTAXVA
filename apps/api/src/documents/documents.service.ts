@@ -346,9 +346,11 @@ export class DocumentsService {
       }
 
       let finalBuffer = fileBuffer;
-      if (doc.s3Key.endsWith('.enc')) {
+      // Check if file is encrypted: either s3Key ends with .enc OR mimeType is application/octet-stream (encrypted files are stored as binary)
+      const isEncrypted = doc.s3Key.endsWith('.enc') || doc.mimeType === 'application/octet-stream';
+      if (isEncrypted) {
         try {
-          console.log(`[adminDownloadDocument] Decrypting buffer...`);
+          console.log(`[adminDownloadDocument] Decrypting buffer (s3Key: ${doc.s3Key}, mimeType: ${doc.mimeType})...`);
           finalBuffer = this.encryptionService.decryptBuffer(fileBuffer);
           console.log(
             `[adminDownloadDocument] Decrypted to ${finalBuffer.length} bytes`,
@@ -530,12 +532,14 @@ export class DocumentsService {
         );
       }
 
-      // 2. Decrypt ONLY if it was encrypted (ends with .enc)
+      // 2. Decrypt ONLY if it was encrypted (ends with .enc OR mimeType is application/octet-stream)
       // This supports legacy/unencrypted files
       let finalBuffer = fileBuffer;
-      if (doc.s3Key.endsWith('.enc')) {
+      // Check if file is encrypted: either s3Key ends with .enc OR mimeType is application/octet-stream (encrypted files are stored as binary)
+      const isEncrypted = doc.s3Key.endsWith('.enc') || doc.mimeType === 'application/octet-stream';
+      if (isEncrypted) {
         try {
-          console.log(`[downloadDecryptedDocument] Decrypting buffer...`);
+          console.log(`[downloadDecryptedDocument] Decrypting buffer (s3Key: ${doc.s3Key}, mimeType: ${doc.mimeType})...`);
           finalBuffer = this.encryptionService.decryptBuffer(fileBuffer);
           console.log(
             `[downloadDecryptedDocument] Decrypted to ${finalBuffer.length} bytes`,
