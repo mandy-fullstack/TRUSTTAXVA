@@ -30,6 +30,76 @@ import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { getDocumentProxyUrl, openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
 
+// Componente para cargar imágenes con autenticación
+const ImageWithAuth = ({
+  documentId,
+  originalUrl,
+  onPress,
+  style,
+  imageStyle,
+}: {
+  documentId: string;
+  originalUrl?: string;
+  onPress: () => void;
+  style: any;
+  imageStyle: any;
+}) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    getAuthenticatedImageUrl(documentId, originalUrl)
+      .then((blobUrl) => {
+        if (!cancelled) {
+          setImageUrl(blobUrl);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load image:', err);
+        if (!cancelled) {
+          setError(true);
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId, originalUrl]);
+
+  if (loading) {
+    return (
+      <View style={[style, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="small" color="#64748B" />
+      </View>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <TouchableOpacity style={style} onPress={onPress}>
+        <View style={[imageStyle, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1F5F9' }]}>
+          <ImageIcon size={32} color="#94A3B8" />
+          <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 8 }}>Error al cargar imagen</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={style}>
+      <Image source={{ uri: imageUrl }} style={imageStyle} resizeMode="cover" />
+      <View style={styles.imageOverlay}>
+        <Eye size={20} color="#FFF" />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
 interface ConversationViewProps {
   messages: any[];
   loading: boolean;
@@ -240,25 +310,25 @@ export const ConversationView = ({
                             ]}
                           >
                             {isImage(msg.document.mimeType) ? (
-                              <TouchableOpacity
-                                activeOpacity={0.9}
-                                onPress={() => {
-                                  const proxyUrl = getDocumentProxyUrl(msg.document.id, msg.document.url);
-                                  setPreviewImage(proxyUrl);
+                              <ImageWithAuth
+                                documentId={msg.document.id}
+                                originalUrl={msg.document.url}
+                                onPress={async () => {
+                                  try {
+                                    const blobUrl = await getAuthenticatedImageUrl(msg.document.id, msg.document.url);
+                                    setPreviewImage(blobUrl);
+                                  } catch (err) {
+                                    console.error('Failed to load preview image:', err);
+                                    showAlert({
+                                      title: t("chat.image_error_title", "Error"),
+                                      message: t("chat.image_error", "No se pudo cargar la imagen"),
+                                      variant: "error",
+                                    });
+                                  }
                                 }}
                                 style={styles.imagePreviewWrapper}
-                              >
-                                <Image
-                                  source={{ 
-                                    uri: getDocumentProxyUrl(msg.document.id, msg.document.url)
-                                  }}
-                                  style={styles.imagePreview}
-                                  resizeMode="cover"
-                                />
-                                <View style={styles.imageOverlay}>
-                                  <Eye size={20} color="#FFF" />
-                                </View>
-                              </TouchableOpacity>
+                                imageStyle={styles.imagePreview}
+                              />
                             ) : (
                               <View style={styles.fileRow}>
                                 {getFileIcon(msg.document.mimeType, isMine)}
