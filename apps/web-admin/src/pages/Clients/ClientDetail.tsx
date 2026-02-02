@@ -37,6 +37,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
 import { FileIcon } from "../../components/FileIcon";
 import { RenameModal } from "../../components/RenameModal";
+import { API_BASE_URL } from "../../config/api";
 // import { ConfirmDialog } from '../../components/ConfirmDialog'; // Removed unused
 
 const MOBILE_BREAKPOINT = 768;
@@ -154,7 +155,7 @@ export function ClientDetailPage() {
     try {
       setProcessingId(doc.id);
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:4000"}/documents/admin/download/${doc.id}`,
+        `${API_BASE_URL}/documents/admin/download/${doc.id}`,
         {
           headers: {
             Authorization: `Bearer ${api.getToken ? api.getToken() : ""}`,
@@ -183,7 +184,7 @@ export function ClientDetailPage() {
     try {
       setProcessingId(doc.id);
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL || "http://localhost:4000"}/documents/admin/download/${doc.id}?disposition=inline`,
+        `${API_BASE_URL}/documents/admin/download/${doc.id}?disposition=inline`,
         {
           headers: {
             Authorization: `Bearer ${api.getToken ? api.getToken() : ""}`,

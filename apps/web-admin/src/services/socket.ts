@@ -4,8 +4,9 @@ import type {
   ServerToClientEvents,
   ClientToServerEvents,
 } from "@trusttax/core";
+import { API_BASE_URL } from "../config/api";
 
-const SOCKET_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const SOCKET_URL = API_BASE_URL;
 
 export const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
   SOCKET_URL,

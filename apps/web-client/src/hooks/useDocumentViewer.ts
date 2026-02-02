@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getToken } from "../lib/cookies";
+import { API_BASE_URL } from "../config/api";
 
 /**
  * Hook para manejar visualización, descarga y preview de documentos
@@ -20,8 +21,7 @@ export function useDocumentViewer() {
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
-      const url = `${baseUrl}/documents/${docId}/content`;
+      const url = `${API_BASE_URL}/documents/${docId}/content`;
 
       const token = getToken();
       if (!token) {
@@ -67,8 +67,7 @@ export function useDocumentViewer() {
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
-      const url = `${baseUrl}/documents/${docId}/content`;
+      const url = `${API_BASE_URL}/documents/${docId}/content`;
 
       const token = getToken();
       if (!token) {
@@ -116,8 +115,7 @@ export function useDocumentViewer() {
       setLoading(true);
       setError(null);
 
-      const baseUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
-      const url = `${baseUrl}/documents/${docId}/content`;
+      const url = `${API_BASE_URL}/documents/${docId}/content`;
 
       const token = getToken();
       if (!token) {
