@@ -24,11 +24,12 @@ import {
   File,
   Image as ImageIcon,
   Eye,
+  ExternalLink,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
+import { openDocumentWithAuth, getAuthenticatedImageUrl, downloadDocumentWithAuth } from "../../utils/documentUrl";
 
 // Componente para cargar imágenes con autenticación
 const ImageWithAuth = ({
@@ -354,23 +355,56 @@ export const ConversationView = ({
                                     {(msg.document.size / 1024).toFixed(1)} KB
                                   </Text>
                                 </View>
-                                <TouchableOpacity
-                                  onPress={() => {
-                                    openDocumentWithAuth(msg.document.id, msg.document.url).catch((err) => {
-                                      console.error('Failed to open document:', err);
-                                      alert('Error al abrir el documento');
-                                    });
-                                  }}
-                                >
-                                  <Download
-                                    size={18}
-                                    color={
-                                      isMine
-                                        ? "rgba(255,255,255,0.6)"
-                                        : "#94A3B8"
-                                    }
-                                  />
-                                </TouchableOpacity>
+                                <View style={styles.documentActions}>
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      downloadDocumentWithAuth(
+                                        msg.document.id,
+                                        msg.document.title || `document-${msg.document.id}`,
+                                        msg.document.url
+                                      ).catch((err) => {
+                                        console.error('Failed to download document:', err);
+                                        showAlert({
+                                          title: t("chat.download_error_title", "Error"),
+                                          message: t("chat.download_error", "No se pudo descargar el documento"),
+                                          variant: "error",
+                                        });
+                                      });
+                                    }}
+                                    style={styles.actionButton}
+                                  >
+                                    <Download
+                                      size={18}
+                                      color={
+                                        isMine
+                                          ? "rgba(255,255,255,0.8)"
+                                          : "#2563EB"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      openDocumentWithAuth(msg.document.id, msg.document.url).catch((err) => {
+                                        console.error('Failed to open document:', err);
+                                        showAlert({
+                                          title: t("chat.open_error_title", "Error"),
+                                          message: t("chat.open_error", "No se pudo abrir el documento"),
+                                          variant: "error",
+                                        });
+                                      });
+                                    }}
+                                    style={styles.actionButton}
+                                  >
+                                    <ExternalLink
+                                      size={18}
+                                      color={
+                                        isMine
+                                          ? "rgba(255,255,255,0.8)"
+                                          : "#2563EB"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                </View>
                               </View>
                             )}
                           </View>
@@ -729,6 +763,15 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 12,
     minWidth: 200,
+  },
+  documentActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
+    borderRadius: 4,
   },
   imagePreviewWrapper: {
     width: 220,

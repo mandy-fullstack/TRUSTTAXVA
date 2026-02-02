@@ -20,13 +20,13 @@ import {
   Download,
   Folder,
   X,
-  ChevronRight,
   File,
   Image as ImageIcon,
   Eye,
+  ExternalLink,
 } from "lucide-react";
 import { api } from "../../services/api";
-import { openDocumentWithAuth, getAuthenticatedImageUrl } from "../../utils/documentUrl";
+import { openDocumentWithAuth, getAuthenticatedImageUrl, downloadDocumentWithAuth } from "../../utils/documentUrl";
 
 // Componente para cargar imágenes con autenticación
 const ImageWithAuth = ({
@@ -331,22 +331,47 @@ export const AdminConversationView = ({
                                     {(msg.document.size / 1024).toFixed(1)} KB
                                   </Text>
                                 </View>
-                                <TouchableOpacity
-                                  onPress={() =>
-                                    openDocumentWithAuth(msg.document.id, msg.document.url).catch(
-                                      (err) => alert(err.message),
-                                    )
-                                  }
-                                >
-                                  <Download
-                                    size={18}
-                                    color={
-                                      isMine
-                                        ? "rgba(255,255,255,0.6)"
-                                        : "#94A3B8"
+                                <View style={styles.documentActions}>
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      downloadDocumentWithAuth(
+                                        msg.document.id,
+                                        msg.document.title || `document-${msg.document.id}`,
+                                        msg.document.url
+                                      ).catch((err) => {
+                                        console.error('Failed to download document:', err);
+                                        alert(`Error al descargar: ${err.message}`);
+                                      });
+                                    }}
+                                    style={styles.actionButton}
+                                  >
+                                    <Download
+                                      size={18}
+                                      color={
+                                        isMine
+                                          ? "rgba(255,255,255,0.8)"
+                                          : "#2563EB"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() =>
+                                      openDocumentWithAuth(msg.document.id, msg.document.url).catch(
+                                        (err) => alert(err.message),
+                                      )
                                     }
-                                  />
-                                </TouchableOpacity>
+                                    style={styles.actionButton}
+                                  >
+                                    <ExternalLink
+                                      size={18}
+                                      color={
+                                        isMine
+                                          ? "rgba(255,255,255,0.8)"
+                                          : "#2563EB"
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                </View>
                               </View>
                             )}
                           </View>
@@ -451,7 +476,33 @@ export const AdminConversationView = ({
                         {(doc.size / 1024).toFixed(1)} KB
                       </Text>
                     </View>
-                    <ChevronRight size={14} color="#CBD5E1" />
+                    <View style={styles.sidebarDocActions}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          downloadDocumentWithAuth(
+                            doc.id,
+                            doc.title || `document-${doc.id}`,
+                            doc.url
+                          ).catch((err) => {
+                            console.error('Failed to download document:', err);
+                            alert(`Error al descargar: ${err.message}`);
+                          });
+                        }}
+                        style={styles.sidebarActionButton}
+                      >
+                        <Download size={14} color="#64748B" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() =>
+                          openDocumentWithAuth(doc.id, doc.url).catch(
+                            (err) => alert(err.message),
+                          )
+                        }
+                        style={styles.sidebarActionButton}
+                      >
+                        <ExternalLink size={14} color="#64748B" />
+                      </TouchableOpacity>
+                    </View>
                   </TouchableOpacity>
                 ))
               )}
@@ -689,6 +740,15 @@ const styles = StyleSheet.create({
     padding: 12,
     minWidth: 200,
   },
+  documentActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
   imagePreviewWrapper: {
     width: 220,
     height: 160,
@@ -792,6 +852,15 @@ const styles = StyleSheet.create({
   sidebarDocInfo: { flex: 1 },
   sidebarDocTitle: { fontSize: 13, color: "#1E293B", fontWeight: "500" },
   sidebarDocMeta: { fontSize: 11, color: "#94A3B8" },
+  sidebarDocActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  sidebarActionButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
   emptySidebar: {
     flex: 1,
     alignItems: "center",

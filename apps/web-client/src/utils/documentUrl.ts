@@ -114,3 +114,46 @@ export async function openDocumentWithAuth(documentId: string, originalUrl?: str
     throw error;
   }
 }
+
+/**
+ * Descarga un documento usando el proxy del backend con autenticación
+ */
+export async function downloadDocumentWithAuth(
+  documentId: string,
+  filename: string,
+  originalUrl?: string
+): Promise<void> {
+  const url = getDocumentProxyUrl(documentId, originalUrl);
+  const token = getToken();
+  
+  if (!token) {
+    throw new Error('No authentication token available');
+  }
+  
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load document: ${response.statusText}`);
+    }
+    
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Crear elemento <a> para descargar
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || `document-${documentId}`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Limpiar
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (error) {
+    console.error('Failed to download document:', error);
+    throw error;
+  }
+}
