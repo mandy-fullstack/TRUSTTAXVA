@@ -44,12 +44,6 @@ class ApiService {
 
         const url = `${BASE_URL}${endpoint}`;
 
-        // Log en desarrollo para debugging
-        if (import.meta.env.DEV) {
-            console.log(`[API Request] ${options.method || "GET"} ${url}`);
-            console.log(`[API Request] BASE_URL: ${BASE_URL}`);
-        }
-
         try {
             const response = await fetch(url, {
                 ...options,
@@ -98,31 +92,14 @@ class ApiService {
                 throw error;
             }
             if (error instanceof TypeError && error.message.includes("fetch")) {
-                const errorMessage = `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`;
-                if (import.meta.env.DEV) {
-                    console.error("[API Error] Network Error:", errorMessage);
-                    console.error("[API Error] BASE_URL usado:", BASE_URL);
-                    console.error("[API Error] Endpoint completo:", url);
-                }
-                throw new NetworkError(errorMessage);
+                throw new NetworkError(
+                    `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`
+                );
             }
-            // Si es un Error genérico con mensaje "An unexpected error occurred", 
-            // convertirlo a NetworkError para mejor manejo
-            if (
-                error instanceof Error &&
-                error.message === "An unexpected error occurred"
-            ) {
-                const networkError = new NetworkError(
+            if (error instanceof Error && error.message === "An unexpected error occurred") {
+                throw new NetworkError(
                     "Server error occurred. Please try again later or contact support."
                 );
-                if (import.meta.env.DEV) {
-                    console.error("[API Error] Converted generic error to NetworkError:", error);
-                }
-                throw networkError;
-            }
-
-            if (import.meta.env.DEV) {
-                console.error("[API Error] Unexpected error:", error);
             }
             throw error;
         }

@@ -33,7 +33,7 @@ export class AuthService {
     private chatGateway: ChatGateway,
     private storageService: StorageService,
     private tokenService: TokenService,
-  ) {}
+  ) { }
 
   async register(data: {
     email: string;
@@ -104,122 +104,45 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
-    console.log('[AuthService] validateUser called:', { email, hasPassword: !!pass });
-    
-    try {
-      // Verificar que PrismaService esté inicializado
-      if (!this.prisma) {
-        console.error('[AuthService] PrismaService no está inicializado');
-        throw new Error('PrismaService not initialized');
-      }
-      
-      if (!this.prisma.user) {
-        console.error('[AuthService] PrismaService.user no está disponible');
-        throw new Error('PrismaService.user not available');
-      }
-      
-      console.log('[AuthService] Querying database for user...');
-      const user = await this.prisma.user.findUnique({ where: { email } });
-      
-      console.log('[AuthService] Database query result:', {
-        found: !!user,
-        hasPassword: !!user?.password,
-        userId: user?.id,
-      });
-      
-      if (!user) {
-        // User not found - return null (will be handled as invalid credentials)
-        console.log('[AuthService] User not found in database');
-        return null;
-      }
+    const user = await this.prisma.user.findUnique({ where: { email } });
 
-      // Check if user has a password (some users might not have passwords if created differently)
-      if (!user.password) {
-        console.warn(`[AuthService] User ${email} has no password set`);
-        return null;
-      }
-
-      // Compare password
-      console.log('[AuthService] Comparing password...');
-      const isPasswordValid = await bcrypt.compare(pass, user.password);
-      console.log('[AuthService] Password comparison result:', isPasswordValid);
-      
-      if (!isPasswordValid) {
-        // Invalid password - return null (will be handled as invalid credentials)
-        console.log('[AuthService] Password does not match');
-        return null;
-      }
-
-      console.log('[AuthService] User validated successfully');
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { password, ...result } = user;
-      return result;
-    } catch (error) {
-      console.error('[AuthService] validateUser error:', {
-        email,
-        errorName: error?.constructor?.name,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorKeys: error ? Object.keys(error) : [],
-      });
-      // Re-throw to be caught by error interceptor
-      throw error;
+    if (!user || !user.password) {
+      return null;
     }
+
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
+    return result;
   }
 
   async login(user: any) {
-    try {
-      // Validate required fields
-      if (!user || !user.email || !user.id) {
-        console.error('[AuthService] login: Invalid user object', {
-          hasUser: !!user,
-          hasEmail: !!user?.email,
-          hasId: !!user?.id,
-        });
-        throw new BadRequestException('Invalid user data for login');
-      }
-
-      // Check if JWT_SECRET is configured
-      if (!process.env.JWT_SECRET) {
-        console.error('[AuthService] login: JWT_SECRET not configured');
-        throw new BadRequestException('Server configuration error');
-      }
-
-      // Verificar que JwtService esté disponible
-      if (!this.jwtService) {
-        console.error('[AuthService] login: JwtService no está inicializado');
-        throw new BadRequestException('JwtService not initialized');
-      }
-
-      const payload = { email: user.email, sub: user.id, role: user.role };
-      console.log('[AuthService] Signing JWT with payload:', { email: payload.email, sub: payload.sub, role: payload.role });
-      
-      // Sign JWT token
-      const access_token = this.jwtService.sign(payload);
-      console.log('[AuthService] JWT token generated:', access_token ? '✅' : '❌');
-      
-      if (!access_token) {
-        console.error('[AuthService] login: Failed to generate JWT token');
-        throw new BadRequestException('Failed to generate authentication token');
-      }
-
-      return {
-        access_token,
-        user: {
-          ...user,
-          isProfileComplete: user.profileCompleted,
-        },
-      };
-    } catch (error) {
-      console.error('[AuthService] login error:', {
-        userId: user?.id,
-        email: user?.email,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      // Re-throw to be caught by error interceptor
-      throw error;
+    if (!user || !user.email || !user.id) {
+      throw new BadRequestException('Invalid user data for login');
     }
+
+    if (!process.env.JWT_SECRET) {
+      throw new BadRequestException('Server configuration error');
+    }
+
+    const payload = { email: user.email, sub: user.id, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    if (!access_token) {
+      throw new BadRequestException('Failed to generate authentication token');
+    }
+
+    return {
+      access_token,
+      user: {
+        ...user,
+        isProfileComplete: user.profileCompleted,
+      },
+    };
   }
 
   async findById(id: string) {
@@ -1196,13 +1119,13 @@ export class AuthService {
         const updateData =
           docType === 'DL'
             ? {
-                driverLicenseEncrypted:
-                  this.encryptionService.encrypt(updatedJson),
-              }
+              driverLicenseEncrypted:
+                this.encryptionService.encrypt(updatedJson),
+            }
             : {
-                passportDataEncrypted:
-                  this.encryptionService.encrypt(updatedJson),
-              };
+              passportDataEncrypted:
+                this.encryptionService.encrypt(updatedJson),
+            };
 
         await this.prisma.user.update({
           where: { id: userId },

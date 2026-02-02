@@ -8,8 +8,6 @@ import {
   Patch,
   UnauthorizedException,
   HttpException,
-  Param,
-  Query,
   Headers,
   UseInterceptors,
   UploadedFile,
@@ -38,66 +36,29 @@ export class AuthController {
   }
 
   @Post('login')
-  @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 requests per 15 minutes
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
   async login(@Body() dto: LoginDto) {
-    console.log('[AuthController] Login attempt started:', {
-      email: dto.email,
-      hasPassword: !!dto.password,
-      passwordLength: dto.password?.length || 0,
-    });
-
     try {
-      console.log('[AuthController] Calling validateUser...');
       const user = await this.authService.validateUser(dto.email, dto.password);
 
-      console.log('[AuthController] validateUser result:', {
-        hasUser: !!user,
-        hasEmail: !!user?.email,
-        hasId: !!user?.id,
-      });
-
       if (!user) {
-        console.log('[AuthController] User validation failed - invalid credentials');
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      console.log('[AuthController] Calling login service...');
-      const result = await this.authService.login(user);
-      console.log('[AuthController] Login successful for:', dto.email);
-      return result; // Returns access_token
+      return await this.authService.login(user);
     } catch (error) {
-      // Log error for debugging
-      console.error('[AuthController] Login error:', {
-        email: dto.email,
-        errorName: error?.constructor?.name,
-        errorMessage: error instanceof Error ? error.message : String(error),
-        errorStack: error instanceof Error ? error.stack : undefined,
-        errorKeys: error ? Object.keys(error) : [],
-      });
-
-      // En desarrollo, incluir más detalles del error en la respuesta
-      if (process.env.NODE_ENV !== 'production') {
-        const errorResponse: any = {
-          success: false,
-          statusCode: error instanceof HttpException ? error.getStatus() : 500,
-          message: error instanceof Error ? error.message : 'An unexpected error occurred',
-          timestamp: new Date().toISOString(),
-          path: '/auth/login',
-        };
-
-        // Agregar detalles adicionales en desarrollo
-        if (error instanceof Error) {
-          errorResponse.errorDetails = {
-            name: error.name,
+      if (process.env.NODE_ENV !== 'production' && error instanceof Error) {
+        throw new HttpException(
+          {
+            success: false,
+            statusCode: error instanceof HttpException ? error.getStatus() : 500,
             message: error.message,
-            stack: error.stack,
-          };
-        }
-
-        throw new HttpException(errorResponse, errorResponse.statusCode);
+            timestamp: new Date().toISOString(),
+            path: '/auth/login',
+          },
+          error instanceof HttpException ? error.getStatus() : 500,
+        );
       }
-
-      // Re-throw to let error interceptor handle it
       throw error;
     }
   }
