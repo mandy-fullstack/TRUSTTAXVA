@@ -20,26 +20,40 @@ export function getApiUrl(): string {
     // Si VITE_API_URL está definido y no está vacío, SIEMPRE lo usamos
     if (envUrl && typeof envUrl === "string" && envUrl.trim() !== "") {
         const url = envUrl.trim();
-        // Solo log en desarrollo
+        // Log siempre en desarrollo para debugging
         if (import.meta.env.DEV) {
-            console.log("✅ Usando VITE_API_URL de variables de entorno:", url);
+            console.log("✅ [API Config] Usando VITE_API_URL:", url);
+            console.log("✅ [API Config] Tipo:", typeof envUrl);
+            console.log("✅ [API Config] Valor raw:", import.meta.env.VITE_API_URL);
         }
         return url;
     }
 
     // SOLO si NO está definido, usamos fallback
-    // Solo mostrar warning en desarrollo
+    // Mostrar warning siempre en desarrollo
     if (import.meta.env.DEV) {
         console.warn(
-            "⚠️ VITE_API_URL no está definido en variables de entorno. Usando fallback.",
+            "⚠️ [API Config] VITE_API_URL no está definido. Valor:", envUrl,
+        );
+        console.warn(
+            "⚠️ [API Config] Todas las variables env:",
+            Object.keys(import.meta.env).filter((k) => k.startsWith("VITE_")),
         );
     }
 
     if (import.meta.env.PROD) {
-        return "https://trusttax-api.onrender.com";
+        const fallback = "https://trusttax-api.onrender.com";
+        if (import.meta.env.DEV) {
+            console.warn("⚠️ [API Config] Usando fallback de producción:", fallback);
+        }
+        return fallback;
     }
 
-    return "http://localhost:4000";
+    const fallback = "http://localhost:4000";
+    if (import.meta.env.DEV) {
+        console.warn("⚠️ [API Config] Usando fallback de desarrollo:", fallback);
+    }
+    return fallback;
 }
 
 /**

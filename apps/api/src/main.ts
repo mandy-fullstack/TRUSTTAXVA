@@ -13,20 +13,89 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // CORS configuration - restrict origins in production
-  const allowedOrigins =
-    process.env.NODE_ENV === 'production'
-      ? process.env.CORS_ORIGINS?.split(',') || []
-      : [
-          'http://localhost:5175',
-          'http://localhost:5176',
-          'http://localhost:3000',
-        ];
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  let allowedOrigins: string[];
+
+  if (isProduction) {
+    // En producción, usar CORS_ORIGINS de variables de entorno
+    const corsOrigins = process.env.CORS_ORIGINS;
+
+    if (!corsOrigins || corsOrigins.trim() === '') {
+      console.error(
+        '⚠️ [CORS] CORS_ORIGINS no está configurado en producción!',
+      );
+      console.error(
+        '⚠️ [CORS] Esto causará errores CORS. Configura CORS_ORIGINS en Render.com',
+      );
+      console.error(
+        '⚠️ [CORS] Ejemplo: CORS_ORIGINS=https://trusttaxllc.com,https://admin.trusttaxllc.com',
+      );
+      // En producción, si no está configurado, usar array vacío (bloqueará todo)
+      allowedOrigins = [];
+    } else {
+      // Limpiar espacios y dividir por comas
+      allowedOrigins = corsOrigins
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0);
+
+      console.log(
+        '✅ [CORS] Orígenes permitidos en producción:',
+        allowedOrigins,
+      );
+    }
+  } else {
+    // En desarrollo, permitir localhost
+    allowedOrigins = [
+      'http://localhost:5175',
+      'http://localhost:5176',
+      'http://localhost:3000',
+    ];
+    console.log(
+      '✅ [CORS] Modo desarrollo - Orígenes permitidos:',
+      allowedOrigins,
+    );
+  }
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      // Permitir requests sin origen (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Verificar si el origen está permitido
+      if (allowedOrigins.length === 0) {
+        // Si no hay orígenes configurados en producción, bloquear
+        if (isProduction) {
+          console.warn(
+            '⚠️ [CORS] Origen bloqueado (CORS_ORIGINS vacío):',
+            origin,
+          );
+          return callback(
+            new Error('CORS: Origin not allowed. CORS_ORIGINS not configured.'),
+          );
+        }
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      console.warn('⚠️ [CORS] Origen no permitido:', origin);
+      console.warn('⚠️ [CORS] Orígenes permitidos:', allowedOrigins);
+      return callback(new Error(`CORS: Origin ${origin} is not allowed.`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
 
   const redisIoAdapter = new RedisIoAdapter(app);

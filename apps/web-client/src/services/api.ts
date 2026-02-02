@@ -42,8 +42,16 @@ class ApiService {
         : {}),
     };
 
+    const url = `${BASE_URL}${endpoint}`;
+    
+    // Log en desarrollo para debugging
+    if (import.meta.env.DEV) {
+      console.log(`[API Request] ${options.method || "GET"} ${url}`);
+      console.log(`[API Request] BASE_URL: ${BASE_URL}`);
+    }
+
     try {
-      const response = await fetch(`${BASE_URL}${endpoint}`, {
+      const response = await fetch(url, {
         ...options,
         headers,
       });
@@ -78,9 +86,16 @@ class ApiService {
         throw error;
       }
       if (error instanceof TypeError && error.message.includes("fetch")) {
-        throw new NetworkError(
-          "Unable to connect to server. Please check your connection.",
-        );
+        const errorMessage = `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`;
+        if (import.meta.env.DEV) {
+          console.error("[API Error] Network Error:", errorMessage);
+          console.error("[API Error] BASE_URL usado:", BASE_URL);
+          console.error("[API Error] Endpoint completo:", url);
+        }
+        throw new NetworkError(errorMessage);
+      }
+      if (import.meta.env.DEV) {
+        console.error("[API Error] Unexpected error:", error);
       }
       throw error;
     }

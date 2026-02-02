@@ -53,8 +53,16 @@ async function request<T>(
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const url = `${BASE_URL}${endpoint}`;
+  
+  // Log en desarrollo para debugging
+  if (import.meta.env.DEV) {
+    console.log(`[API Request] ${options.method || "GET"} ${url}`);
+    console.log(`[API Request] BASE_URL: ${BASE_URL}`);
+  }
+
   try {
-    const res = await fetch(`${BASE_URL}${endpoint}`, { ...init, headers });
+    const res = await fetch(url, { ...init, headers });
     if (!res.ok) {
       const err = await res
         .json()
@@ -76,10 +84,18 @@ async function request<T>(
       e instanceof NetworkError
     )
       throw e;
-    if (e instanceof TypeError && (e.message || "").includes("fetch"))
-      throw new NetworkError(
-        "Unable to connect to server. Please check your connection.",
-      );
+    if (e instanceof TypeError && (e.message || "").includes("fetch")) {
+      const errorMessage = `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`;
+      if (import.meta.env.DEV) {
+        console.error("[API Error] Network Error:", errorMessage);
+        console.error("[API Error] BASE_URL usado:", BASE_URL);
+        console.error("[API Error] Endpoint completo:", url);
+      }
+      throw new NetworkError(errorMessage);
+    }
+    if (import.meta.env.DEV) {
+      console.error("[API Error] Unexpected error:", e);
+    }
     throw e;
   }
 }
