@@ -73,6 +73,29 @@ export class AuthController {
         errorStack: error instanceof Error ? error.stack : undefined,
         errorKeys: error ? Object.keys(error) : [],
       });
+      
+      // En desarrollo, incluir más detalles del error en la respuesta
+      if (process.env.NODE_ENV !== 'production') {
+        const errorResponse: any = {
+          success: false,
+          statusCode: error instanceof HttpException ? error.getStatus() : 500,
+          message: error instanceof Error ? error.message : 'An unexpected error occurred',
+          timestamp: new Date().toISOString(),
+          path: '/auth/login',
+        };
+        
+        // Agregar detalles adicionales en desarrollo
+        if (error instanceof Error) {
+          errorResponse.errorDetails = {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+          };
+        }
+        
+        throw new HttpException(errorResponse, errorResponse.statusCode);
+      }
+      
       // Re-throw to let error interceptor handle it
       throw error;
     }

@@ -22,6 +22,7 @@ import Redis from 'ioredis';
 
 @Module({
   imports: [
+    AuthModule,
     // Rate limiting configuration with Redis storage for global consistency
     ThrottlerModule.forRootAsync({
       useFactory: () => ({
