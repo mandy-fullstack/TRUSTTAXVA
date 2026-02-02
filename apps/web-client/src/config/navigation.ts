@@ -3,7 +3,11 @@
  * Used by Header, Layout, and Footer.
  */
 
-export const MOBILE_BREAKPOINT = 768;
+// Breakpoints responsivos
+export const MOBILE_BREAKPOINT = 768; // Mobile: < 768px
+export const TABLET_BREAKPOINT = 1024; // Tablet: 768px - 1024px
+export const DESKTOP_BREAKPOINT = 1280; // Desktop: > 1024px
+export const SMALL_MOBILE_BREAKPOINT = 375; // Small mobile: < 375px
 
 export interface PublicNavItem {
   path: string;

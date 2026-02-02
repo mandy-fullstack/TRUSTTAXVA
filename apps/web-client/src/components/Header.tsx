@@ -17,6 +17,8 @@ import {
   getPublicNav,
   getAuthNav,
   MOBILE_BREAKPOINT,
+  TABLET_BREAKPOINT,
+  SMALL_MOBILE_BREAKPOINT,
 } from "../config/navigation";
 import { useAuth } from "../context/AuthContext";
 import { LanguageSelector } from "./LanguageSelector";
@@ -33,6 +35,8 @@ export const Header = () => {
   const mobileMenuRef = useRef<any>(null);
 
   const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
+  const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
 
   const navItems = getPublicNav();
   const authItems = getAuthNav(isAuthenticated);
@@ -110,7 +114,12 @@ export const Header = () => {
       accessibilityRole="header"
     >
       <View
-        style={[styles.navContainer, isMobile && { paddingHorizontal: 20 }]}
+        style={[
+          styles.navContainer,
+          isSmallMobile && { paddingHorizontal: 16 },
+          isMobile && !isSmallMobile && { paddingHorizontal: 20 },
+          isTablet && { paddingHorizontal: 32 },
+        ]}
       >
         {/* Brand Section */}
         <Link
@@ -118,27 +127,42 @@ export const Header = () => {
           className={Platform.OS === "web" ? "logo-link" : undefined}
           style={Platform.OS === "web" ? undefined : styles.logoContainer}
         >
-          <TrustTaxLogo size={isMobile ? 32 : 40} bgColor={primaryColor} />
+          <TrustTaxLogo
+            size={
+              isSmallMobile ? 28 : isMobile ? 32 : isTablet ? 36 : 40
+            }
+            bgColor={primaryColor}
+          />
           <Text
             style={[
               styles.logoText,
               { color: primaryColor },
-              isMobile && { fontSize: 18 },
+              isSmallMobile && { fontSize: 16 },
+              isMobile && !isSmallMobile && { fontSize: 18 },
+              isTablet && { fontSize: 19 },
             ]}
           >
             {companyName}
           </Text>
         </Link>
 
-        {/* Desktop Menu */}
+        {/* Desktop/Tablet Menu */}
         {!isMobile && (
           <View
-            style={styles.desktopMenu}
+            style={[
+              styles.desktopMenu,
+              isTablet && styles.tabletMenu,
+            ]}
             {...(Platform.OS === "web"
               ? { role: "navigation", "aria-label": "Main navigation" }
               : {})}
           >
-            <View style={styles.navLinksRow}>
+            <View
+              style={[
+                styles.navLinksRow,
+                isTablet && styles.tabletNavLinksRow,
+              ]}
+            >
               {navItems.map((item) => {
                 const label = t(item.i18nKey, item.path);
                 const active = isActive(item.path);
@@ -160,6 +184,7 @@ export const Header = () => {
                     <Text
                       style={[
                         styles.navLinkText,
+                        isTablet && styles.tabletNavLinkText,
                         active && { color: secondaryColor, fontWeight: "600" },
                       ]}
                     >
@@ -178,7 +203,12 @@ export const Header = () => {
               })}
             </View>
 
-            <View style={styles.authButtons}>
+            <View
+              style={[
+                styles.authButtons,
+                isTablet && styles.tabletAuthButtons,
+              ]}
+            >
               <LanguageSelector variant="desktop" />
 
               <View style={styles.divider} />
@@ -462,6 +492,7 @@ export const Header = () => {
 
 const styles = StyleSheet.create({
   navbar: {
+    minHeight: 64,
     height: 80,
     justifyContent: "center",
     zIndex: 1000,
@@ -486,6 +517,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  tabletMenu: {
+    gap: 32,
+  },
+  tabletNavLinksRow: {
+    gap: 24,
+  },
+  tabletAuthButtons: {
+    gap: 12,
+    paddingLeft: 16,
   },
   logoContainer: {
     flexDirection: "row",
@@ -519,6 +560,10 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "#64748B",
     letterSpacing: 0.2,
+  },
+  // Tablet adjustments
+  tabletNavLinkText: {
+    fontSize: 14,
   },
   activeIndicator: {
     position: "absolute",
