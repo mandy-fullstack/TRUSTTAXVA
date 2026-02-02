@@ -14,6 +14,7 @@ import { ChatModule } from './chat/chat.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { DocumentsModule } from './documents/documents.module';
 import { SMSModule } from './sms/sms.module';
+import { EmailModule } from './email/email.module';
 import { FirebaseModule } from './common/firebase.module';
 import { RedisModule } from './common/services/redis.module';
 import { SharedModule } from './common/shared.module';
@@ -55,6 +56,7 @@ import Redis from 'ioredis';
     ChatModule,
     DocumentsModule,
     SMSModule,
+    EmailModule,
     FirebaseModule,
     RedisModule,
     SharedModule,

@@ -7,38 +7,77 @@ import * as path from 'path';
 export class EmailService {
   private transporter: nodemailer.Transporter;
   private templatesPath: string;
+  private isProductionMode: boolean;
 
   constructor() {
     // Set templates directory path
-    this.templatesPath = path.join(__dirname, 'templates');
+    // In compiled code, __dirname points to dist/src/email/
+    // But templates are copied to dist/email/templates/
+    // So we need to go up one level to dist/email/templates/
+    const isCompiled = __dirname.includes('dist');
+    if (isCompiled) {
+      // Compiled: dist/src/email/ -> dist/email/templates/
+      this.templatesPath = path.join(__dirname, '..', '..', 'email', 'templates');
+    } else {
+      // Development: src/email/ -> src/email/templates/
+      this.templatesPath = path.join(__dirname, 'templates');
+    }
+
+    // Check if SMTP is configured
+    const hasSMTPConfig =
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASSWORD &&
+      process.env.SMTP_HOST;
+
+    this.isProductionMode = !!hasSMTPConfig;
 
     // Configure email transporter
-    const emailConfig = {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // true for 465, false for other ports
-      auth: process.env.SMTP_USER
-        ? {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-          }
-        : undefined,
-    };
-
-    // If no SMTP credentials, use console logging for development
-    if (!process.env.SMTP_USER) {
+    if (!hasSMTPConfig) {
+      // Development mode: log to console
       this.transporter = nodemailer.createTransport({
         streamTransport: true,
         newline: 'unix',
         buffer: true,
       });
-      console.log(
-        '⚠️  Email service in DEV mode - emails will be logged to console',
-      );
+      console.log('⚠️  [EmailService] DEV MODE - Emails will be logged to console');
+      console.log('⚠️  [EmailService] To enable real emails, configure:');
+      console.log('   - SMTP_USER');
+      console.log('   - SMTP_PASSWORD');
+      console.log('   - SMTP_HOST');
+      console.log('   - SMTP_PORT (optional, default: 587)');
     } else {
+      // Production mode: use SMTP
+      const emailConfig = {
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587', 10),
+        secure: process.env.SMTP_PORT === '465', // true for 465, false for other ports
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASSWORD,
+        },
+        // Add connection timeout
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
+      };
+
       this.transporter = nodemailer.createTransport(emailConfig);
-      console.log('✅ Email service configured with SMTP');
-      console.log(`📁 Email templates loaded from: ${this.templatesPath}`);
+
+      // Verify connection
+      this.transporter.verify((error, success) => {
+        if (error) {
+          console.error('❌ [EmailService] SMTP connection failed:', error);
+          console.error('❌ [EmailService] Check your SMTP configuration');
+        } else {
+          console.log('✅ [EmailService] SMTP connection verified');
+          console.log(`📁 [EmailService] Templates: ${this.templatesPath}`);
+        }
+      });
+
+      console.log('✅ [EmailService] Configured with SMTP');
+      console.log(`   Host: ${process.env.SMTP_HOST}`);
+      console.log(`   Port: ${process.env.SMTP_PORT || '587'}`);
+      console.log(`   User: ${process.env.SMTP_USER}`);
     }
   }
 
@@ -57,6 +96,12 @@ export class EmailService {
         this.templatesPath,
         `${templateName}.html`,
       );
+
+      if (!fs.existsSync(templatePath)) {
+        console.error(`❌ [EmailService] Template not found: ${templatePath}`);
+        throw new Error(`Template file not found: ${templateName}.html`);
+      }
+
       let template = fs.readFileSync(templatePath, 'utf-8');
 
       // Replace all variables in format {{variableName}}
@@ -67,7 +112,7 @@ export class EmailService {
 
       return template;
     } catch (error) {
-      console.error(`❌ Error loading template ${templateName}:`, error);
+      console.error(`❌ [EmailService] Error loading template ${templateName}:`, error);
       throw new Error(`Failed to load email template: ${templateName}`);
     }
   }
@@ -100,42 +145,53 @@ export class EmailService {
       'http://localhost:5173';
     const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
 
-    const htmlContent = this.loadTemplate('password-reset', {
-      userName: userName || 'there',
-      resetUrl: resetUrl,
-      userEmail: email,
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'Password Reset Request - TrustTax',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('password-reset', {
+        userName: userName || 'there',
+        resetUrl: resetUrl,
+        userEmail: email,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'Password Reset Request - TrustTax',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 PASSWORD RESET EMAIL (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] PASSWORD RESET EMAIL (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log(`Reset URL: ${resetUrl}`);
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Password reset email sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] Password reset email sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
+        console.log(`📬 [EmailService] Response: ${info.response || 'N/A'}`);
+        
+        // Verificar que realmente se envió
+        if (!info.messageId) {
+          console.warn('⚠️ [EmailService] Email sent but no messageId received');
+        }
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending password reset email:', error);
-      throw new Error('Failed to send password reset email');
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending password reset email:', {
+        email,
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode,
+      });
+      throw new Error(`Failed to send password reset email: ${error.message}`);
     }
   }
 
@@ -143,40 +199,42 @@ export class EmailService {
    * Send account not found email (marketing opportunity)
    */
   async sendAccountNotFoundEmail(email: string) {
-    const htmlContent = this.loadTemplate('account-not-found', {
-      userEmail: email,
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'Account Not Found - TrustTax Services',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('account-not-found', {
+        userEmail: email,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'Account Not Found - TrustTax Services',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 ACCOUNT NOT FOUND EMAIL (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] ACCOUNT NOT FOUND EMAIL (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log('Message: Marketing email sent');
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Account not found email (marketing) sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] Account not found email sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending account not found email:', error);
-      throw new Error('Failed to send account not found email');
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending account not found email:', {
+        email,
+        error: error.message,
+        code: error.code,
+      });
+      throw new Error(`Failed to send account not found email: ${error.message}`);
     }
   }
 
@@ -191,42 +249,46 @@ export class EmailService {
   ) {
     const verifyUrl = `${origin || process.env.CLIENT_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
 
-    const htmlContent = this.loadTemplate('email-verification', {
-      userName: userName || 'there',
-      verifyUrl: verifyUrl,
-      userEmail: email,
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'Verify Your Email Address - TrustTax',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('email-verification', {
+        userName: userName || 'there',
+        verifyUrl: verifyUrl,
+        userEmail: email,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'Verify Your Email Address - TrustTax',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 EMAIL VERIFICATION (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] EMAIL VERIFICATION (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log(`Verification URL: ${verifyUrl}`);
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Verification email sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] Verification email sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending verification email:', error);
-      throw new Error('Failed to send verification email');
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending verification email:', {
+        email,
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+      });
+      throw new Error(`Failed to send verification email: ${error.message}`);
     }
   }
 
@@ -234,41 +296,43 @@ export class EmailService {
    * Send password reset confirmation email
    */
   async sendPasswordResetConfirmation(email: string, userName?: string) {
-    const htmlContent = this.loadTemplate('password-changed', {
-      userName: userName || 'there',
-      userEmail: email,
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'Password Changed Successfully - TrustTax',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('password-changed', {
+        userName: userName || 'there',
+        userEmail: email,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'Password Changed Successfully - TrustTax',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 PASSWORD CHANGED CONFIRMATION (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] PASSWORD CHANGED CONFIRMATION (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log('Message: Password changed confirmation sent');
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Password changed confirmation sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] Password changed confirmation sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending password changed confirmation:', error);
-      throw new Error('Failed to send password changed confirmation');
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending password changed confirmation:', {
+        email,
+        error: error.message,
+        code: error.code,
+      });
+      throw new Error(`Failed to send password changed confirmation: ${error.message}`);
     }
   }
 
@@ -282,41 +346,44 @@ export class EmailService {
   ) {
     const setupUrl = `${process.env.ADMIN_URL || 'http://localhost:5174'}/reset-password/${setupToken}`;
 
-    const htmlContent = this.loadTemplate('admin-invitation', {
-      userName: userName || email,
-      setupUrl: setupUrl,
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'TrustTax Administration Panel Invitation',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('admin-invitation', {
+        userName: userName || email,
+        setupUrl: setupUrl,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'TrustTax Administration Panel Invitation',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 ADMIN INVITATION (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] ADMIN INVITATION (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log(`Setup URL: ${setupUrl}`);
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Admin invitation sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] Admin invitation sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending admin invitation:', error);
-      throw new Error('Failed to send admin invitation');
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending admin invitation:', {
+        email,
+        error: error.message,
+        code: error.code,
+        command: error.command,
+      });
+      throw new Error(`Failed to send admin invitation: ${error.message}`);
     }
   }
 
@@ -324,41 +391,42 @@ export class EmailService {
    * Send PIN activation confirmation email (Security Alert)
    */
   async sendPinActivatedEmail(email: string, userName?: string) {
-    const htmlContent = this.loadTemplate('pin-activated', {
-      userName: userName || 'there',
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'Security Alert: PIN Activated - TrustTax',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('pin-activated', {
+        userName: userName || 'there',
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'Security Alert: PIN Activated - TrustTax',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      // Log to console in dev mode
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 PIN ACTIVATED ALERT (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] PIN ACTIVATED ALERT (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log('Message: Security PIN activated alert sent');
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ PIN activated alert sent to ${email}`);
-        console.log(`📬 SMTP Response: ${info.response}`);
-        console.log(`🆔 Message ID: ${info.messageId}`);
+        console.log(`✅ [EmailService] PIN activated alert sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending PIN activation email:', error);
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending PIN activation email:', {
+        email,
+        error: error.message,
+        code: error.code,
+      });
       // Don't throw here to avoid blocking the API response if email fails
-      // Just log the error
     }
   }
 
@@ -371,44 +439,49 @@ export class EmailService {
     userName?: string,
     origin?: string,
   ) {
-    // Direct to documents page
     const actionUrl = `${origin || process.env.CLIENT_URL || 'http://localhost:5173'}/documents`;
 
-    const htmlContent = this.loadTemplate('document-uploaded', {
-      userName: userName || 'Customer',
-      documentTitle: documentTitle,
-      itemType: 'document', // For tracking
-      actionUrl: actionUrl,
-      uploadDate: new Date().toLocaleDateString(),
-      year: new Date().getFullYear().toString(),
-    });
-
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
-      to: email,
-      subject: 'New Document Available - TrustTax',
-      html: htmlContent,
-      text: this.htmlToText(htmlContent),
-    };
-
     try {
+      const htmlContent = this.loadTemplate('document-uploaded', {
+        userName: userName || 'Customer',
+        documentTitle: documentTitle,
+        itemType: 'document',
+        actionUrl: actionUrl,
+        uploadDate: new Date().toLocaleDateString(),
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: 'New Document Available - TrustTax',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
       const info = await this.transporter.sendMail(mailOptions);
 
-      if (!process.env.SMTP_USER) {
-        console.log('\n📧 DOCUMENT UPLOADED NOTIFICATION (DEV MODE)');
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] DOCUMENT UPLOADED NOTIFICATION (DEV MODE)');
         console.log('═══════════════════════════════════════════');
         console.log(`To: ${email}`);
         console.log(`Document: ${documentTitle}`);
         console.log(`Action URL: ${actionUrl}`);
         console.log('═══════════════════════════════════════════\n');
       } else {
-        console.log(`✅ Document notification sent to ${email}`);
+        console.log(`✅ [EmailService] Document notification sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
       }
 
       return info;
-    } catch (error) {
-      console.error('❌ Error sending document notification:', error);
+    } catch (error: any) {
+      console.error('❌ [EmailService] Error sending document notification:', {
+        email,
+        documentTitle,
+        error: error.message,
+        code: error.code,
+      });
       // Don't block upload if email fails
     }
   }

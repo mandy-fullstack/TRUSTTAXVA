@@ -534,6 +534,7 @@ export class AuthService {
     });
 
     // Send email
+    let emailSent = false;
     try {
       await this.emailService.sendPasswordResetEmail(
         email,
@@ -541,14 +542,33 @@ export class AuthService {
         user.name || undefined,
         origin,
       );
-    } catch (error) {
-      console.error('Failed to send password reset email:', error);
-      // Don't throw error to user, still return success message
+      emailSent = true;
+      console.log(`✅ [AuthService] Password reset email sent successfully to ${email}`);
+    } catch (error: any) {
+      console.error('❌ [AuthService] Failed to send password reset email:', {
+        email,
+        error: error?.message,
+        code: error?.code,
+        command: error?.command,
+        response: error?.response,
+        stack: error?.stack,
+      });
+      emailSent = false;
+      
+      // Si estamos en producción y el email falla, lanzar error
+      // para que el usuario sepa que hay un problema
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(
+          'Unable to send password reset email. Please try again later or contact support.',
+        );
+      }
+      // En desarrollo, solo loguear pero continuar
     }
 
     return {
       message:
         'If an account exists with this email, you will receive a password reset link.',
+      emailSent, // Incluir flag para debugging (solo en desarrollo)
     };
   }
 
