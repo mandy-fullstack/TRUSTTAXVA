@@ -29,13 +29,13 @@ import Redis from 'ioredis';
       useFactory: () => ({
         throttlers: [
           {
-            ttl: 60000,
-            limit: 10,
+          ttl: 60000,
+          limit: 10,
           },
         ],
         storage: new ThrottlerStorageRedisService(
           new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-            keyPrefix: 'tt:throttle:',
+          keyPrefix: 'tt:throttle:',
             tls:
               (process.env.REDIS_URL || '').startsWith('rediss://') ||
               (process.env.REDIS_URL || '').includes('upstash.io')

@@ -106,19 +106,6 @@ export class ChatService {
         `active_messages:${id}`,
       );
       if (cachedMessages) {
-        // Ensure cached messages have proxy URLs (in case cache was created before fix)
-        const messagesWithProxyUrls = cachedMessages.map((msg: any) => {
-          if (msg.document && msg.document.id) {
-            return {
-              ...msg,
-              document: {
-                ...msg.document,
-                url: `/documents/${msg.document.id}/content`,
-              },
-            };
-          }
-          return msg;
-        });
         // Return conversation with cached messages
         // We still need the conversation metadata
         const metadata = await this.prisma.conversation.findUnique({
@@ -128,7 +115,20 @@ export class ChatService {
             preparer: { select: { id: true, name: true, email: true } },
           },
         });
-        return { ...metadata, messages: messagesWithProxyUrls };
+        // Map cached messages to use proxy URLs for documents
+        const mappedCachedMessages = cachedMessages.map((msg: any) => {
+          if (msg.document && msg.document.id) {
+            return {
+              ...msg,
+              document: {
+                ...msg.document,
+                url: `/documents/${msg.document.id}/content`, // Use proxy URL to avoid CORS
+              },
+            };
+          }
+          return msg;
+        });
+        return { ...metadata, messages: mappedCachedMessages };
       }
     }
 
@@ -145,20 +145,6 @@ export class ChatService {
       },
     });
 
-    // Transform document URLs to use backend proxy instead of direct Firebase Storage URLs
-    const messagesWithProxyUrls = messages.map((msg: any) => {
-      if (msg.document && msg.document.id) {
-        return {
-          ...msg,
-          document: {
-            ...msg.document,
-            url: `/documents/${msg.document.id}/content`, // Use backend proxy URL
-          },
-        };
-      }
-      return msg;
-    });
-
     const conversation = await this.prisma.conversation.findUnique({
       where: { id },
       include: {
@@ -167,10 +153,24 @@ export class ChatService {
       },
     });
 
-    const result = { ...conversation, messages: messagesWithProxyUrls.reverse() }; // Reverse to keep chronological order in UI
+    // Map messages to use proxy URLs for documents instead of direct Firebase Storage URLs
+    const mappedMessages = messages.reverse().map((msg: any) => {
+      if (msg.document && msg.document.id) {
+        return {
+          ...msg,
+          document: {
+            ...msg.document,
+            url: `/documents/${msg.document.id}/content`, // Use proxy URL to avoid CORS
+          },
+        };
+      }
+      return msg;
+    });
 
-    // Cache the first page if it's new (with proxy URLs)
-    if (!cursor && messagesWithProxyUrls.length > 0) {
+    const result = { ...conversation, messages: mappedMessages };
+
+    // Cache the first page if it's new
+    if (!cursor && messages.length > 0) {
       await this.redisService.set(
         `active_messages:${id}`,
         result.messages,
@@ -230,17 +230,6 @@ export class ChatService {
       },
     });
 
-    // Transform document URL to use backend proxy
-    const messageWithProxyUrl = message.document
-      ? {
-          ...message,
-          document: {
-            ...message.document,
-            url: `/documents/${message.document.id}/content`,
-          },
-        }
-      : message;
-
     // Update conversation timestamp
     await this.prisma.conversation.update({
       where: { id: conversationId },
@@ -261,7 +250,15 @@ export class ChatService {
     // Trigger Push Notification
     this.triggerPushNotification(message);
 
-    return messageWithProxyUrl;
+    // Map document URL to use proxy instead of direct Firebase Storage URL
+    if (message.document && message.document.id) {
+      message.document = {
+        ...message.document,
+        url: `/documents/${message.document.id}/content`, // Use proxy URL to avoid CORS
+      };
+    }
+
+    return message;
   }
 
   private async triggerPushNotification(message: any) {

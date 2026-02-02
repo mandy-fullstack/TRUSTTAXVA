@@ -28,7 +28,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import { API_BASE_URL } from "../../config/api";
+import { getDocumentProxyUrl, openDocumentWithAuth } from "../../utils/documentUrl";
 
 interface ConversationViewProps {
   messages: any[];
@@ -243,22 +243,14 @@ export const ConversationView = ({
                               <TouchableOpacity
                                 activeOpacity={0.9}
                                 onPress={() => {
-                                  // If URL is a relative path, make it absolute
-                                  const imageUrl = msg.document.url?.startsWith('/')
-                                    ? `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${msg.document.url}`
-                                    : msg.document.url;
-                                  setPreviewImage(imageUrl);
+                                  const proxyUrl = getDocumentProxyUrl(msg.document.id, msg.document.url);
+                                  setPreviewImage(proxyUrl);
                                 }}
                                 style={styles.imagePreviewWrapper}
                               >
                                 <Image
-                                  source={{
-                                    uri: msg.document.url?.startsWith('/')
-                                      ? `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${msg.document.url}`
-                                      : msg.document.url,
-                                    headers: {
-                                      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-                                    },
+                                  source={{ 
+                                    uri: getDocumentProxyUrl(msg.document.id, msg.document.url)
                                   }}
                                   style={styles.imagePreview}
                                   resizeMode="cover"
@@ -293,9 +285,12 @@ export const ConversationView = ({
                                   </Text>
                                 </View>
                                 <TouchableOpacity
-                                  onPress={() =>
-                                    window.open(msg.document.url, "_blank")
-                                  }
+                                  onPress={() => {
+                                    openDocumentWithAuth(msg.document.id, msg.document.url).catch((err) => {
+                                      console.error('Failed to open document:', err);
+                                      alert('Error al abrir el documento');
+                                    });
+                                  }}
                                 >
                                   <Download
                                     size={18}
@@ -395,7 +390,18 @@ export const ConversationView = ({
                   <TouchableOpacity
                     key={idx}
                     style={styles.sidebarDocItem}
-                    onPress={() => window.open(doc.url, "_blank")}
+                    onPress={() => {
+                      // Extract document ID from URL or use doc.id if available
+                      const docId = doc.id || doc.url?.match(/\/documents\/([^\/]+)/)?.[1];
+                      if (docId) {
+                        openDocumentWithAuth(docId, doc.url).catch((err) => {
+                          console.error('Failed to open document:', err);
+                          alert('Error al abrir el documento');
+                        });
+                      } else {
+                        window.open(doc.url, "_blank");
+                      }
+                    }}
                   >
                     <View style={styles.sidebarDocIcon}>
                       <FileText size={16} color="#64748B" />
