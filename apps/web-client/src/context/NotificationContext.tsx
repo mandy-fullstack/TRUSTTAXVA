@@ -117,7 +117,7 @@ export const NotificationProvider = ({
 
   const playSound = () => {
     try {
-      const audio = new Audio("/assets/notification.mp3");
+      const audio = new Audio("/notification.mp3");
       audio.play().catch(() => {});
     } catch (e) {
       // ignore

@@ -1,0 +1,17 @@
+[
+  {
+    "origin": [
+      "https://trusttaxllc.com",
+      "https://www.trusttaxllc.com",
+      "http://localhost:5175",
+      "http://localhost:5176"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": [
+      "Content-Type",
+      "Access-Control-Allow-Origin",
+      "Content-Disposition"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]
