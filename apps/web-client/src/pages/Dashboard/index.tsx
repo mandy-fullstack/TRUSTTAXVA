@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, ScrollView, StyleSheet, useWindowDimensions } from "react-native";
 import { Layout } from "../../components/Layout";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
@@ -13,6 +13,11 @@ import { DashboardError } from "./DashboardError";
 import { ProfileIncompleteBanner } from "../../components/ProfileIncompleteBanner";
 import { PageMeta } from "../../components/PageMeta";
 import { useTranslation } from "react-i18next";
+import {
+  MOBILE_BREAKPOINT,
+  TABLET_BREAKPOINT,
+  SMALL_MOBILE_BREAKPOINT,
+} from "../../config/navigation";
 
 interface UserWithRelations {
   id?: string;
@@ -39,6 +44,7 @@ import { api } from "../../services/api";
 
 export const DashboardPage = () => {
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
   const {
     user,
     isLoading: authLoading,
@@ -53,6 +59,12 @@ export const DashboardPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Responsive breakpoints
+  const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
+  const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
+  const isDesktop = width >= TABLET_BREAKPOINT;
 
   // Refrescar user al montar para tener profileComplete actualizado (p. ej. tras completar perfil)
   useEffect(() => {
@@ -121,7 +133,12 @@ export const DashboardPage = () => {
       {/* Contenido principal del dashboard */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isSmallMobile && styles.scrollContentSmallMobile,
+          isMobile && !isSmallMobile && styles.scrollContentMobile,
+          isTablet && styles.scrollContentTablet,
+        ]}
       >
         {!userData?.isProfileComplete && (
           <ProfileIncompleteBanner profileComplete={false} />
@@ -131,6 +148,9 @@ export const DashboardPage = () => {
           <View
             style={[
               styles.notificationBanner,
+              isSmallMobile && styles.notificationBannerSmallMobile,
+              isMobile && !isSmallMobile && styles.notificationBannerMobile,
+              isTablet && styles.notificationBannerTablet,
               isIOS &&
                 !isStandalone && {
                   backgroundColor: "#F0F9FF",
@@ -140,7 +160,13 @@ export const DashboardPage = () => {
           >
             {isIOS && !isStandalone ? (
               <View style={{ flex: 1 }}>
-                <Text style={[styles.notificationText, { color: "#0369A1" }]}>
+                <Text
+                  style={[
+                    styles.notificationText,
+                    { color: "#0369A1" },
+                    isSmallMobile && styles.notificationTextSmallMobile,
+                  ]}
+                >
                   {t(
                     "notifications.ios_install_prompt",
                     'To enable notifications on iPhone: Tap the Share button and select "Add to Home Screen"',
@@ -149,7 +175,12 @@ export const DashboardPage = () => {
               </View>
             ) : (
               <>
-                <Text style={styles.notificationText}>
+                <Text
+                  style={[
+                    styles.notificationText,
+                    isSmallMobile && styles.notificationTextSmallMobile,
+                  ]}
+                >
                   Enable notifications to stay updated on your orders.
                 </Text>
                 <Button
@@ -162,7 +193,15 @@ export const DashboardPage = () => {
           </View>
         )}
 
-        <View style={styles.grid}>
+        <View
+          style={[
+            styles.grid,
+            isSmallMobile && styles.gridSmallMobile,
+            isMobile && !isSmallMobile && styles.gridMobile,
+            isTablet && styles.gridTablet,
+            isDesktop && styles.gridDesktop,
+          ]}
+        >
           <DashboardOverview
             totalOrders={orders.length}
             actionRequiredCount={pendingInvoices.length}
@@ -189,11 +228,45 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: 32,
     paddingBottom: 40,
+    paddingHorizontal: 24,
+  },
+  scrollContentSmallMobile: {
+    paddingTop: 20,
+    paddingBottom: 32,
+    paddingHorizontal: 16,
+  },
+  scrollContentMobile: {
+    paddingTop: 24,
+    paddingBottom: 36,
+    paddingHorizontal: 20,
+  },
+  scrollContentTablet: {
+    paddingTop: 28,
+    paddingBottom: 40,
+    paddingHorizontal: 32,
   },
   grid: {
     flexDirection: "row",
     gap: 32,
     flexWrap: "wrap",
+  },
+  gridSmallMobile: {
+    flexDirection: "column",
+    gap: 24,
+  },
+  gridMobile: {
+    flexDirection: "column",
+    gap: 24,
+  },
+  gridTablet: {
+    flexDirection: "row",
+    gap: 24,
+    flexWrap: "wrap",
+  },
+  gridDesktop: {
+    flexDirection: "row",
+    gap: 32,
+    flexWrap: "nowrap",
   },
   notificationBanner: {
     backgroundColor: "#EFF6FF",
@@ -205,8 +278,27 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#2563EB",
   },
+  notificationBannerSmallMobile: {
+    padding: 12,
+    marginBottom: 20,
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  notificationBannerMobile: {
+    padding: 14,
+    marginBottom: 22,
+  },
+  notificationBannerTablet: {
+    padding: 18,
+    marginBottom: 24,
+  },
   notificationText: {
     color: "#1E3A8A",
     fontWeight: "500",
+    fontSize: 14,
+  },
+  notificationTextSmallMobile: {
+    fontSize: 13,
   },
 });

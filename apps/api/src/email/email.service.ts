@@ -174,7 +174,7 @@ export class EmailService {
         console.log(`✅ [EmailService] Password reset email sent to ${email}`);
         console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
         console.log(`📬 [EmailService] Response: ${info.response || 'N/A'}`);
-        
+
         // Verificar que realmente se envió
         if (!info.messageId) {
           console.warn('⚠️ [EmailService] Email sent but no messageId received');

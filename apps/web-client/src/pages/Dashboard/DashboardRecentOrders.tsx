@@ -1,9 +1,14 @@
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, useWindowDimensions } from "react-native";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
 import { CheckCircle, LayoutDashboard } from "lucide-react";
 import { H4, Card, Text, Button, Badge } from "@trusttax/ui";
 import { useTranslation } from "react-i18next";
+import {
+  MOBILE_BREAKPOINT,
+  TABLET_BREAKPOINT,
+  SMALL_MOBILE_BREAKPOINT,
+} from "../../config/navigation";
 
 interface Order {
   id: string;
@@ -21,7 +26,13 @@ export const DashboardRecentOrders = ({
   orders,
 }: DashboardRecentOrdersProps) => {
   const { t } = useTranslation();
+  const { width } = useWindowDimensions();
   const navigate = useNavigate();
+
+  // Responsive breakpoints
+  const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
+  const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
 
   const handleDelete = async (orderId: string, e: any) => {
     e.stopPropagation();
@@ -46,8 +57,21 @@ export const DashboardRecentOrders = ({
   };
 
   return (
-    <View style={styles.wrapper}>
-      <H4 style={styles.gridTitle}>
+    <View
+      style={[
+        styles.wrapper,
+        isSmallMobile && styles.wrapperSmallMobile,
+        isMobile && !isSmallMobile && styles.wrapperMobile,
+        isTablet && styles.wrapperTablet,
+      ]}
+    >
+      <H4
+        style={[
+          styles.gridTitle,
+          isSmallMobile && styles.gridTitleSmallMobile,
+          isTablet && styles.gridTitleTablet,
+        ]}
+      >
         {t("dashboard.recent_orders", "Recent Orders")}
       </H4>
       <Card padding="none" elevated style={styles.card}>
@@ -82,23 +106,34 @@ export const DashboardRecentOrders = ({
                 </View>
               </View>
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+                style={[
+                  { flexDirection: "row", alignItems: "center", gap: 12 },
+                  isSmallMobile && { flexDirection: "column", alignItems: "flex-start", gap: 8 },
+                  isMobile && !isSmallMobile && { gap: 10 },
+                  isTablet && { gap: 10 },
+                ]}
               >
                 <Badge
                   label={order.status}
                   variant={order.status === "DRAFT" ? "warning" : "primary"}
                 />
                 {order.status === "DRAFT" && (
-                  <>
+                  <View
+                    style={[
+                      { flexDirection: "row", gap: 8 },
+                      isSmallMobile && { width: "100%", flexDirection: "column" },
+                    ]}
+                  >
                     <Button
                       title={t("dashboard.resume", "Resume")}
                       variant="outline"
                       style={{
-                        height: 32,
+                        height: isSmallMobile ? 36 : 32,
                         paddingVertical: 0,
-                        paddingHorizontal: 12,
+                        paddingHorizontal: isSmallMobile ? 16 : 12,
+                        ...(isSmallMobile && { width: "100%" }),
                       }}
-                      textStyle={{ fontSize: 12 }}
+                      textStyle={{ fontSize: isSmallMobile ? 13 : 12 }}
                       onPress={(e: any) => {
                         e.stopPropagation();
                         if (order.service?.id) {
@@ -110,14 +145,15 @@ export const DashboardRecentOrders = ({
                       title={t("common.delete", "Delete")}
                       variant="ghost"
                       style={{
-                        height: 32,
+                        height: isSmallMobile ? 36 : 32,
                         paddingVertical: 0,
-                        paddingHorizontal: 8,
+                        paddingHorizontal: isSmallMobile ? 16 : 8,
+                        ...(isSmallMobile && { width: "100%" }),
                       }}
-                      textStyle={{ fontSize: 12, color: "#EF4444" }}
+                      textStyle={{ fontSize: isSmallMobile ? 13 : 12, color: "#EF4444" }}
                       onPress={(e: any) => handleDelete(order.id, e)}
                     />
-                  </>
+                  </View>
                 )}
               </View>
             </TouchableOpacity>
@@ -146,7 +182,12 @@ export const DashboardRecentOrders = ({
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, minWidth: 340, gap: 24 },
+  wrapperSmallMobile: { minWidth: "100%", gap: 20 },
+  wrapperMobile: { minWidth: "100%", gap: 22 },
+  wrapperTablet: { minWidth: 300, gap: 24 },
   gridTitle: { marginBottom: 16 },
+  gridTitleSmallMobile: { marginBottom: 12, fontSize: 18 },
+  gridTitleTablet: { marginBottom: 14, fontSize: 19 },
   card: { overflow: "hidden" },
   orderItem: {
     flexDirection: "row",
