@@ -6,717 +6,744 @@ const BASE_URL = API_BASE_URL;
 
 // Custom error classes
 export class AuthenticationError extends Error {
-  statusCode: number;
-  constructor(message: string, statusCode: number = 401) {
-    super(message);
-    this.name = "AuthenticationError";
-    this.statusCode = statusCode;
-  }
+    statusCode: number;
+    constructor(message: string, statusCode: number = 401) {
+        super(message);
+        this.name = "AuthenticationError";
+        this.statusCode = statusCode;
+    }
 }
 
 export class NotFoundError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NotFoundError";
-  }
+    constructor(message: string) {
+        super(message);
+        this.name = "NotFoundError";
+    }
 }
 
 export class NetworkError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "NetworkError";
-  }
+    constructor(message: string) {
+        super(message);
+        this.name = "NetworkError";
+    }
 }
 
 class ApiService {
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {},
-  ): Promise<T> {
-    const isFormData = options.body instanceof FormData;
-    const headers: Record<string, string> = {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(typeof options.headers === "object" &&
-      !(options.headers instanceof Headers)
-        ? (options.headers as Record<string, string>)
-        : {}),
-    };
+    private async request<T>(
+        endpoint: string,
+        options: RequestInit = {},
+    ): Promise<T> {
+        const isFormData = options.body instanceof FormData;
+        const headers: Record<string, string> = {
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
+            ...(typeof options.headers === "object" &&
+                !(options.headers instanceof Headers)
+                ? (options.headers as Record<string, string>)
+                : {}),
+        };
 
-    const url = `${BASE_URL}${endpoint}`;
-    
-    // Log en desarrollo para debugging
-    if (import.meta.env.DEV) {
-      console.log(`[API Request] ${options.method || "GET"} ${url}`);
-      console.log(`[API Request] BASE_URL: ${BASE_URL}`);
-    }
+        const url = `${BASE_URL}${endpoint}`;
 
-    try {
-      const response = await fetch(url, {
-        ...options,
-        headers,
-      });
-
-      if (!response.ok) {
-        const error = await response
-          .json()
-          .catch(() => ({ message: "A technical error occurred" }));
-        const message =
-          (error &&
-            typeof error === "object" &&
-            "message" in error &&
-            error.message) ||
-          "Request failed";
-
-        if (response.status === 401) {
-          throw new AuthenticationError(String(message), 401);
-        }
-        if (response.status === 404) {
-          throw new NotFoundError(String(message));
-        }
-        throw new Error(String(message));
-      }
-
-      return response.json();
-    } catch (error) {
-      if (
-        error instanceof AuthenticationError ||
-        error instanceof NotFoundError ||
-        error instanceof NetworkError
-      ) {
-        throw error;
-      }
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        const errorMessage = `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`;
+        // Log en desarrollo para debugging
         if (import.meta.env.DEV) {
-          console.error("[API Error] Network Error:", errorMessage);
-          console.error("[API Error] BASE_URL usado:", BASE_URL);
-          console.error("[API Error] Endpoint completo:", url);
+            console.log(`[API Request] ${options.method || "GET"} ${url}`);
+            console.log(`[API Request] BASE_URL: ${BASE_URL}`);
         }
-        throw new NetworkError(errorMessage);
-      }
-      if (import.meta.env.DEV) {
-        console.error("[API Error] Unexpected error:", error);
-      }
-      throw error;
-    }
-  }
 
-  // --- Auth ---
-  async login(email: string, password: string): Promise<any> {
-    return this.request<any>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-  }
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers,
+            });
 
-  async register(data: any): Promise<any> {
-    return this.request<any>("/auth/register", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  }
+            if (!response.ok) {
+                let error: any;
+                try {
+                    error = await response.json();
+                } catch {
+                    // Si no se puede parsear JSON, usar mensaje por defecto
+                    error = { message: `Server error: ${response.status} ${response.statusText}` };
+                }
 
-  async requestPasswordReset(email: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>("/auth/forgot-password", {
-      method: "POST",
-      body: JSON.stringify({ email }),
-    });
-  }
+                const message =
+                    (error &&
+                        typeof error === "object" &&
+                        "message" in error &&
+                        error.message) ||
+                    `Request failed with status ${response.status}`;
 
-  async verifyResetToken(
-    token: string,
-  ): Promise<{ valid: boolean; email: string }> {
-    return this.request<{ valid: boolean; email: string }>(
-      `/auth/verify-reset-token/${token}`,
-    );
-  }
+                if (response.status === 401) {
+                    throw new AuthenticationError(String(message), 401);
+                }
+                if (response.status === 404) {
+                    throw new NotFoundError(String(message));
+                }
+                // Para errores 500, usar NetworkError para mejor manejo
+                if (response.status >= 500) {
+                    throw new NetworkError(
+                        `Server error: ${message}. Please try again later or contact support.`
+                    );
+                }
+                // Para otros errores, lanzar Error genérico
+                throw new Error(String(message));
+            }
 
-  async resetPassword(
-    token: string,
-    password: string,
-  ): Promise<{ message: string }> {
-    return this.request<{ message: string }>("/auth/reset-password", {
-      method: "POST",
-      body: JSON.stringify({ token, password }),
-    });
-  }
+            return response.json();
+        } catch (error) {
+            if (
+                error instanceof AuthenticationError ||
+                error instanceof NotFoundError ||
+                error instanceof NetworkError
+            ) {
+                throw error;
+            }
+            if (error instanceof TypeError && error.message.includes("fetch")) {
+                const errorMessage = `Unable to connect to server at ${BASE_URL}. Please check your connection and ensure the backend is running.`;
+                if (import.meta.env.DEV) {
+                    console.error("[API Error] Network Error:", errorMessage);
+                    console.error("[API Error] BASE_URL usado:", BASE_URL);
+                    console.error("[API Error] Endpoint completo:", url);
+                }
+                throw new NetworkError(errorMessage);
+            }
+            // Si es un Error genérico con mensaje "An unexpected error occurred", 
+            // convertirlo a NetworkError para mejor manejo
+            if (
+                error instanceof Error &&
+                error.message === "An unexpected error occurred"
+            ) {
+                const networkError = new NetworkError(
+                    "Server error occurred. Please try again later or contact support."
+                );
+                if (import.meta.env.DEV) {
+                    console.error("[API Error] Converted generic error to NetworkError:", error);
+                }
+                throw networkError;
+            }
 
-  async verifyEmail(
-    token: string,
-  ): Promise<{ access_token: string; user: any; message: string }> {
-    return this.request<{ access_token: string; user: any; message: string }>(
-      `/auth/verify-email/${token}`,
-    );
-  }
-
-  // --- Services ---
-  async getServices(): Promise<Service[]> {
-    return this.request<Service[]>("/services");
-  }
-
-  async getServiceById(id: string): Promise<Service> {
-    return this.request<Service>(`/services/${id}`);
-  }
-
-  async getServiceReviews(id: string): Promise<any[]> {
-    return this.request<any[]>(`/services/${id}/reviews`);
-  }
-
-  async getTopReviews(): Promise<any[]> {
-    return this.request<any[]>("/services/top-reviews");
-  }
-
-  async getMe(): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("No authentication token found");
-    return this.request<any>("/auth/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async getCompanyProfile(): Promise<any> {
-    return this.request<any>("/company/public");
-  }
-
-  // --- Orders ---
-  async createOrder(
-    serviceId: string,
-    metadata: any = {},
-    status?: string,
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>("/orders", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ serviceId, metadata, status }),
-    });
-  }
-
-  async updateOrder(
-    id: string,
-    data: { status?: string; formData?: any; docData?: any },
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>(`/orders/${id}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-  }
-
-  async deleteOrder(id: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>(`/orders/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async getOrderById(
-    id: string,
-    decryptForReview: boolean = false,
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    const url = decryptForReview
-      ? `/orders/${id}?decryptForReview=true`
-      : `/orders/${id}`;
-
-    return this.request<any>(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async getOrders(): Promise<any[]> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any[]>("/orders", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async respondToApproval(
-    approvalId: string,
-    status: "APPROVED" | "REJECTED",
-    clientNote?: string,
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>(`/orders/approvals/${approvalId}`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status, clientNote }),
-    });
-  }
-
-  // --- Invoices ---
-  async getInvoices(): Promise<any[]> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any[]>("/invoices", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async getInvoiceById(id: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>(`/invoices/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  // --- Profile ---
-  async updateProfile(data: {
-    firstName?: string;
-    middleName?: string;
-    lastName?: string;
-    dateOfBirth?: string;
-    countryOfBirth?: string;
-    primaryLanguage?: string;
-    taxIdType?: "SSN" | "ITIN";
-    ssn?: string;
-    driverLicenseNumber?: string;
-    driverLicenseStateCode?: string;
-    driverLicenseStateName?: string;
-    driverLicenseIssueDate?: string;
-    driverLicenseExpiration?: string;
-    passportNumber?: string;
-    passportCountryOfIssue?: string;
-    passportIssueDate?: string;
-    passportExpiration?: string;
-    acceptTerms?: boolean;
-    termsVersion?: string;
-  }): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    return this.request<any>("/auth/profile", {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(data),
-    });
-  }
-
-  async updateFCMToken(token: string | null): Promise<any> {
-    if (token) {
-      localStorage.setItem("fcm_token_pending", token);
+            if (import.meta.env.DEV) {
+                console.error("[API Error] Unexpected error:", error);
+            }
+            throw error;
+        }
     }
 
-    const authToken = getToken();
-    if (!authToken) return;
-
-    try {
-      const res = await this.request<any>("/auth/fcm-token", {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ token }),
-      });
-      if (token) localStorage.removeItem("fcm_token_pending");
-      return res;
-    } catch (e) {
-      console.warn("Failed to sync FCM token", e);
+    // --- Auth ---
+    async login(email: string, password: string): Promise<any> {
+        return this.request<any>("/auth/login", {
+            method: "POST",
+            body: JSON.stringify({ email, password }),
+        });
     }
-  }
 
-  async uploadProfileDocument(
-    file: File,
-    docType: "DL" | "PASSPORT",
-  ): Promise<{ message: string; fileName: string }> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
+    async register(data: any): Promise<any> {
+        return this.request<any>("/auth/register", {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("docType", docType);
+    async requestPasswordReset(email: string): Promise<{ message: string }> {
+        return this.request<{ message: string }>("/auth/forgot-password", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+        });
+    }
 
-    return this.request<{ message: string; fileName: string }>(
-      "/auth/profile/upload-document",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      },
-    );
-  }
+    async verifyResetToken(
+        token: string,
+    ): Promise<{ valid: boolean; email: string }> {
+        return this.request<{ valid: boolean; email: string }>(
+            `/auth/verify-reset-token/${token}`,
+        );
+    }
 
-  async getDecryptedSSN(): Promise<string | null> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    async resetPassword(
+        token: string,
+        password: string,
+    ): Promise<{ message: string }> {
+        return this.request<{ message: string }>("/auth/reset-password", {
+            method: "POST",
+            body: JSON.stringify({ token, password }),
+        });
+    }
 
-    const response = await this.request<{ ssn: string | null }>(
-      "/auth/profile/decrypt-ssn",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-    return response.ssn;
-  }
+    async verifyEmail(
+        token: string,
+    ): Promise<{ access_token: string; user: any; message: string }> {
+        return this.request<{ access_token: string; user: any; message: string }>(
+            `/auth/verify-email/${token}`,
+        );
+    }
 
-  async getDecryptedDriverLicense(): Promise<{
-    number: string;
-    stateCode: string;
-    stateName: string;
-    issueDate: string;
-    expirationDate: string;
-    photoKey?: string;
-  } | null> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    // --- Services ---
+    async getServices(): Promise<Service[]> {
+        return this.request<Service[]>("/services");
+    }
 
-    const response = await this.request<{
-      driverLicense: {
+    async getServiceById(id: string): Promise<Service> {
+        return this.request<Service>(`/services/${id}`);
+    }
+
+    async getServiceReviews(id: string): Promise<any[]> {
+        return this.request<any[]>(`/services/${id}/reviews`);
+    }
+
+    async getTopReviews(): Promise<any[]> {
+        return this.request<any[]>("/services/top-reviews");
+    }
+
+    async getMe(): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("No authentication token found");
+        return this.request<any>("/auth/me", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getCompanyProfile(): Promise<any> {
+        return this.request<any>("/company/public");
+    }
+
+    // --- Orders ---
+    async createOrder(
+        serviceId: string,
+        metadata: any = {},
+        status?: string,
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>("/orders", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ serviceId, metadata, status }),
+        });
+    }
+
+    async updateOrder(
+        id: string,
+        data: { status?: string; formData?: any; docData?: any },
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/orders/${id}`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        });
+    }
+
+    async deleteOrder(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/orders/${id}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getOrderById(
+        id: string,
+        decryptForReview: boolean = false,
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        const url = decryptForReview
+            ? `/orders/${id}?decryptForReview=true`
+            : `/orders/${id}`;
+
+        return this.request<any>(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getOrders(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any[]>("/orders", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async respondToApproval(
+        approvalId: string,
+        status: "APPROVED" | "REJECTED",
+        clientNote?: string,
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/orders/approvals/${approvalId}`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status, clientNote }),
+        });
+    }
+
+    // --- Invoices ---
+    async getInvoices(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any[]>("/invoices", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    async getInvoiceById(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/invoices/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
+
+    // --- Profile ---
+    async updateProfile(data: {
+        firstName?: string;
+        middleName?: string;
+        lastName?: string;
+        dateOfBirth?: string;
+        countryOfBirth?: string;
+        primaryLanguage?: string;
+        taxIdType?: "SSN" | "ITIN";
+        ssn?: string;
+        driverLicenseNumber?: string;
+        driverLicenseStateCode?: string;
+        driverLicenseStateName?: string;
+        driverLicenseIssueDate?: string;
+        driverLicenseExpiration?: string;
+        passportNumber?: string;
+        passportCountryOfIssue?: string;
+        passportIssueDate?: string;
+        passportExpiration?: string;
+        acceptTerms?: boolean;
+        termsVersion?: string;
+    }): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>("/auth/profile", {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data),
+        });
+    }
+
+    async updateFCMToken(token: string | null): Promise<any> {
+        if (token) {
+            localStorage.setItem("fcm_token_pending", token);
+        }
+
+        const authToken = getToken();
+        if (!authToken) return;
+
+        try {
+            const res = await this.request<any>("/auth/fcm-token", {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${authToken}`,
+                },
+                body: JSON.stringify({ token }),
+            });
+            if (token) localStorage.removeItem("fcm_token_pending");
+            return res;
+        } catch (e) {
+            console.warn("Failed to sync FCM token", e);
+        }
+    }
+
+    async uploadProfileDocument(
+        file: File,
+        docType: "DL" | "PASSPORT",
+    ): Promise<{ message: string; fileName: string }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("docType", docType);
+
+        return this.request<{ message: string; fileName: string }>(
+            "/auth/profile/upload-document",
+            {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            },
+        );
+    }
+
+    async getDecryptedSSN(): Promise<string | null> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        const response = await this.request<{ ssn: string | null }>(
+            "/auth/profile/decrypt-ssn",
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            },
+        );
+        return response.ssn;
+    }
+
+    async getDecryptedDriverLicense(): Promise<{
         number: string;
         stateCode: string;
         stateName: string;
         issueDate: string;
         expirationDate: string;
         photoKey?: string;
-      } | null;
-    }>("/auth/profile/decrypt-driver-license", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.driverLicense;
-  }
+    } | null> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
 
-  async getDecryptedPassport(): Promise<{
-    number: string;
-    countryOfIssue: string;
-    issueDate: string;
-    expirationDate: string;
-    photoKey?: string;
-  } | null> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+        const response = await this.request<{
+            driverLicense: {
+                number: string;
+                stateCode: string;
+                stateName: string;
+                issueDate: string;
+                expirationDate: string;
+                photoKey?: string;
+            } | null;
+        }>("/auth/profile/decrypt-driver-license", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.driverLicense;
+    }
 
-    const response = await this.request<{
-      passport: {
+    async getDecryptedPassport(): Promise<{
         number: string;
         countryOfIssue: string;
         issueDate: string;
         expirationDate: string;
         photoKey?: string;
-      } | null;
-    }>("/auth/profile/decrypt-passport", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.passport;
-  }
+    } | null> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
 
-  // --- Admin ---
-  async adminGetOrders(): Promise<any[]> {
-    const token = getToken();
-    return this.request<any[]>("/admin/orders", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async adminGetOrderById(id: string): Promise<any> {
-    const token = getToken();
-    return this.request<any>(`/admin/orders/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async adminUpdateOrderStatus(
-    id: string,
-    status: string,
-    notes?: string,
-  ): Promise<any> {
-    const token = getToken();
-    return this.request<any>(`/admin/orders/${id}/status`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status, notes }),
-    });
-  }
-
-  async adminAddOrderTimelineEntry(
-    id: string,
-    title: string,
-    description: string,
-  ): Promise<any> {
-    const token = getToken();
-    return this.request<any>(`/admin/orders/${id}/timeline`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ title, description }),
-    });
-  }
-
-  async adminCreateOrderApproval(
-    id: string,
-    type: string,
-    title: string,
-    description?: string,
-  ): Promise<any> {
-    const token = getToken();
-    return this.request<any>(`/admin/orders/${id}/approvals`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ type, title, description }),
-    });
-  }
-
-  // --- Chat ---
-  async getConversations(): Promise<any[]> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-    return this.request<any[]>("/chat/conversations", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  async getConversation(id: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-    return this.request<any>(`/chat/conversations/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  async createConversation(subject?: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-    return this.request<any>("/chat/conversations", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ subject }),
-    });
-  }
-
-  async sendMessage(
-    conversationId: string,
-    content: string,
-    documentId?: string,
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-    return this.request<any>(`/chat/conversations/${conversationId}/messages`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ content, documentId }),
-    });
-  }
-
-  async getDocuments(filters?: {
-    type?: string;
-    limit?: number;
-    offset?: number;
-  }): Promise<any[]> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-
-    const params = new URLSearchParams();
-    if (filters?.type) params.append("type", filters.type);
-    if (filters?.limit) params.append("limit", filters.limit.toString());
-    if (filters?.offset) params.append("offset", filters.offset.toString());
-
-    return this.request<any[]>(`/documents?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
-
-  async downloadDocument(id: string): Promise<Blob> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-
-    const response = await fetch(`${BASE_URL}/documents/${id}/content`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error("Download failed");
+        const response = await this.request<{
+            passport: {
+                number: string;
+                countryOfIssue: string;
+                issueDate: string;
+                expirationDate: string;
+                photoKey?: string;
+            } | null;
+        }>("/auth/profile/decrypt-passport", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.passport;
     }
 
-    return response.blob();
-  }
+    // --- Admin ---
+    async adminGetOrders(): Promise<any[]> {
+        const token = getToken();
+        return this.request<any[]>("/admin/orders", {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
 
-  async uploadDocument(
-    file: File,
-    title?: string,
-    type: string = "OTHER",
-  ): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    async adminGetOrderById(id: string): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    if (title) formData.append("title", title);
-    formData.append("type", type);
+    async adminUpdateOrderStatus(
+        id: string,
+        status: string,
+        notes?: string,
+    ): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/status`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status, notes }),
+        });
+    }
 
-    return this.request<any>("/documents/upload", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-  }
+    async adminAddOrderTimelineEntry(
+        id: string,
+        title: string,
+        description: string,
+    ): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/timeline`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title, description }),
+        });
+    }
 
-  async analyzeW2(documentId: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    async adminCreateOrderApproval(
+        id: string,
+        type: string,
+        title: string,
+        description?: string,
+    ): Promise<any> {
+        const token = getToken();
+        return this.request<any>(`/admin/orders/${id}/approvals`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ type, title, description }),
+        });
+    }
 
-    return this.request<any>(`/documents/analyze-w2/${documentId}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+    // --- Chat ---
+    async getConversations(): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+        return this.request<any[]>("/chat/conversations", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
 
-  async deleteDocument(id: string): Promise<void> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    async getConversation(id: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+        return this.request<any>(`/chat/conversations/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
 
-    return this.request<void>(`/documents/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+    async createConversation(subject?: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+        return this.request<any>("/chat/conversations", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ subject }),
+        });
+    }
 
-  async renameDocument(id: string, newTitle: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
+    async sendMessage(
+        conversationId: string,
+        content: string,
+        documentId?: string,
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+        return this.request<any>(`/chat/conversations/${conversationId}/messages`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ content, documentId }),
+        });
+    }
 
-    return this.request<any>(`/documents/${id}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ title: newTitle }),
-    });
-  }
+    async getDocuments(filters?: {
+        type?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<any[]> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
 
-  async deleteConversation(id: string): Promise<void> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in to continue");
-    return this.request<void>(`/chat/conversations/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+        const params = new URLSearchParams();
+        if (filters?.type) params.append("type", filters.type);
+        if (filters?.limit) params.append("limit", filters.limit.toString());
+        if (filters?.offset) params.append("offset", filters.offset.toString());
 
-  // --- FAQs ---
-  async getFAQs(): Promise<any[]> {
-    return this.request<any[]>("/faq");
-  }
+        return this.request<any[]>(`/documents?${params.toString()}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
 
-  // --- Secure PIN ---
-  async getPinStatus(): Promise<{ hasPin: boolean }> {
-    const token = getToken();
-    if (!token) return { hasPin: false }; // Safe fallback
-    return this.request<{ hasPin: boolean }>("/auth/pin/status", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+    async downloadDocument(id: string): Promise<Blob> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
 
-  async setupPin(pin: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<any>("/auth/pin/setup", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ pin }),
-    });
-  }
+        const response = await fetch(`${BASE_URL}/documents/${id}/content`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
 
-  async verifyPin(pin: string): Promise<{ valid: boolean }> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<{ valid: boolean }>("/auth/pin/verify", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ pin }),
-    });
-  }
+        if (!response.ok) {
+            throw new Error("Download failed");
+        }
 
-  async changePin(oldPin: string, newPin: string): Promise<any> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<any>("/auth/pin/change", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ oldPin, newPin }),
-    });
-  }
+        return response.blob();
+    }
 
-  // --- SMS ---
-  async optInSMS(
-    phoneNumber: string,
-  ): Promise<{ success: boolean; message: string }> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<{ success: boolean; message: string }>("/sms/opt-in", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ phoneNumber }),
-    });
-  }
+    async uploadDocument(
+        file: File,
+        title?: string,
+        type: string = "OTHER",
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
 
-  async optOutSMS(): Promise<{ success: boolean; message: string }> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<{ success: boolean; message: string }>("/sms/opt-out", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+        const formData = new FormData();
+        formData.append("file", file);
+        if (title) formData.append("title", title);
+        formData.append("type", type);
 
-  async getSMSConsentStatus(): Promise<{ hasConsent: boolean }> {
-    const token = getToken();
-    if (!token) throw new AuthenticationError("Please sign in");
-    return this.request<{ hasConsent: boolean }>("/sms/consent-status", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+        return this.request<any>("/documents/upload", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: formData,
+        });
+    }
 
-  // Add future modules here (Orders, Appointments, etc.)
+    async analyzeW2(documentId: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/documents/analyze-w2/${documentId}`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    async deleteDocument(id: string): Promise<void> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<void>(`/documents/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    async renameDocument(id: string, newTitle: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/documents/${id}`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ title: newTitle }),
+        });
+    }
+
+    async deleteConversation(id: string): Promise<void> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+        return this.request<void>(`/chat/conversations/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    // --- FAQs ---
+    async getFAQs(): Promise<any[]> {
+        return this.request<any[]>("/faq");
+    }
+
+    // --- Secure PIN ---
+    async getPinStatus(): Promise<{ hasPin: boolean }> {
+        const token = getToken();
+        if (!token) return { hasPin: false }; // Safe fallback
+        return this.request<{ hasPin: boolean }>("/auth/pin/status", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    async setupPin(pin: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<any>("/auth/pin/setup", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin }),
+        });
+    }
+
+    async verifyPin(pin: string): Promise<{ valid: boolean }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<{ valid: boolean }>("/auth/pin/verify", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ pin }),
+        });
+    }
+
+    async changePin(oldPin: string, newPin: string): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<any>("/auth/pin/change", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ oldPin, newPin }),
+        });
+    }
+
+    // --- SMS ---
+    async optInSMS(
+        phoneNumber: string,
+    ): Promise<{ success: boolean; message: string }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<{ success: boolean; message: string }>("/sms/opt-in", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ phoneNumber }),
+        });
+    }
+
+    async optOutSMS(): Promise<{ success: boolean; message: string }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<{ success: boolean; message: string }>("/sms/opt-out", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    async getSMSConsentStatus(): Promise<{ hasConsent: boolean }> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in");
+        return this.request<{ hasConsent: boolean }>("/sms/consent-status", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+    }
+
+    // Add future modules here (Orders, Appointments, etc.)
 }
 
 export const api = new ApiService();

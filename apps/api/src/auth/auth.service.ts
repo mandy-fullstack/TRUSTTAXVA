@@ -103,11 +103,21 @@ export class AuthService {
   }
 
   async validateUser(email: string, pass: string): Promise<any> {
+    console.log('[AuthService] validateUser called:', { email, hasPassword: !!pass });
+    
     try {
+      console.log('[AuthService] Querying database for user...');
       const user = await this.prisma.user.findUnique({ where: { email } });
+      
+      console.log('[AuthService] Database query result:', {
+        found: !!user,
+        hasPassword: !!user?.password,
+        userId: user?.id,
+      });
       
       if (!user) {
         // User not found - return null (will be handled as invalid credentials)
+        console.log('[AuthService] User not found in database');
         return null;
       }
 
@@ -118,21 +128,27 @@ export class AuthService {
       }
 
       // Compare password
+      console.log('[AuthService] Comparing password...');
       const isPasswordValid = await bcrypt.compare(pass, user.password);
+      console.log('[AuthService] Password comparison result:', isPasswordValid);
       
       if (!isPasswordValid) {
         // Invalid password - return null (will be handled as invalid credentials)
+        console.log('[AuthService] Password does not match');
         return null;
       }
 
+      console.log('[AuthService] User validated successfully');
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;
     } catch (error) {
       console.error('[AuthService] validateUser error:', {
         email,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        errorName: error?.constructor?.name,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorKeys: error ? Object.keys(error) : [],
       });
       // Re-throw to be caught by error interceptor
       throw error;

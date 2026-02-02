@@ -39,18 +39,39 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { limit: 10, ttl: 900000 } }) // 10 requests per 15 minutes
   async login(@Body() dto: LoginDto) {
+    console.log('[AuthController] Login attempt started:', {
+      email: dto.email,
+      hasPassword: !!dto.password,
+      passwordLength: dto.password?.length || 0,
+    });
+    
     try {
+      console.log('[AuthController] Calling validateUser...');
       const user = await this.authService.validateUser(dto.email, dto.password);
+      
+      console.log('[AuthController] validateUser result:', {
+        hasUser: !!user,
+        hasEmail: !!user?.email,
+        hasId: !!user?.id,
+      });
+      
       if (!user) {
+        console.log('[AuthController] User validation failed - invalid credentials');
         throw new UnauthorizedException('Invalid email or password');
       }
-      return this.authService.login(user); // Returns access_token
+      
+      console.log('[AuthController] Calling login service...');
+      const result = await this.authService.login(user);
+      console.log('[AuthController] Login successful for:', dto.email);
+      return result; // Returns access_token
     } catch (error) {
       // Log error for debugging
       console.error('[AuthController] Login error:', {
         email: dto.email,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+        errorName: error?.constructor?.name,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+        errorKeys: error ? Object.keys(error) : [],
       });
       // Re-throw to let error interceptor handle it
       throw error;

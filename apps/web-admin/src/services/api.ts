@@ -64,15 +64,28 @@ async function request<T>(
   try {
     const res = await fetch(url, { ...init, headers });
     if (!res.ok) {
-      const err = await res
-        .json()
-        .catch(() => ({ message: "A technical error occurred" }));
+      let err: any;
+      try {
+        err = await res.json();
+      } catch {
+        err = { message: `Server error: ${res.status} ${res.statusText}` };
+      }
+      
       const msg =
         (err && typeof err === "object" && "message" in err && err.message) ||
-        "Request failed";
+        `Request failed with status ${res.status}`;
+        
       if (res.status === 401) throw new AuthenticationError(String(msg), 401);
       if (res.status === 403) throw new ForbiddenError(String(msg));
       if (res.status === 404) throw new NotFoundError(String(msg));
+      
+      // Para errores 500, usar NetworkError
+      if (res.status >= 500) {
+        throw new NetworkError(
+          `Server error: ${msg}. Please try again later or contact support.`
+        );
+      }
+      
       throw new Error(String(msg));
     }
     return res.json();
@@ -93,6 +106,22 @@ async function request<T>(
       }
       throw new NetworkError(errorMessage);
     }
+    
+    // Si es un Error genérico con mensaje "An unexpected error occurred", 
+    // convertirlo a NetworkError para mejor manejo
+    if (
+      e instanceof Error &&
+      e.message === "An unexpected error occurred"
+    ) {
+      const networkError = new NetworkError(
+        "Server error occurred. Please try again later or contact support."
+      );
+      if (import.meta.env.DEV) {
+        console.error("[API Error] Converted generic error to NetworkError:", e);
+      }
+      throw networkError;
+    }
+    
     if (import.meta.env.DEV) {
       console.error("[API Error] Unexpected error:", e);
     }
