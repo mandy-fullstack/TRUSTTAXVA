@@ -86,76 +86,79 @@ export const DashboardRecentOrders = ({
                 i === orders.length - 1 && styles.noBorder,
               ]}
             >
-              <View style={styles.orderInfo}>
-                <View style={styles.orderIconWrapper}>
-                  <LayoutDashboard size={18} color="#2563EB" />
-                </View>
-                <View>
-                  <View style={styles.orderTitleRow}>
+              <View style={styles.orderHeader}>
+                <View style={styles.orderInfo}>
+                  <View style={styles.orderIconWrapper}>
+                    <LayoutDashboard size={18} color="#2563EB" />
+                  </View>
+                  <View style={styles.orderDetails}>
                     <Text style={styles.orderText}>
                       {order.service?.name ||
                         t("dashboard.default_service", "Tax Service")}
                     </Text>
-                    <Text style={styles.displayId}>
-                      {order.displayId || `#${order.id.substring(0, 8)}`}
-                    </Text>
                   </View>
-                  <Text style={styles.orderSubtext}>
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </Text>
                 </View>
-              </View>
-              <View
-                style={[
-                  { flexDirection: "row", alignItems: "center", gap: 12 },
-                  isSmallMobile && { flexDirection: "column", alignItems: "flex-start", gap: 8 },
-                  isMobile && !isSmallMobile && { gap: 10 },
-                  isTablet && { gap: 10 },
-                ]}
-              >
                 <Badge
                   label={order.status}
                   variant={order.status === "DRAFT" ? "warning" : "primary"}
                 />
-                {order.status === "DRAFT" && (
-                  <View
-                    style={[
-                      { flexDirection: "row", gap: 8 },
-                      isSmallMobile && { width: "100%", flexDirection: "column" },
-                    ]}
-                  >
-                    <Button
-                      title={t("dashboard.resume", "Resume")}
-                      variant="outline"
-                      style={{
-                        height: isSmallMobile ? 36 : 32,
-                        paddingVertical: 0,
-                        paddingHorizontal: isSmallMobile ? 16 : 12,
-                        ...(isSmallMobile && { width: "100%" }),
-                      }}
-                      textStyle={{ fontSize: isSmallMobile ? 13 : 12 }}
-                      onPress={(e: any) => {
-                        e.stopPropagation();
-                        if (order.service?.id) {
-                          navigate(`/services/${order.service.id}/wizard`);
-                        }
-                      }}
-                    />
-                    <Button
-                      title={t("common.delete", "Delete")}
-                      variant="ghost"
-                      style={{
-                        height: isSmallMobile ? 36 : 32,
-                        paddingVertical: 0,
-                        paddingHorizontal: isSmallMobile ? 16 : 8,
-                        ...(isSmallMobile && { width: "100%" }),
-                      }}
-                      textStyle={{ fontSize: isSmallMobile ? 13 : 12, color: "#EF4444" }}
-                      onPress={(e: any) => handleDelete(order.id, e)}
-                    />
-                  </View>
-                )}
               </View>
+              <View style={styles.orderMetaRow}>
+                <Text style={styles.displayId}>
+                  {order.displayId || `#${order.id.substring(0, 8)}`}
+                </Text>
+                <Text style={styles.orderDate}>
+                  {new Date(order.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              {order.status === "DRAFT" && (
+                <View
+                  style={[
+                    styles.draftActions,
+                    isSmallMobile && styles.draftActionsSmallMobile,
+                  ]}
+                >
+                  <Button
+                    title={t("dashboard.resume", "Resume")}
+                    variant="primary"
+                    style={{
+                      height: 32,
+                      minHeight: 32,
+                      maxHeight: 32,
+                      paddingVertical: 6,
+                      paddingHorizontal: 16,
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      backgroundColor: "#3B82F6",
+                    }}
+                    textStyle={{ fontSize: 11, lineHeight: 16, padding: 0, margin: 0, color: "#FFFFFF" }}
+                    onPress={(e: any) => {
+                      e.stopPropagation();
+                      if (order.service?.id) {
+                        navigate(`/services/${order.service.id}/wizard`);
+                      }
+                    }}
+                  />
+                  <Button
+                    title={t("common.delete", "Delete")}
+                    variant="danger"
+                    style={{
+                      height: 32,
+                      minHeight: 32,
+                      maxHeight: 32,
+                      paddingVertical: 6,
+                      paddingHorizontal: 16,
+                      flex: 1,
+                      minWidth: 0,
+                      borderRadius: 0,
+                      backgroundColor: "#EF4444",
+                    }}
+                    textStyle={{ fontSize: 11, lineHeight: 16, padding: 0, margin: 0, color: "#FFFFFF" }}
+                    onPress={(e: any) => handleDelete(order.id, e)}
+                  />
+                </View>
+              )}
             </TouchableOpacity>
           ))
         ) : (
@@ -181,33 +184,74 @@ export const DashboardRecentOrders = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, minWidth: 340, gap: 24 },
-  wrapperSmallMobile: { minWidth: "100%", gap: 20 },
-  wrapperMobile: { minWidth: "100%", gap: 22 },
-  wrapperTablet: { minWidth: 300, gap: 24 },
-  gridTitle: { marginBottom: 16 },
-  gridTitleSmallMobile: { marginBottom: 12, fontSize: 18 },
-  gridTitleTablet: { marginBottom: 14, fontSize: 19 },
+  wrapper: { flex: 1, minWidth: 0, gap: 8, width: "100%" },
+  wrapperSmallMobile: { minWidth: "100%", gap: 8, width: "100%" },
+  wrapperMobile: { minWidth: "100%", gap: 8, width: "100%" },
+  wrapperTablet: {
+    minWidth: 0,
+    flex: 1,
+    gap: 8,
+    width: "48%",
+  },
+  gridTitle: { marginBottom: 8 },
+  gridTitleSmallMobile: { marginBottom: 6, fontSize: 16 },
+  gridTitleTablet: { marginBottom: 8, fontSize: 18 },
   card: { overflow: "hidden" },
   orderItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
+    padding: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
+  orderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   noBorder: { borderBottomWidth: 0 },
-  orderInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
+  orderInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    minWidth: 0,
+  },
+  orderDetails: {
+    flex: 1,
+    minWidth: 0,
+  },
   orderIconWrapper: {
     width: 40,
     height: 40,
     backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  orderText: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
-  orderSubtext: { fontSize: 12, color: "#94A3B8", marginTop: 2 },
+  orderText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 4,
+  },
+  orderMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+    marginBottom: 8,
+    paddingLeft: 52,
+  },
+  displayId: {
+    fontSize: 12,
+    color: "#64748B",
+    fontFamily: "monospace",
+  },
+  orderDate: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
   emptyState: { padding: 48, alignItems: "center", gap: 12 },
   emptyText: {
     color: "#64748B",
@@ -216,6 +260,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   browseBtn: { marginTop: 16 },
-  orderTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  displayId: { fontSize: 12, color: "#64748B", fontFamily: "monospace" },
+  draftActions: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "stretch",
+    paddingLeft: 52,
+    marginTop: 6,
+    width: "100%",
+    maxWidth: "100%",
+  },
+  draftActionsSmallMobile: {
+    paddingLeft: 0,
+    flexDirection: "row",
+    gap: 6,
+    width: "100%",
+    maxWidth: "100%",
+  },
 });

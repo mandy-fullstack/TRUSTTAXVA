@@ -56,7 +56,11 @@ export const DashboardOverview = ({
           trend
           trendValue={t("dashboard.live", "Live")}
           trendColor="#64748B"
-          style={styles.flex1}
+          style={[
+            styles.flex1,
+            isSmallMobile && styles.flex1SmallMobile,
+            isMobile && !isSmallMobile && styles.flex1Mobile,
+          ]}
         />
         <StatsCard
           label={t("dashboard.action_required", "Action Required")}
@@ -68,7 +72,11 @@ export const DashboardOverview = ({
               : t("dashboard.none", "None")
           }
           trendColor={actionRequiredCount > 0 ? "#EF4444" : "#10B981"}
-          style={styles.flex1}
+          style={[
+            styles.flex1,
+            isSmallMobile && styles.flex1SmallMobile,
+            isMobile && !isSmallMobile && styles.flex1Mobile,
+          ]}
         />
       </View>
     </View>
@@ -76,16 +84,79 @@ export const DashboardOverview = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: { flex: 1, minWidth: 340, gap: 24 },
-  wrapperSmallMobile: { minWidth: "100%", gap: 20 },
-  wrapperMobile: { minWidth: "100%", gap: 22 },
-  wrapperTablet: { minWidth: 300, gap: 24 },
-  gridTitle: { marginBottom: 16 },
-  gridTitleSmallMobile: { marginBottom: 12, fontSize: 18 },
-  gridTitleTablet: { marginBottom: 14, fontSize: 19 },
-  statsRow: { flexDirection: "row", gap: 16, flexWrap: "wrap" },
-  statsRowSmallMobile: { flexDirection: "column", gap: 12 },
-  statsRowMobile: { flexDirection: "column", gap: 14 },
-  statsRowTablet: { flexDirection: "row", gap: 14, flexWrap: "wrap" },
-  flex1: { flex: 1 },
+  wrapper: {
+    flex: 1,
+    minWidth: 0,
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
+    overflow: "hidden",
+  },
+  wrapperSmallMobile: {
+    minWidth: "100%",
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
+  },
+  wrapperMobile: {
+    minWidth: "100%",
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
+  },
+  wrapperTablet: {
+    minWidth: 0,
+    flex: 1,
+    gap: 8,
+    width: "48%",
+  },
+  gridTitle: { marginBottom: 8 },
+  gridTitleSmallMobile: { marginBottom: 6, fontSize: 16 },
+  gridTitleTablet: { marginBottom: 8, fontSize: 18 },
+  statsRow: {
+    flexDirection: "row",
+    gap: 16,
+    flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "100%",
+  },
+  statsRowSmallMobile: {
+    flexDirection: "column",
+    gap: 12,
+    width: "100%",
+    maxWidth: "100%",
+  },
+  statsRowMobile: {
+    flexDirection: "column",
+    gap: 14,
+    width: "100%",
+    maxWidth: "100%",
+  },
+  statsRowTablet: {
+    flexDirection: "row",
+    gap: 12,
+    flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "100%",
+    overflow: "hidden",
+  },
+  flex1: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 100,
+    maxWidth: "48%",
+    width: "48%",
+  },
+  flex1SmallMobile: {
+    minHeight: 90,
+    minWidth: "100%",
+    maxWidth: "100%",
+    width: "100%",
+  },
+  flex1Mobile: {
+    minHeight: 95,
+    minWidth: "100%",
+    maxWidth: "100%",
+    width: "100%",
+  },
 });

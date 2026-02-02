@@ -16,11 +16,15 @@ import { Layout } from "../components/Layout";
 import { useNavigate } from "react-router-dom";
 
 const MOBILE_BREAKPOINT = 768;
+const TABLET_BREAKPOINT = 1024;
+const SMALL_MOBILE_BREAKPOINT = 375;
 
 export function DashboardPage() {
   const { user, isLoading } = useAuth();
   const { width } = useWindowDimensions();
+  const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
   const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
   const [metrics, setMetrics] = useState<{
     totalClients?: number;
     totalOrders?: number;
@@ -75,12 +79,22 @@ export function DashboardPage() {
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          isMobile && styles.scrollContentMobile,
+          isSmallMobile && styles.scrollContentSmallMobile,
+          isMobile && !isSmallMobile && styles.scrollContentMobile,
+          isTablet && styles.scrollContentTablet,
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topBar}>
-          <H1 style={isMobile ? styles.titleMobile : undefined}>
+        <View style={[
+          styles.topBar,
+          isSmallMobile && styles.topBarSmallMobile,
+          isMobile && !isSmallMobile && styles.topBarMobile,
+        ]}>
+          <H1 style={[
+            isSmallMobile && styles.titleSmallMobile,
+            isMobile && !isSmallMobile && styles.titleMobile,
+            isTablet && styles.titleTablet,
+          ]}>
             Welcome, {adminName}
           </H1>
 
@@ -163,9 +177,16 @@ export function DashboardPage() {
           </View>
         </View>
 
-        <View style={styles.header}>
+        <View style={[
+          styles.header,
+          isSmallMobile && styles.headerSmallMobile,
+        ]}>
           <Spacer size="xs" />
-          <Text style={styles.subtitle}>
+          <Text style={[
+            styles.subtitle,
+            isSmallMobile && styles.subtitleSmallMobile,
+            isMobile && !isSmallMobile && styles.subtitleMobile,
+          ]}>
             Real-time platform status and business metrics.
           </Text>
         </View>
@@ -182,7 +203,12 @@ export function DashboardPage() {
         )}
 
         <Spacer size="xl" />
-        <View style={[styles.statsGrid, isMobile && styles.statsGridMobile]}>
+        <View style={[
+          styles.statsGrid,
+          isSmallMobile && styles.statsGridSmallMobile,
+          isMobile && !isSmallMobile && styles.statsGridMobile,
+          isTablet && styles.statsGridTablet,
+        ]}>
           <StatsCard
             label="Total Clients"
             value={loadingMetrics ? "..." : String(metrics?.totalClients ?? 0)}
@@ -262,9 +288,17 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     alignSelf: "center",
   },
+  scrollContentSmallMobile: {
+    padding: s[3],
+    paddingTop: s[4],
+  },
   scrollContentMobile: {
     padding: s[4],
     paddingTop: s[6],
+  },
+  scrollContentTablet: {
+    padding: s[6],
+    paddingTop: s[8],
   },
   topBar: {
     flexDirection: "row",
@@ -272,17 +306,45 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: s[2],
   },
+  topBarSmallMobile: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 12,
+    marginBottom: s[1],
+  },
+  topBarMobile: {
+    marginBottom: s[1],
+  },
   header: {},
+  headerSmallMobile: {
+    marginBottom: s[1],
+  },
+  titleSmallMobile: { fontSize: 20 },
   titleMobile: { fontSize: 24 },
+  titleTablet: { fontSize: 28 },
   subtitle: { color: "#64748B", fontSize: 15 },
+  subtitleSmallMobile: { fontSize: 13 },
+  subtitleMobile: { fontSize: 14 },
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: s[5],
     width: "100%",
   },
+  statsGridSmallMobile: {
+    flexDirection: "column",
+    gap: s[2],
+    width: "100%",
+  },
   statsGridMobile: {
+    flexDirection: "column",
     gap: s[3],
+    width: "100%",
+  },
+  statsGridTablet: {
+    flexDirection: "row",
+    gap: s[4],
+    flexWrap: "wrap",
   },
   emptyContainer: {
     alignItems: "center",

@@ -126,7 +126,14 @@ export const DashboardPage = () => {
         description={t("dashboard.subtitle", "Your professional tax workspace")}
       />
       {/* Dashboard Header - Componente independiente separado */}
-      <View style={styles.headerSection}>
+      <View
+        style={[
+          styles.headerSection,
+          isSmallMobile && styles.headerSectionSmallMobile,
+          isMobile && !isSmallMobile && styles.headerSectionMobile,
+          isTablet && styles.headerSectionTablet,
+        ]}
+      >
         <DashboardHeader userName={userName} />
       </View>
 
@@ -225,48 +232,72 @@ const styles = StyleSheet.create({
     zIndex: 9999, // Ensure header sits on top of scroll content
     position: "relative",
   },
+  headerSectionSmallMobile: {
+    paddingTop: 16,
+  },
+  headerSectionMobile: {
+    paddingTop: 20,
+  },
+  headerSectionTablet: {
+    paddingTop: 24,
+  },
   scrollContent: {
-    paddingTop: 32,
+    paddingTop: 16,
     paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
+    maxWidth: 1200,
+    alignSelf: "center",
+    width: "100%",
+    overflow: "hidden",
   },
   scrollContentSmallMobile: {
-    paddingTop: 20,
+    paddingTop: 12,
     paddingBottom: 32,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   scrollContentMobile: {
-    paddingTop: 24,
+    paddingTop: 14,
     paddingBottom: 36,
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
   },
   scrollContentTablet: {
-    paddingTop: 28,
+    paddingTop: 16,
     paddingBottom: 40,
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
   },
   grid: {
     flexDirection: "row",
-    gap: 32,
+    gap: 8,
     flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "100%",
+    alignItems: "flex-start",
   },
   gridSmallMobile: {
     flexDirection: "column",
-    gap: 24,
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
   },
   gridMobile: {
     flexDirection: "column",
-    gap: 24,
+    gap: 8,
+    width: "100%",
+    maxWidth: "100%",
   },
   gridTablet: {
     flexDirection: "row",
-    gap: 24,
+    gap: 8,
     flexWrap: "wrap",
+    width: "100%",
+    maxWidth: "100%",
   },
   gridDesktop: {
     flexDirection: "row",
-    gap: 32,
+    gap: 12,
     flexWrap: "nowrap",
+    width: "100%",
+    maxWidth: "100%",
   },
   notificationBanner: {
     backgroundColor: "#EFF6FF",

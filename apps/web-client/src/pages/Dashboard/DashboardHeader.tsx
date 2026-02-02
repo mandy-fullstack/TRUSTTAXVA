@@ -98,19 +98,19 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     width: "100%",
     marginHorizontal: "auto",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingBottom: 24,
   },
   wrapperSmallMobile: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingBottom: 20,
   },
   wrapperMobile: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
     paddingBottom: 22,
   },
   wrapperTablet: {
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
     paddingBottom: 24,
   },
   headerContent: {

@@ -96,6 +96,11 @@ export const DashboardPendingPayments = ({
             <Badge
               label={t("dashboard.pay_now", "Pay Now")}
               variant="warning"
+              style={
+                isSmallMobile
+                  ? ({ marginTop: 8 } as any)
+                  : undefined
+              }
             />
           </View>
         ))}
@@ -105,28 +110,44 @@ export const DashboardPendingPayments = ({
 };
 
 const styles = StyleSheet.create({
-  wrapper: { marginTop: 40 },
-  wrapperSmallMobile: { marginTop: 32 },
-  wrapperMobile: { marginTop: 36 },
-  wrapperTablet: { marginTop: 40 },
+  wrapper: { marginTop: 40, width: "100%" },
+  wrapperSmallMobile: { marginTop: 24, width: "100%" },
+  wrapperMobile: { marginTop: 28, width: "100%" },
+  wrapperTablet: { marginTop: 32, width: "100%" },
   gridTitle: { marginBottom: 16 },
-  gridTitleSmallMobile: { marginBottom: 12, fontSize: 18 },
-  gridTitleTablet: { marginBottom: 14, fontSize: 19 },
+  gridTitleSmallMobile: { marginBottom: 10, fontSize: 16 },
+  gridTitleTablet: { marginBottom: 12, fontSize: 18 },
   card: { overflow: "hidden" },
   actionItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
+    padding: 12,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
+    minHeight: 64,
+  },
+  actionItemSmallMobile: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    padding: 10,
+    paddingHorizontal: 12,
+    minHeight: "auto",
   },
   noBorder: { borderBottomWidth: 0 },
-  actionInfo: { flexDirection: "row", alignItems: "center", gap: 16 },
+  actionInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    flex: 1,
+    minWidth: 0,
+  },
   actionInfoSmallMobile: {
     flexDirection: "column",
     alignItems: "flex-start",
     gap: 12,
+    width: "100%",
   },
   actionIconWrapper: {
     width: 44,
@@ -134,8 +155,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
-  actionText: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
+  actionText: { fontSize: 14, fontWeight: "600", color: "#1E293B", flexShrink: 1 },
   actionTextSmallMobile: { fontSize: 13 },
   actionSubtext: { fontSize: 12, color: "#64748B", marginTop: 2 },
   actionSubtextSmallMobile: { fontSize: 11, marginTop: 4 },
