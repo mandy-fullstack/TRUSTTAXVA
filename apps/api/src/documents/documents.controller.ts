@@ -112,6 +112,9 @@ export class DocumentsController {
         'Cache-Control': 'private, no-cache, no-store, must-revalidate',
         Pragma: 'no-cache',
         Expires: '0',
+        'Access-Control-Allow-Origin': '*', // Allow CORS for images
+        'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       });
 
       res.send(fileData.buffer);
@@ -222,6 +225,9 @@ export class DocumentsController {
       'Content-Type': fileData.mimeType,
       'Content-Disposition': `${contentDisposition}; filename="${fileData.filename}"`,
       'Content-Length': fileData.buffer.length,
+      'Access-Control-Allow-Origin': '*', // Allow CORS for images
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     });
 
     res.send(fileData.buffer);
