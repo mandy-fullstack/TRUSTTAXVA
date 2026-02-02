@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "../config/api";
+import { getToken } from "../lib/cookies";
 
 // Cache para blob URLs autenticadas
 const blobUrlCache = new Map<string, { blobUrl: string; timestamp: number }>();
@@ -37,7 +38,7 @@ export async function getAuthenticatedImageUrl(documentId: string, originalUrl?:
   }
   
   const proxyUrl = getDocumentProxyUrl(documentId, originalUrl);
-  const token = localStorage.getItem('token');
+  const token = getToken();
   
   if (!token) {
     throw new Error('No authentication token available');
@@ -87,7 +88,7 @@ export async function getAuthenticatedImageUrl(documentId: string, originalUrl?:
  */
 export async function openDocumentWithAuth(documentId: string, originalUrl?: string): Promise<void> {
   const url = getDocumentProxyUrl(documentId, originalUrl);
-  const token = localStorage.getItem('token');
+  const token = getToken();
   
   if (!token) {
     throw new Error('No authentication token available');
