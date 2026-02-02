@@ -1,12 +1,12 @@
 {
-    "name": "@trusttax/core",
-    "version": "0.0.0",
-    "main": "./src/index.js",
-    "types": "./src/index.d.ts",
-    "scripts": {
-        "lint": "eslint ."
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
+  "name": "@trusttax/core",
+  "version": "0.0.0",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
 }

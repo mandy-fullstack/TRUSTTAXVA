@@ -1,6 +1,7 @@
 # 🔧 Guía de Configuración de Base de Datos
 
 ## Problema Actual
+
 La aplicación no puede conectarse a `db.prisma.io` porque no existe o no es accesible.
 
 ## Soluciones
@@ -8,6 +9,7 @@ La aplicación no puede conectarse a `db.prisma.io` porque no existe o no es acc
 ### ✅ OPCIÓN 1: PostgreSQL Local (Recomendado)
 
 #### A. Si tienes Homebrew (macOS):
+
 ```bash
 # Instalar PostgreSQL
 brew install postgresql@14
@@ -23,6 +25,7 @@ psql -d trusttax -c "SELECT version();"
 ```
 
 #### B. Si tienes Docker:
+
 ```bash
 # Crear y ejecutar PostgreSQL en Docker
 docker run --name trusttax-db \
@@ -36,18 +39,22 @@ docker ps
 ```
 
 **Luego**:
+
 1. Los archivos `.env` ya están actualizados con:
+
    ```
    DATABASE_URL="postgresql://postgres:postgres@localhost:5432/trusttax?schema=public"
    ```
 
 2. Ejecutar migración de Prisma:
+
    ```bash
    cd /Users/mandy/TRUSTTAXVA/packages/database
    npx prisma migrate dev
    ```
 
 3. Generar cliente de Prisma:
+
    ```bash
    npx prisma generate
    ```
@@ -64,6 +71,7 @@ docker ps
 #### Cambiar a SQLite:
 
 1. Editar `packages/database/prisma/schema.prisma`:
+
    ```prisma
    datasource db {
      provider = "sqlite"  // ← Cambiar de "postgresql" a "sqlite"
@@ -72,6 +80,7 @@ docker ps
    ```
 
 2. Actualizar `.env`:
+
    ```env
    DATABASE_URL="file:./dev.db"
    ```
@@ -84,11 +93,13 @@ docker ps
    ```
 
 **Ventajas SQLite**:
+
 - ✅ No necesita instalación
 - ✅ Archivo local simple
 - ✅ Perfecto para desarrollo
 
 **Desventajas SQLite**:
+
 - ❌ No es PostgreSQL (producción usará PostgreSQL)
 - ❌ Algunas features de PostgreSQL no disponibles
 
@@ -99,6 +110,7 @@ docker ps
 Usar servicios gratuitos como:
 
 #### Supabase (Recomendado):
+
 1. Ir a https://supabase.com
 2. Crear proyecto gratuito
 3. Copiar "Connection String" (URI mode)
@@ -108,6 +120,7 @@ Usar servicios gratuitos como:
    ```
 
 #### Railway.app:
+
 1. Ir a https://railway.app
 2. Crear PostgreSQL database
 3. Copiar DATABASE_URL
@@ -118,29 +131,36 @@ Usar servicios gratuitos como:
 ## Pasos Siguientes (Después de Elegir Opción)
 
 ### 1. Ejecutar Migraciones
+
 ```bash
 cd /Users/mandy/TRUSTTAXVA/packages/database
 npx prisma migrate dev
 ```
 
 ### 2. Generar Cliente Prisma
+
 ```bash
 npx prisma generate
 ```
 
 ### 3. (Opcional) Ver Base de Datos
+
 ```bash
 npx prisma studio
 ```
+
 Abre http://localhost:5555 para ver/editar datos
 
 ### 4. Seed Datos Iniciales
+
 ```bash
 npx prisma db seed
 ```
 
 ### 5. Reiniciar Servidores
+
 Los servidores deberían reiniciarse automáticamente, o:
+
 ```bash
 # Ctrl+C en cada terminal y luego:
 pnpm dev
@@ -151,13 +171,16 @@ pnpm dev
 ## Verificación
 
 ### Test de Conexión:
+
 ```bash
 cd /Users/mandy/TRUSTTAXVA/packages/database
 npx prisma db pull  # Debería conectarse sin errores
 ```
 
 ### Errors Resueltos:
+
 Después de configurar correctamente:
+
 - ✅ "Can't reach database server" desaparecerá
 - ✅ Landing page cargará correctamente
 - ✅ API funcionará normalmente
@@ -167,16 +190,19 @@ Después de configurar correctamente:
 ## Mi Recomendación
 
 **Para desarrollo local rápido**: Usa **OPCIÓN 2 (SQLite)**
+
 - Solo requiere cambiar 2 líneas
 - Sin instalaciones
 - Funciona inmediatamente
 
 **Para desarrollo serio**: Usa **OPCIÓN 1 (PostgreSQL local)**
+
 - Mismo motor que producción
 - Mejor para testing realista
 - Soporta todas las features
 
 **Para colaboración**: Usa **OPCIÓN 3 (Supabase gratuito)**
+
 - Todos los devs usan misma DB
 - No requiere instalación local
 - Gratis hasta 500MB
@@ -186,15 +212,18 @@ Después de configurar correctamente:
 ## Solución de Problemas
 
 ### Error: "Connection refused"
+
 - PostgreSQL no está corriendo
 - Ejecutar: `brew services start postgresql@14`
 - O: `docker start trusttax-db`
 
 ### Error: "Database does not exist"
+
 - Crear base de datos: `createdb trusttax`
 - O cambiar nombre en DATABASE_URL
 
 ### Error: "Password authentication failed"
+
 - Verificar username/password en DATABASE_URL
 - Por defecto PostgreSQL local: `postgres:postgres`
 

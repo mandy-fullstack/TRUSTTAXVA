@@ -5,9 +5,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { EmailModule } from '../../email/email.module';
 
 @Module({
-    imports: [EmailModule],
-    controllers: [PinController],
-    providers: [PinService, PrismaService],
-    exports: [PinService],
+  imports: [EmailModule],
+  controllers: [PinController],
+  providers: [PinService, PrismaService],
+  exports: [PinService],
 })
-export class PinModule { }
+export class PinModule {}

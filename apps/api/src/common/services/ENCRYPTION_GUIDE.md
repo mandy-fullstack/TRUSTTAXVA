@@ -11,10 +11,12 @@ Los datos cifrados **NUNCA** deben descifrarse en el backend solo para generar v
 ### 1. Almacenamiento
 
 Para cada campo sensible, almacenar:
+
 - **Campo cifrado**: `{field}Encrypted` - Datos completos cifrados con AES-256-GCM
 - **Campo Last4**: `{field}Last4` - Últimos 4 caracteres/dígitos para mostrar sin descifrar
 
 Ejemplo:
+
 ```prisma
 ssnEncrypted          String?   // Full SSN/ITIN encrypted
 ssnLast4              String?   // Last 4 digits for display (NUNCA descifrar solo para mostrar)
@@ -41,7 +43,9 @@ updateData.ssnLast4 = this.encryptionService.extractSSNLast4(dto.ssn);
 ```typescript
 // ✅ CORRECTO: Usar campos Last4 almacenados
 const ssnMasked = user.ssnLast4 ? `XXX-XX-${user.ssnLast4}` : null;
-const driverLicenseMasked = user.driverLicenseLast4 ? `••••${user.driverLicenseLast4}` : null;
+const driverLicenseMasked = user.driverLicenseLast4
+  ? `••••${user.driverLicenseLast4}`
+  : null;
 
 // ❌ INCORRECTO: Descifrar solo para mostrar
 // const decrypted = this.encryptionService.decrypt(user.ssnEncrypted);
@@ -51,6 +55,7 @@ const driverLicenseMasked = user.driverLicenseLast4 ? `••••${user.driver
 ### 4. Cuándo SÍ descifrar
 
 Los datos **SOLO** deben descifrarse cuando es absolutamente necesario:
+
 - Verificación de identidad en el backend
 - Procesamiento de documentos oficiales
 - Integración con APIs externas que requieren datos completos
@@ -86,12 +91,14 @@ onPress={() => {
 Para añadir un nuevo campo sensible:
 
 1. **Schema (Prisma)**:
+
 ```prisma
 newFieldEncrypted String?   // Datos cifrados
 newFieldLast4     String?   // Últimos 4 caracteres para mostrar
 ```
 
 2. **EncryptionService**: Añadir métodos de extracción
+
 ```typescript
 extractNewFieldLast4(value: string): string | null {
     if (!value || value.length < 4) return null;
@@ -100,14 +107,18 @@ extractNewFieldLast4(value: string): string | null {
 ```
 
 3. **AuthService.updateProfile**: Cifrar y guardar Last4
+
 ```typescript
 if (dto.newField) {
-    updateData.newFieldEncrypted = this.encryptionService.encrypt(dto.newField);
-    updateData.newFieldLast4 = this.encryptionService.extractNewFieldLast4(dto.newField);
+  updateData.newFieldEncrypted = this.encryptionService.encrypt(dto.newField);
+  updateData.newFieldLast4 = this.encryptionService.extractNewFieldLast4(
+    dto.newField,
+  );
 }
 ```
 
 4. **AuthService.findById**: Usar Last4, NO descifrar
+
 ```typescript
 const newFieldMasked = user.newFieldLast4 ? `••••${user.newFieldLast4}` : null;
 ```

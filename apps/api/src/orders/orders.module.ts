@@ -6,9 +6,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ChatModule } from '../chat/chat.module';
 
 @Module({
-    imports: [ChatModule],
-    controllers: [OrdersController],
-    providers: [OrdersService, PrismaService],
-    exports: [OrdersService],
+  imports: [ChatModule],
+  controllers: [OrdersController],
+  providers: [OrdersService, PrismaService],
+  exports: [OrdersService],
 })
-export class OrdersModule { }
+export class OrdersModule {}

@@ -1,16 +1,13 @@
 {
-    "compilerOptions": {
-        "target": "ES2022",
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "jsx": "react-jsx",
-        "strict": true,
-        "skipLibCheck": true,
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true
-    },
-    "include": [
-        "src",
-        "nativewind-env.d.ts"
-    ]
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": ["src", "nativewind-env.d.ts"]
 }

@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { H1, H4, Text, Badge } from '@trusttax/ui';
-import { Users, Mail, Calendar } from 'lucide-react';
-import { api } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
-import { Layout } from '../../components/Layout';
+import { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  useWindowDimensions,
+} from "react-native";
+import { H1, H4, Text, Badge } from "@trusttax/ui";
+import { Users, Mail, Calendar } from "lucide-react";
+import { api } from "../../services/api";
+import { useNavigate } from "react-router-dom";
+import { Layout } from "../../components/Layout";
 
 interface Client {
   id: string;
@@ -28,8 +35,10 @@ interface Client {
 }
 
 function fullName(c: Client): string {
-  const parts = [c.firstName, c.middleName, c.lastName].filter(Boolean) as string[];
-  return parts.length ? parts.join(' ') : c.name || '—';
+  const parts = [c.firstName, c.middleName, c.lastName].filter(
+    Boolean,
+  ) as string[];
+  return parts.length ? parts.join(" ") : c.name || "—";
 }
 
 const MOBILE_BREAKPOINT = 768;
@@ -39,7 +48,7 @@ export function ClientsPage() {
   const isMobile = width < MOBILE_BREAKPOINT;
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,12 +59,14 @@ export function ClientsPage() {
         const data = await api.getClients();
         if (!cancelled) setClients(Array.isArray(data) ? data : []);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load clients');
+        if (!cancelled) setError(e?.message || "Failed to load clients");
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -82,7 +93,10 @@ export function ClientsPage() {
     <Layout>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.container, isMobile && styles.containerMobile]}
+        contentContainerStyle={[
+          styles.container,
+          isMobile && styles.containerMobile,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -96,7 +110,9 @@ export function ClientsPage() {
           <View style={styles.emptyState}>
             <Users size={48} color="#E2E8F0" />
             <H4 style={styles.emptyTitle}>No Clients Yet</H4>
-            <Text style={styles.emptyText}>Clients will appear here once they register.</Text>
+            <Text style={styles.emptyText}>
+              Clients will appear here once they register.
+            </Text>
           </View>
         ) : isMobile ? (
           <View style={styles.cardList}>
@@ -115,7 +131,9 @@ export function ClientsPage() {
                     <Text style={styles.clientName}>{fullName(c)}</Text>
                     {c.profileCompleted && (
                       <View style={styles.profileBadge}>
-                        <Text style={styles.profileBadgeText}>Profile complete</Text>
+                        <Text style={styles.profileBadgeText}>
+                          Profile complete
+                        </Text>
                       </View>
                     )}
                     <View style={styles.cardMeta}>
@@ -124,11 +142,15 @@ export function ClientsPage() {
                     </View>
                     <View style={styles.cardMeta}>
                       <Calendar size={12} color="#94A3B8" />
-                      <Text style={styles.dateText}>{new Date(c.createdAt).toLocaleDateString()}</Text>
+                      <Text style={styles.dateText}>
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </Text>
                     </View>
                     <Badge
                       label={`${c._count?.orders ?? 0} orders`}
-                      variant={(c._count?.orders ?? 0) > 0 ? 'primary' : 'secondary'}
+                      variant={
+                        (c._count?.orders ?? 0) > 0 ? "primary" : "secondary"
+                      }
                     />
                   </View>
                 </View>
@@ -170,12 +192,16 @@ export function ClientsPage() {
                 <View style={[styles.colOrders, styles.cell]}>
                   <Badge
                     label={`${c._count?.orders ?? 0} orders`}
-                    variant={(c._count?.orders ?? 0) > 0 ? 'primary' : 'secondary'}
+                    variant={
+                      (c._count?.orders ?? 0) > 0 ? "primary" : "secondary"
+                    }
                   />
                 </View>
                 <View style={[styles.colDate, styles.cell]}>
                   <Calendar size={14} color="#94A3B8" />
-                  <Text style={styles.dateText}>{new Date(c.createdAt).toLocaleDateString()}</Text>
+                  <Text style={styles.dateText}>
+                    {new Date(c.createdAt).toLocaleDateString()}
+                  </Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -187,46 +213,56 @@ export function ClientsPage() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { flex: 1, width: '100%' },
+  scroll: { flex: 1, width: "100%" },
   container: {
     padding: 32,
-    width: '100%',
-    minWidth: '100%' as any,
-    minHeight: '100%',
+    width: "100%",
+    minWidth: "100%" as any,
+    minHeight: "100%",
     maxWidth: 1200,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   containerMobile: { padding: 16, paddingTop: 24 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 200 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 200,
+  },
   header: { marginBottom: 24 },
   titleMobile: { fontSize: 24 },
-  subtitle: { color: '#64748B', marginTop: 4 },
-  errorText: { color: '#EF4444', fontSize: 14 },
+  subtitle: { color: "#64748B", marginTop: 4 },
+  errorText: { color: "#EF4444", fontSize: 14 },
 
   tableContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 0,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    width: '100%',
+    borderColor: "#E2E8F0",
+    width: "100%",
   },
   tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#F8FAFC',
+    flexDirection: "row",
+    backgroundColor: "#F8FAFC",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: "#E2E8F0",
   },
-  th: { fontSize: 12, fontWeight: '600', color: '#64748B', textTransform: 'uppercase' },
+  th: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
+    textTransform: "uppercase",
+  },
   tableRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    alignItems: 'center',
+    borderBottomColor: "#F1F5F9",
+    alignItems: "center",
   },
-  cell: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cell: { flexDirection: "row", alignItems: "center", gap: 10 },
   colName: { flex: 3 },
   colEmail: { flex: 3 },
   colOrders: { flex: 2 },
@@ -236,30 +272,40 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 0,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#EFF6FF",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  nameCell: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  clientName: { fontSize: 14, fontWeight: '600', color: '#1E293B' },
-  profileBadge: { backgroundColor: '#DCFCE7', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 0 },
-  profileBadgeText: { fontSize: 11, fontWeight: '600', color: '#15803D' },
-  emailText: { fontSize: 13, color: '#64748B' },
-  dateText: { fontSize: 13, color: '#64748B' },
+  nameCell: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  clientName: { fontSize: 14, fontWeight: "600", color: "#1E293B" },
+  profileBadge: {
+    backgroundColor: "#DCFCE7",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 0,
+  },
+  profileBadgeText: { fontSize: 11, fontWeight: "600", color: "#15803D" },
+  emailText: { fontSize: 13, color: "#64748B" },
+  dateText: { fontSize: 13, color: "#64748B" },
 
-  cardList: { gap: 12, width: '100%' },
+  cardList: { gap: 12, width: "100%" },
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: "#E2E8F0",
     padding: 16,
   },
-  cardRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  cardRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   cardMain: { flex: 1, gap: 6 },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
 
-  emptyState: { padding: 48, alignItems: 'center', gap: 12 },
-  emptyTitle: { color: '#1E293B' },
-  emptyText: { color: '#94A3B8', textAlign: 'center' },
+  emptyState: { padding: 48, alignItems: "center", gap: 12 },
+  emptyTitle: { color: "#1E293B" },
+  emptyText: { color: "#94A3B8", textAlign: "center" },
 });

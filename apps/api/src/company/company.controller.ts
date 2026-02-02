@@ -4,19 +4,19 @@ import { AuthGuard } from '@nestjs/passport';
 
 @Controller('company')
 export class CompanyController {
-    constructor(private companyService: CompanyService) { }
+  constructor(private companyService: CompanyService) {}
 
-    @Get('public')
-    async getPublicProfile() {
-        return this.companyService.getProfile();
-    }
+  @Get('public')
+  async getPublicProfile() {
+    return this.companyService.getProfile();
+  }
 
-    @UseGuards(AuthGuard('jwt'))
-    @Put()
-    async updateProfile(@Request() req: any, @Body() body: any) {
-        if (req.user.role !== 'ADMIN') {
-            throw new Error('Unauthorized');
-        }
-        return this.companyService.updateProfile(body);
+  @UseGuards(AuthGuard('jwt'))
+  @Put()
+  async updateProfile(@Request() req: any, @Body() body: any) {
+    if (req.user.role !== 'ADMIN') {
+      throw new Error('Unauthorized');
     }
+    return this.companyService.updateProfile(body);
+  }
 }

@@ -13,18 +13,29 @@ import { PinModule } from './pin/pin.module';
 import { TokenService } from './token.service';
 
 @Module({
-    imports: [
-        PassportModule,
-        JwtModule.register({
-            secret: process.env.JWT_SECRET || 'secretKey',
-            signOptions: { expiresIn: '30d' },
-        }),
-        EmailModule,
-        ChatModule,
-        PinModule,
-    ],
-    providers: [AuthService, PrismaService, EncryptionService, JwtStrategy, TwoFactorService, TokenService],
-    controllers: [AuthController],
-    exports: [AuthService],
+  imports: [
+    PassportModule,
+    JwtModule.register({
+      secret:
+        process.env.JWT_SECRET ||
+        (() => {
+          throw new Error('JWT_SECRET environment variable is required');
+        })(),
+      signOptions: { expiresIn: '30d' },
+    }),
+    EmailModule,
+    ChatModule,
+    PinModule,
+  ],
+  providers: [
+    AuthService,
+    PrismaService,
+    EncryptionService,
+    JwtStrategy,
+    TwoFactorService,
+    TokenService,
+  ],
+  controllers: [AuthController],
+  exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

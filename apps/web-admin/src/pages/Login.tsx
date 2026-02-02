@@ -1,17 +1,22 @@
-import { useState } from 'react';
-import { View, StyleSheet, Text, useWindowDimensions } from 'react-native';
-import { Button, Input } from '@trusttax/ui';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { api, AuthenticationError, ForbiddenError, NetworkError } from '../services/api';
+import { useState } from "react";
+import { View, StyleSheet, Text, useWindowDimensions } from "react-native";
+import { Button, Input } from "@trusttax/ui";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import {
+  api,
+  AuthenticationError,
+  ForbiddenError,
+  NetworkError,
+} from "../services/api";
 
 const MOBILE_BREAKPOINT = 768;
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
@@ -20,30 +25,33 @@ export function LoginPage() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
     setLoading(true);
-    setError('');
+    setError("");
     try {
       const data = await api.login(email.trim(), password);
 
-      if (data.user?.role !== 'ADMIN') {
-        setError('Access denied. Admin privileges required.');
+      if (data.user?.role !== "ADMIN") {
+        setError("Access denied. Admin privileges required.");
         setLoading(false);
         return;
       }
       login(data.access_token, data.user);
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (err: unknown) {
       if (err instanceof AuthenticationError) {
-        setError('Invalid email or password. Please try again.');
+        setError("Invalid email or password. Please try again.");
       } else if (err instanceof ForbiddenError) {
-        setError('Access denied. Admin privileges required.');
+        setError("Access denied. Admin privileges required.");
       } else if (err instanceof NetworkError) {
-        setError('Unable to connect to server. Please check your connection.');
+        setError("Unable to connect to server. Please check your connection.");
       } else {
-        setError((err as Error)?.message || 'An unexpected error occurred. Please try again.');
+        setError(
+          (err as Error)?.message ||
+            "An unexpected error occurred. Please try again.",
+        );
       }
     } finally {
       setLoading(false);
@@ -70,7 +78,9 @@ export function LoginPage() {
           )}
           <View style={styles.header}>
             <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Please sign in to access the dashboard</Text>
+            <Text style={styles.subtitle}>
+              Please sign in to access the dashboard
+            </Text>
           </View>
 
           <Input
@@ -92,7 +102,7 @@ export function LoginPage() {
 
           <Text
             style={styles.forgotPasswordLink}
-            onPress={() => navigate('/forgot-password')}
+            onPress={() => navigate("/forgot-password")}
           >
             Forgot Password?
           </Text>
@@ -118,19 +128,19 @@ export function LoginPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'row',
-    minHeight: '100vh' as any,
-    width: '100%',
-    backgroundColor: '#F8FAFC',
+    flexDirection: "row",
+    minHeight: "100vh" as any,
+    width: "100%",
+    backgroundColor: "#F8FAFC",
   },
   containerMobile: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   brandSection: {
     flex: 1,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#0F172A",
+    justifyContent: "center",
+    alignItems: "center",
   },
   brandOverlay: {
     padding: 40,
@@ -138,36 +148,36 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     fontSize: 42,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
     marginBottom: 16,
   },
   brandTitleMobile: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
   },
   brandSubtitle: {
     fontSize: 20,
-    color: '#94A3B8',
+    color: "#94A3B8",
     lineHeight: 28,
   },
   formSection: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   formSectionMobile: {
     padding: 20,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
     paddingTop: 48,
   },
   formCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
     padding: 8,
   },
@@ -176,13 +186,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: "700",
+    color: "#0F172A",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 15,
-    color: '#64748B',
+    color: "#64748B",
   },
   inputWrap: {
     marginBottom: 20,
@@ -190,28 +200,28 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     height: 48,
-    backgroundColor: '#0F172A',
+    backgroundColor: "#0F172A",
   },
   errorText: {
-    color: '#EF4444',
+    color: "#EF4444",
     fontSize: 14,
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   footerText: {
     marginTop: 24,
-    textAlign: 'center',
-    color: '#94A3B8',
+    textAlign: "center",
+    color: "#94A3B8",
     fontSize: 12,
   },
   forgotPasswordLink: {
-    color: '#0F172A',
+    color: "#0F172A",
     fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'right',
+    fontWeight: "600",
+    textAlign: "right",
     marginBottom: 16,
     marginTop: -8,
-    textDecorationLine: 'underline',
-    cursor: 'pointer',
+    textDecorationLine: "underline",
+    cursor: "pointer",
   },
 });

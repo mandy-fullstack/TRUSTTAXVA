@@ -7,14 +7,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ChatGateway } from './chat.gateway';
 
 @Module({
-    imports: [
-        JwtModule.register({
-            secret: process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
-            signOptions: { expiresIn: '7d' },
-        }),
-    ],
-    providers: [ChatService, PrismaService, ChatGateway],
-    controllers: [ChatController],
-    exports: [ChatService, ChatGateway],
+  imports: [
+    JwtModule.register({
+      secret:
+        process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
+  providers: [ChatService, PrismaService, ChatGateway],
+  controllers: [ChatController],
+  exports: [ChatService, ChatGateway],
 })
-export class ChatModule { }
+export class ChatModule {}

@@ -14,18 +14,21 @@ Professional tax preparation and immigration services platform built with modern
 ## 🏗️ Tech Stack
 
 ### Frontend
+
 - **React** with TypeScript
 - **React Native Web** for cross-platform compatibility
 - **React Router** for navigation
 - **i18next** for internationalization
 
 ### Backend
+
 - **NestJS** framework
 - **Prisma** ORM
 - **PostgreSQL** database
 - **JWT** authentication
 
 ### Monorepo
+
 - **Turborepo** for build orchestration
 - **pnpm** for package management
 
@@ -47,6 +50,7 @@ TRUSTTAXVA/
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+
 - pnpm 8+
 - PostgreSQL 14+
@@ -99,16 +103,20 @@ pnpm type-check
 ## 📱 Applications
 
 ### Web Client
+
 Public-facing application for clients to browse services, create orders, and track progress.
 
 ### Admin Panel
+
 Internal dashboard for managing:
+
 - Services and pricing
 - Client orders
 - Process workflows
 - Company settings
 
 ### Mobile App
+
 React Native application for iOS and Android (coming soon).
 
 ## 🎨 Design System
@@ -121,6 +129,7 @@ React Native application for iOS and Android (coming soon).
 ## 🌐 Internationalization
 
 Full support for:
+
 - 🇺🇸 English
 - 🇪🇸 Spanish
 

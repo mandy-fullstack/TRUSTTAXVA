@@ -43,6 +43,11 @@ model User {
   pinHash                String?
   pinEnabled             Boolean           @default(false)
   fcmToken               String?           @unique
+  phone                  String?
+  smsConsent             Boolean           @default(false)
+  smsConsentDate         DateTime?
+  smsConsentVersion      String?
+  smsOptOutDate          DateTime?
   clientAppointments     Appointment[]     @relation("ClientAppointments")
   preparedAppointments   Appointment[]     @relation("PreparerAppointments")
   auditLogs              AuditLog[]

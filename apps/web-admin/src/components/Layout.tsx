@@ -1,21 +1,49 @@
-import { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, useWindowDimensions, Platform, ScrollView } from 'react-native';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { H4, Text, spacing } from '@trusttax/ui';
-import { LayoutDashboard, Users, FileText, LogOut, Briefcase, Settings, Menu, X, ClipboardList, MessageCircle } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { ChatWidget } from './Chat/ChatWidget';
+import { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  useWindowDimensions,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { H4, Text, spacing } from "@trusttax/ui";
+import {
+  LayoutDashboard,
+  Users,
+  FileText,
+  LogOut,
+  Briefcase,
+  Settings,
+  Menu,
+  X,
+  ClipboardList,
+  MessageCircle,
+} from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { ChatWidget } from "./Chat/ChatWidget";
 
 const MOBILE_BREAKPOINT = 768;
 
-const navItems: { path: string; label: string; icon: typeof LayoutDashboard; match?: 'startsWith' }[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/clients', label: 'Clients', icon: Users },
-  { path: '/staff', label: 'Staff', icon: Users },
-  { path: '/orders', label: 'Orders', icon: FileText, match: 'startsWith' },
-  { path: '/services', label: 'Services', icon: Briefcase, match: 'startsWith' },
-  { path: '/forms', label: 'Forms', icon: ClipboardList, match: 'startsWith' },
-  { path: '/settings', label: 'Settings', icon: Settings, match: 'startsWith' },
+const navItems: {
+  path: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  match?: "startsWith";
+}[] = [
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/clients", label: "Clients", icon: Users },
+  { path: "/staff", label: "Staff", icon: Users },
+  { path: "/orders", label: "Orders", icon: FileText, match: "startsWith" },
+  {
+    path: "/services",
+    label: "Services",
+    icon: Briefcase,
+    match: "startsWith",
+  },
+  { path: "/forms", label: "Forms", icon: ClipboardList, match: "startsWith" },
+  { path: "/settings", label: "Settings", icon: Settings, match: "startsWith" },
 ];
 
 function NavItem({
@@ -33,8 +61,10 @@ function NavItem({
 }) {
   const content = (
     <View style={[styles.navItem, active && styles.navItemActive]}>
-      <Icon size={20} color={active ? '#FFF' : '#94A3B8'} />
-      <Text style={[styles.navLabel, active && styles.navLabelActive]}>{label}</Text>
+      <Icon size={20} color={active ? "#FFF" : "#94A3B8"} />
+      <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+        {label}
+      </Text>
     </View>
   );
 
@@ -53,7 +83,13 @@ function NavItem({
   );
 }
 
-export function Layout({ children, noScroll = false }: { children: React.ReactNode, noScroll?: boolean }) {
+export function Layout({
+  children,
+  noScroll = false,
+}: {
+  children: React.ReactNode;
+  noScroll?: boolean;
+}) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,7 +98,7 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const isMobile = width < MOBILE_BREAKPOINT;
-  const isChatRoute = location.pathname.startsWith('/chat');
+  const isChatRoute = location.pathname.startsWith("/chat");
 
   // Close chat widget if navigating to full chat page
   useEffect(() => {
@@ -71,14 +107,15 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
     }
   }, [isChatRoute, isChatOpen]);
 
-  const isActive = (item: typeof navItems[number]) => {
-    if (item.match === 'startsWith') return location.pathname.startsWith(item.path);
+  const isActive = (item: (typeof navItems)[number]) => {
+    if (item.match === "startsWith")
+      return location.pathname.startsWith(item.path);
     return location.pathname === item.path;
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -90,17 +127,19 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
   useEffect(() => {
     if (!mobileMenuOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileMenuOpen(false);
+      if (e.key === "Escape") setMobileMenuOpen(false);
     };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
   }, [mobileMenuOpen]);
 
   const sidebar = (
     <View style={[styles.sidebar, isMobile && styles.sidebarMobile]}>
       <View style={styles.logoContainer}>
         <H4 style={styles.logoTitle}>TrustTax Admin</H4>
-        <Text style={styles.logoSubtitle} numberOfLines={1}>{user?.email || ''}</Text>
+        <Text style={styles.logoSubtitle} numberOfLines={1}>
+          {user?.email || ""}
+        </Text>
       </View>
 
       <View style={styles.navList}>
@@ -111,12 +150,23 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
             label={item.label}
             icon={item.icon}
             active={isActive(item)}
-            onPress={isMobile ? () => { navigate(item.path); closeMobileMenu(); } : undefined}
+            onPress={
+              isMobile
+                ? () => {
+                    navigate(item.path);
+                    closeMobileMenu();
+                  }
+                : undefined
+            }
           />
         ))}
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleLogout}
+        activeOpacity={0.7}
+      >
         <LogOut size={20} color="#EF4444" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -131,9 +181,13 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
             onPress={() => setMobileMenuOpen((o) => !o)}
             style={styles.menuButton}
             activeOpacity={0.7}
-            accessibilityLabel={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            accessibilityLabel={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
-            {mobileMenuOpen ? <X size={24} color="#0F172A" /> : <Menu size={24} color="#0F172A" />}
+            {mobileMenuOpen ? (
+              <X size={24} color="#0F172A" />
+            ) : (
+              <Menu size={24} color="#0F172A" />
+            )}
           </TouchableOpacity>
           <Text style={styles.mobileHeaderTitle}>TrustTax Admin</Text>
           <View style={styles.menuButton} />
@@ -168,7 +222,9 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
 
           {/* Chat Panel */}
           {!isChatRoute && isChatOpen && (
-            <View style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}>
+            <View
+              style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}
+            >
               <ChatWidget onClose={() => setIsChatOpen(false)} />
             </View>
           )}
@@ -192,168 +248,172 @@ export function Layout({ children, noScroll = false }: { children: React.ReactNo
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'row',
-    minHeight: '100vh' as any,
-    width: '100%',
-    backgroundColor: '#F8FAFC',
+    flexDirection: "row",
+    minHeight: "100vh" as any,
+    width: "100%",
+    backgroundColor: "#F8FAFC",
   },
   mobileHeader: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing[4],
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF",
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: "#E2E8F0",
     zIndex: 100,
-    ...(Platform.OS === 'web' ? { boxShadow: '0 1px 3px rgba(0,0,0,0.06)' } : {}),
+    ...(Platform.OS === "web"
+      ? { boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }
+      : {}),
   } as any,
   menuButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+    alignItems: "center",
+    justifyContent: "center",
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   } as any,
   mobileHeaderTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: "700",
+    color: "#0F172A",
   },
   overlay: {
-    ...(Platform.OS === 'web'
+    ...(Platform.OS === "web"
       ? {
-        position: 'fixed' as any,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        zIndex: 200,
-      }
+          position: "fixed" as any,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          zIndex: 200,
+        }
       : {
-        position: 'absolute' as any,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.4)',
-        zIndex: 200,
-      }),
+          position: "absolute" as any,
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0,0,0,0.4)",
+          zIndex: 200,
+        }),
   } as any,
   sidebar: {
     width: 280,
     minWidth: 280,
-    backgroundColor: '#0F172A',
+    backgroundColor: "#0F172A",
     padding: spacing[6],
-    height: '100vh' as any,
-    justifyContent: 'space-between',
+    height: "100vh" as any,
+    justifyContent: "space-between",
   },
   sidebarMobile: {
-    position: 'fixed' as any,
+    position: "fixed" as any,
     top: 0,
     left: 0,
     bottom: 0,
     width: 280,
-    height: '100%',
+    height: "100%",
     zIndex: 201,
-    ...(Platform.OS === 'web' ? { boxShadow: '4px 0 20px rgba(0,0,0,0.15)' } : {}),
+    ...(Platform.OS === "web"
+      ? { boxShadow: "4px 0 20px rgba(0,0,0,0.15)" }
+      : {}),
   } as any,
   logoContainer: {
     marginBottom: spacing[6],
     paddingBottom: spacing[6],
     borderBottomWidth: 1,
-    borderBottomColor: '#1E293B',
+    borderBottomColor: "#1E293B",
   },
-  logoTitle: { color: '#FFF', marginBottom: 0, fontSize: 18 },
-  logoSubtitle: { color: '#94A3B8', fontSize: 12, marginTop: spacing[1] },
+  logoTitle: { color: "#FFF", marginBottom: 0, fontSize: 18 },
+  logoSubtitle: { color: "#94A3B8", fontSize: 12, marginTop: spacing[1] },
   navList: { flex: 1, gap: spacing[1], marginTop: spacing[4] },
   navItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[3],
     padding: spacing[3],
     borderRadius: 0,
   },
-  navItemActive: { backgroundColor: '#1E293B' },
-  navLabel: { color: '#94A3B8', fontSize: 14, fontWeight: '500' },
-  navLabelActive: { color: '#FFF' },
+  navItemActive: { backgroundColor: "#1E293B" },
+  navLabel: { color: "#94A3B8", fontSize: 14, fontWeight: "500" },
+  navLabelActive: { color: "#FFF" },
   navLink: {
-    textDecoration: 'none',
-    ...(Platform.OS === 'web' ? { display: 'block' } : {}),
+    textDecoration: "none",
+    ...(Platform.OS === "web" ? { display: "block" } : {}),
   } as any,
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing[3],
     padding: spacing[3],
     marginTop: spacing[6],
     borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#EF4444',
-    ...(Platform.OS === 'web' ? { cursor: 'pointer' } : {}),
+    borderColor: "#EF4444",
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   } as any,
-  logoutText: { color: '#EF4444', fontSize: 14, fontWeight: '600' },
+  logoutText: { color: "#EF4444", fontSize: 14, fontWeight: "600" },
   main: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: '#F8FAFC',
-    overflow: 'auto' as any,
-    minHeight: '100vh' as any,
+    backgroundColor: "#F8FAFC",
+    overflow: "auto" as any,
+    minHeight: "100vh" as any,
   },
   mainMobile: {
     paddingTop: 56,
   },
   contentRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     flex: 1,
-    height: '100%',
-    overflow: 'hidden' as any
+    height: "100%",
+    overflow: "hidden" as any,
   },
   contentScroll: {
     flex: 1,
-    height: '100%'
+    height: "100%",
   },
   contentInner: {
-    minHeight: '100%',
+    minHeight: "100%",
     padding: spacing[6],
   },
   chatPanel: {
     width: 400,
     borderLeftWidth: 1,
-    borderLeftColor: '#E2E8F0',
-    backgroundColor: '#FFF',
-    height: '100%',
+    borderLeftColor: "#E2E8F0",
+    backgroundColor: "#FFF",
+    height: "100%",
   },
   chatPanelMobile: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
-    width: '100%',
-    zIndex: 900
+    width: "100%",
+    zIndex: 900,
   } as any,
   floatingChatBtn: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 32,
     right: 32,
     width: 56,
     height: 56,
     borderRadius: 0,
-    backgroundColor: '#0F172A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    backgroundColor: "#0F172A",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    zIndex: 50
-  }
+    zIndex: 50,
+  },
 });

@@ -4,7 +4,7 @@ import { StorageService } from './services/storage.service';
 
 @Global()
 @Module({
-    providers: [FirebaseService, StorageService],
-    exports: [FirebaseService, StorageService],
+  providers: [FirebaseService, StorageService],
+  exports: [FirebaseService, StorageService],
 })
-export class FirebaseModule { }
+export class FirebaseModule {}

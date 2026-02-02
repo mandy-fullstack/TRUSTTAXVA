@@ -1,21 +1,21 @@
 {
-    "short_name": "TrustTax",
-    "name": "TrustTax VA",
-    "icons": [
-        {
-            "src": "favicon.svg",
-            "sizes": "64x64 32x32 24x24 16x16",
-            "type": "image/svg+xml"
-        },
-        {
-            "src": "vite.svg",
-            "type": "image/svg+xml",
-            "sizes": "192x192 512x512",
-            "purpose": "any maskable"
-        }
-    ],
-    "start_url": ".",
-    "display": "standalone",
-    "theme_color": "#0F172A",
-    "background_color": "#FFFFFF"
+  "short_name": "TrustTax",
+  "name": "TrustTax VA",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "vite.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0F172A",
+  "background_color": "#FFFFFF"
 }

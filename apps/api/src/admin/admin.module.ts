@@ -8,8 +8,8 @@ import { ChatModule } from '../chat/chat.module';
 import { DocumentsModule } from '../documents/documents.module';
 
 @Module({
-    imports: [ChatModule, DocumentsModule],
-    controllers: [AdminController],
-    providers: [AdminService, PrismaService, EncryptionService],
+  imports: [ChatModule, DocumentsModule],
+  controllers: [AdminController],
+  providers: [AdminService, PrismaService, EncryptionService],
 })
-export class AdminModule { }
+export class AdminModule {}

@@ -1,359 +1,398 @@
-import { getToken } from '../lib/cookies';
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { socket } from '../services/socket';
-import { api } from '../services/api';
-import { useAuth } from './AuthContext';
-import { useToast } from './ToastContext';
-import { requestFCMToken, onMessageListener } from '../lib/firebase';
+import { getToken } from "../lib/cookies";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+} from "react";
+import { socket } from "../services/socket";
+import { api } from "../services/api";
+import { useAuth } from "./AuthContext";
+import { useToast } from "./ToastContext";
+import { requestFCMToken, onMessageListener } from "../lib/firebase";
 
 interface NotificationItem {
-    id: string;
-    type: 'message' | 'order';
-    title: string;
-    body: string;
-    date: Date;
-    read: boolean;
-    link: string;
+  id: string;
+  type: "message" | "order";
+  title: string;
+  body: string;
+  date: Date;
+  read: boolean;
+  link: string;
 }
 
 interface NotificationContextType {
-    permission: NotificationPermission;
-    isStandalone: boolean;
-    isIOS: boolean;
-    requestPermission: () => Promise<void>;
-    notifications: NotificationItem[];
-    markAsRead: (id: string) => void;
-    unreadCount: number;
+  permission: NotificationPermission;
+  isStandalone: boolean;
+  isIOS: boolean;
+  requestPermission: () => Promise<void>;
+  notifications: NotificationItem[];
+  markAsRead: (id: string) => void;
+  unreadCount: number;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
-export const NotificationProvider = ({ children }: { children: React.ReactNode }) => {
-    const { isAuthenticated } = useAuth();
-    const { showToast } = useToast();
-    const [permission, setPermission] = useState<NotificationPermission>('default');
-    const [isStandalone, setIsStandalone] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
-    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-    const lastCheckRef = useRef<Date>(new Date());
+export const NotificationProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const { isAuthenticated } = useAuth();
+  const { showToast } = useToast();
+  const [permission, setPermission] =
+    useState<NotificationPermission>("default");
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const lastCheckRef = useRef<Date>(new Date());
 
-    const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            if ('Notification' in window) {
-                setPermission(window.Notification.permission);
-            }
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("Notification" in window) {
+        setPermission(window.Notification.permission);
+      }
 
-            // Check if iOS
-            const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            setIsIOS(ios);
+      // Check if iOS
+      const ios =
+        /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      setIsIOS(ios);
 
-            // Check if standalone (installed as PWA)
-            const standalone = window.matchMedia('(display-mode: standalone)').matches ||
-                (window.navigator as any).standalone ||
-                document.referrer.includes('android-app://');
-            setIsStandalone(!!standalone);
+      // Check if standalone (installed as PWA)
+      const standalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes("android-app://");
+      setIsStandalone(!!standalone);
 
-            // If iOS and not standalone, show a tip after a delay
-            if (ios && !standalone) {
-                setTimeout(() => {
-                    showToast({
-                        title: '💡 Tip para iPhone',
-                        message: 'Para recibir notificaciones, pulsa "Compartir" y luego "Añadir a la pantalla de inicio".',
-                        type: 'info',
-                        duration: 10000
-                    });
-                }, 5000);
-            }
+      // If iOS and not standalone, show a tip after a delay
+      if (ios && !standalone) {
+        setTimeout(() => {
+          showToast({
+            title: "💡 Tip para iPhone",
+            message:
+              'Para recibir notificaciones, pulsa "Compartir" y luego "Añadir a la pantalla de inicio".',
+            type: "info",
+            duration: 10000,
+          });
+        }, 5000);
+      }
+    }
+  }, [showToast]);
+
+  const requestPermission = async () => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      try {
+        const perm = await window.Notification.requestPermission();
+        setPermission(perm);
+
+        if (perm === "granted" && isAuthenticated) {
+          setupFCM();
         }
-    }, [showToast]);
+      } catch (e) {
+        console.warn("Notification permission request failed", e);
+      }
+    }
+  };
 
-    const requestPermission = async () => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
-            try {
-                const perm = await window.Notification.requestPermission();
-                setPermission(perm);
+  const setupFCM = async () => {
+    const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
+    if (!vapidKey) {
+      console.warn("FCM VAPID key not found in environment variables");
+      return;
+    }
 
-                if (perm === 'granted' && isAuthenticated) {
-                    setupFCM();
-                }
-            } catch (e) {
-                console.warn('Notification permission request failed', e);
-            }
-        }
-    };
+    const token = await requestFCMToken(vapidKey);
+    if (token) {
+      console.log("FCM Token generated:", token);
+      await api.updateFCMToken(token);
+    }
+  };
 
-    const setupFCM = async () => {
-        const vapidKey = import.meta.env.VITE_FIREBASE_VAPID_KEY;
-        if (!vapidKey) {
-            console.warn('FCM VAPID key not found in environment variables');
-            return;
-        }
+  const playSound = () => {
+    try {
+      const audio = new Audio("/assets/notification.mp3");
+      audio.play().catch(() => {});
+    } catch (e) {
+      // ignore
+    }
+  };
 
-        const token = await requestFCMToken(vapidKey);
-        if (token) {
-            console.log('FCM Token generated:', token);
-            await api.updateFCMToken(token);
-        }
-    };
+  const markAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  };
 
-    const playSound = () => {
-        try {
-            const audio = new Audio('/assets/notification.mp3');
-            audio.play().catch(() => { });
-        } catch (e) {
-            // ignore
-        }
-    };
+  const sendBrowserNotification = (
+    title: string,
+    body: string,
+    tag?: string,
+  ) => {
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      permission === "granted"
+    ) {
+      try {
+        new window.Notification(title, {
+          body,
+          icon: "/vite.svg",
+          tag,
+        });
+      } catch (e) {
+        console.warn("Failed to send browser notification", e);
+      }
+    }
+  };
 
-    const markAsRead = (id: string) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    };
+  const checkUpdates = async () => {
+    if (!isAuthenticated) return;
 
-    const sendBrowserNotification = (title: string, body: string, tag?: string) => {
-        if (typeof window !== 'undefined' && 'Notification' in window && permission === 'granted') {
-            try {
-                new window.Notification(title, {
-                    body,
-                    icon: '/vite.svg',
-                    tag
-                });
-            } catch (e) {
-                console.warn('Failed to send browser notification', e);
-            }
-        }
-    };
+    try {
+      const [conversations, orders] = await Promise.all([
+        api.getConversations().catch(() => []),
+        api.getOrders().catch(() => []),
+      ]);
 
-    const checkUpdates = async () => {
-        if (!isAuthenticated) return;
+      const newNotifications: NotificationItem[] = [];
+      let hasNewAlert = false;
 
-        try {
-            const [conversations, orders] = await Promise.all([
-                api.getConversations().catch(() => []),
-                api.getOrders().catch(() => [])
-            ]);
+      // Check messages
+      for (const conv of conversations) {
+        if (conv.messages && conv.messages.length > 0) {
+          const lastMsg = conv.messages[0];
+          const msgDate = new Date(lastMsg.createdAt);
 
-            const newNotifications: NotificationItem[] = [];
-            let hasNewAlert = false;
-
-            // Check messages
-            for (const conv of conversations) {
-                if (conv.messages && conv.messages.length > 0) {
-                    const lastMsg = conv.messages[0];
-                    const msgDate = new Date(lastMsg.createdAt);
-
-                    if (lastMsg.sender?.role !== 'CLIENT') {
-                        const exists = notifications.some(n => n.id === lastMsg.id);
-                        if (!exists) {
-                            newNotifications.push({
-                                id: lastMsg.id,
-                                type: 'message',
-                                title: 'Nuevo mensaje',
-                                body: `De: ${conv.preparer?.name || 'Soporte'}`,
-                                date: msgDate,
-                                read: false,
-                                link: `/dashboard/chat/${conv.id}`
-                            });
-
-                            if (msgDate > lastCheckRef.current) {
-                                hasNewAlert = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Check orders
-            for (const order of orders) {
-                const orderDate = new Date(order.updatedAt);
-                const notifId = `order-${order.id}`;
-
-                const existingIndex = notifications.findIndex(n => n.id === notifId);
-                const existingNotif = existingIndex !== -1 ? notifications[existingIndex] : null;
-
-                const isNewer = existingNotif ? orderDate > existingNotif.date : true;
-
-                if (isNewer) {
-                    const isNewUpdate = orderDate > lastCheckRef.current;
-
-                    const statusMap: Record<string, string> = {
-                        'APPROVED': 'Aprobada',
-                        'REJECTED': 'Rechazada',
-                        'IN_PROGRESS': 'En Progreso',
-                        'COMPLETED': 'Completada',
-                        'PENDING': 'Pendiente',
-                        'needs_info': 'Requiere Información'
-                    };
-
-                    let notifTitle = 'Actualización de Orden';
-                    let notifBody = `Orden ${order.displayId || order.id.slice(0, 8)}: ${statusMap[order.status] || order.status}`;
-                    let notifLink = `/dashboard/orders/${order.id}`;
-
-                    if (order.approvals && order.approvals.length > 0) {
-                        const pendingApproval = order.approvals[0];
-                        notifTitle = 'Acción Requerida';
-                        notifBody = `Aprobación pendiente: ${pendingApproval.title}`;
-                    }
-                    else if (existingNotif && existingNotif.body !== notifBody) {
-                        notifTitle = 'Estado Actualizado';
-                    }
-
-                    const newItem: NotificationItem = {
-                        id: notifId,
-                        type: 'order',
-                        title: notifTitle,
-                        body: notifBody,
-                        date: orderDate,
-                        read: false,
-                        link: notifLink
-                    };
-
-                    if (!existingNotif) {
-                        const oneDay = 24 * 60 * 60 * 1000;
-                        if (Date.now() - orderDate.getTime() > oneDay) {
-                            newItem.read = true;
-                        }
-                    }
-
-                    newNotifications.push(newItem);
-
-                    if (isNewUpdate) {
-                        hasNewAlert = true;
-                        sendBrowserNotification('TrustTax Update', newItem.body, `order-${order.id}`);
-
-                        showToast({
-                            title: newItem.title,
-                            message: newItem.body,
-                            type: order.status === 'REJECTED' || order.status === 'needs_info' ? 'warning' : 'info',
-                            link: newItem.link
-                        });
-                    }
-                }
-            }
-
-            if (newNotifications.length > 0) {
-                setNotifications(prev => {
-                    const prevFiltered = prev.filter(p => !newNotifications.some(n => n.id === p.id));
-                    return [...newNotifications, ...prevFiltered].sort((a, b) => b.date.getTime() - a.date.getTime());
-                });
-
-                if (hasNewAlert && permission === 'granted') {
-                    playSound();
-                }
-            }
-
-            lastCheckRef.current = new Date();
-        } catch (error) {
-            console.error('Notification poll failed', error);
-        }
-    };
-
-
-    useEffect(() => {
-        if (!isAuthenticated) return;
-
-        checkUpdates();
-        const interval = setInterval(checkUpdates, 60 * 1000);
-
-        socket.auth = { token: getToken() };
-        socket.connect();
-
-        socket.on('notification', (payload: any) => {
-            const newNotif: NotificationItem = {
-                id: Math.random().toString(36).substr(2, 9),
-                type: payload.type || 'order',
-                title: payload.title,
-                body: payload.body,
-                date: new Date(),
+          if (lastMsg.sender?.role !== "CLIENT") {
+            const exists = notifications.some((n) => n.id === lastMsg.id);
+            if (!exists) {
+              newNotifications.push({
+                id: lastMsg.id,
+                type: "message",
+                title: "Nuevo mensaje",
+                body: `De: ${conv.preparer?.name || "Soporte"}`,
+                date: msgDate,
                 read: false,
-                link: payload.link
-            };
+                link: `/dashboard/chat/${conv.id}`,
+              });
 
-            setNotifications(prev => [newNotif, ...prev]);
+              if (msgDate > lastCheckRef.current) {
+                hasNewAlert = true;
+              }
+            }
+          }
+        }
+      }
+
+      // Check orders
+      for (const order of orders) {
+        const orderDate = new Date(order.updatedAt);
+        const notifId = `order-${order.id}`;
+
+        const existingIndex = notifications.findIndex((n) => n.id === notifId);
+        const existingNotif =
+          existingIndex !== -1 ? notifications[existingIndex] : null;
+
+        const isNewer = existingNotif ? orderDate > existingNotif.date : true;
+
+        if (isNewer) {
+          const isNewUpdate = orderDate > lastCheckRef.current;
+
+          const statusMap: Record<string, string> = {
+            APPROVED: "Aprobada",
+            REJECTED: "Rechazada",
+            IN_PROGRESS: "En Progreso",
+            COMPLETED: "Completada",
+            PENDING: "Pendiente",
+            needs_info: "Requiere Información",
+          };
+
+          let notifTitle = "Actualización de Orden";
+          let notifBody = `Orden ${order.displayId || order.id.slice(0, 8)}: ${statusMap[order.status] || order.status}`;
+          let notifLink = `/dashboard/orders/${order.id}`;
+
+          if (order.approvals && order.approvals.length > 0) {
+            const pendingApproval = order.approvals[0];
+            notifTitle = "Acción Requerida";
+            notifBody = `Aprobación pendiente: ${pendingApproval.title}`;
+          } else if (existingNotif && existingNotif.body !== notifBody) {
+            notifTitle = "Estado Actualizado";
+          }
+
+          const newItem: NotificationItem = {
+            id: notifId,
+            type: "order",
+            title: notifTitle,
+            body: notifBody,
+            date: orderDate,
+            read: false,
+            link: notifLink,
+          };
+
+          if (!existingNotif) {
+            const oneDay = 24 * 60 * 60 * 1000;
+            if (Date.now() - orderDate.getTime() > oneDay) {
+              newItem.read = true;
+            }
+          }
+
+          newNotifications.push(newItem);
+
+          if (isNewUpdate) {
+            hasNewAlert = true;
+            sendBrowserNotification(
+              "TrustTax Update",
+              newItem.body,
+              `order-${order.id}`,
+            );
 
             showToast({
-                title: newNotif.title,
-                message: newNotif.body,
-                type: 'info',
-                link: newNotif.link
+              title: newItem.title,
+              message: newItem.body,
+              type:
+                order.status === "REJECTED" || order.status === "needs_info"
+                  ? "warning"
+                  : "info",
+              link: newItem.link,
             });
+          }
+        }
+      }
 
-            if (permission === 'granted') {
-                playSound();
-                sendBrowserNotification(newNotif.title, newNotif.body);
-            }
+      if (newNotifications.length > 0) {
+        setNotifications((prev) => {
+          const prevFiltered = prev.filter(
+            (p) => !newNotifications.some((n) => n.id === p.id),
+          );
+          return [...newNotifications, ...prevFiltered].sort(
+            (a, b) => b.date.getTime() - a.date.getTime(),
+          );
         });
 
-        return () => {
-            socket.off('notification');
-            socket.disconnect();
-            clearInterval(interval);
-        };
-    }, [isAuthenticated, permission]);
-
-    // Separate effect for Firebase Cloud Messaging
-    useEffect(() => {
-        // Setup FCM Token (even if not authenticated, the api service will skip if no token)
-        if (permission === 'granted') {
-            setupFCM();
+        if (hasNewAlert && permission === "granted") {
+          playSound();
         }
+      }
 
-        // Foreground FCM Listener - Always active if permission granted
-        let unsubscribeFCM: (() => void) | undefined;
-        if (permission === 'granted') {
-            onMessageListener((payload) => {
-                console.log('Foreground message received:', payload);
-                const notification = payload.notification;
-                if (notification) {
-                    showToast({
-                        title: notification.title || 'New Notification',
-                        message: notification.body || '',
-                        type: 'info',
-                        link: payload.data?.link
-                    });
+      lastCheckRef.current = new Date();
+    } catch (error) {
+      console.error("Notification poll failed", error);
+    }
+  };
 
-                    const newNotif: NotificationItem = {
-                        id: Math.random().toString(36).substr(2, 9),
-                        type: 'message',
-                        title: notification.title || 'Notification',
-                        body: notification.body || '',
-                        date: new Date(),
-                        read: false,
-                        link: payload.data?.link || '/'
-                    };
-                    setNotifications(prev => [newNotif, ...prev]);
-                }
-            }).then(unsub => {
-                if (unsub) unsubscribeFCM = unsub;
-            });
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    checkUpdates();
+    const interval = setInterval(checkUpdates, 60 * 1000);
+
+    socket.auth = { token: getToken() };
+    socket.connect();
+
+    socket.on("notification", (payload: any) => {
+      const newNotif: NotificationItem = {
+        id: Math.random().toString(36).substr(2, 9),
+        type: payload.type || "order",
+        title: payload.title,
+        body: payload.body,
+        date: new Date(),
+        read: false,
+        link: payload.link,
+      };
+
+      setNotifications((prev) => [newNotif, ...prev]);
+
+      showToast({
+        title: newNotif.title,
+        message: newNotif.body,
+        type: "info",
+        link: newNotif.link,
+      });
+
+      if (permission === "granted") {
+        playSound();
+        sendBrowserNotification(newNotif.title, newNotif.body);
+      }
+    });
+
+    return () => {
+      socket.off("notification");
+      socket.disconnect();
+      clearInterval(interval);
+    };
+  }, [isAuthenticated, permission]);
+
+  // Separate effect for Firebase Cloud Messaging
+  useEffect(() => {
+    // Setup FCM Token (even if not authenticated, the api service will skip if no token)
+    if (permission === "granted") {
+      setupFCM();
+    }
+
+    // Foreground FCM Listener - Always active if permission granted
+    let unsubscribeFCM: (() => void) | undefined;
+    if (permission === "granted") {
+      onMessageListener((payload) => {
+        console.log("Foreground message received:", payload);
+        const notification = payload.notification;
+        if (notification) {
+          showToast({
+            title: notification.title || "New Notification",
+            message: notification.body || "",
+            type: "info",
+            link: payload.data?.link,
+          });
+
+          const newNotif: NotificationItem = {
+            id: Math.random().toString(36).substr(2, 9),
+            type: "message",
+            title: notification.title || "Notification",
+            body: notification.body || "",
+            date: new Date(),
+            read: false,
+            link: payload.data?.link || "/",
+          };
+          setNotifications((prev) => [newNotif, ...prev]);
         }
+      }).then((unsub) => {
+        if (unsub) unsubscribeFCM = unsub;
+      });
+    }
 
-        return () => {
-            if (unsubscribeFCM) {
-                unsubscribeFCM();
-            }
-        };
-    }, [permission, isAuthenticated]);
+    return () => {
+      if (unsubscribeFCM) {
+        unsubscribeFCM();
+      }
+    };
+  }, [permission, isAuthenticated]);
 
-    return (
-        <NotificationContext.Provider value={{
-            permission,
-            requestPermission,
-            notifications,
-            markAsRead,
-            unreadCount,
-            isStandalone,
-            isIOS
-        }}>
-            {children}
-        </NotificationContext.Provider>
-    );
+  return (
+    <NotificationContext.Provider
+      value={{
+        permission,
+        requestPermission,
+        notifications,
+        markAsRead,
+        unreadCount,
+        isStandalone,
+        isIOS,
+      }}
+    >
+      {children}
+    </NotificationContext.Provider>
+  );
 };
 
 export const useNotification = () => {
-    const context = useContext(NotificationContext);
-    if (!context) throw new Error('useNotification must be used within NotificationProvider');
-    return context;
+  const context = useContext(NotificationContext);
+  if (!context)
+    throw new Error("useNotification must be used within NotificationProvider");
+  return context;
 };

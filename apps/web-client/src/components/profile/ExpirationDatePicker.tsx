@@ -1,10 +1,10 @@
-import { useTranslation } from 'react-i18next';
-import { DatePicker } from './DatePicker';
+import { useTranslation } from "react-i18next";
+import { DatePicker } from "./DatePicker";
 
 interface ExpirationDatePickerProps {
-    value: string;
-    onChange: (date: string) => void;
-    label?: string;
+  value: string;
+  onChange: (date: string) => void;
+  label?: string;
 }
 
 /**
@@ -12,18 +12,18 @@ interface ExpirationDatePickerProps {
  * Usa DatePicker internamente para consistencia.
  */
 export const ExpirationDatePicker = ({
-    value,
-    onChange,
-    label,
+  value,
+  onChange,
+  label,
 }: ExpirationDatePickerProps) => {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
 
-    return (
-        <DatePicker
-            label={label ?? t('profile.expiration_date', 'Expiration date')}
-            value={value}
-            onChange={onChange}
-            placeholder="YYYY-MM-DD"
-        />
-    );
+  return (
+    <DatePicker
+      label={label ?? t("profile.expiration_date", "Expiration date")}
+      value={value}
+      onChange={onChange}
+      placeholder="YYYY-MM-DD"
+    />
+  );
 };

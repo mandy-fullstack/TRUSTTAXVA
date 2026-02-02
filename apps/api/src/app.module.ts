@@ -13,8 +13,10 @@ import { FaqModule } from './faq/faq.module';
 import { ChatModule } from './chat/chat.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { DocumentsModule } from './documents/documents.module';
+import { SMSModule } from './sms/sms.module';
 import { FirebaseModule } from './common/firebase.module';
 import { RedisModule } from './common/services/redis.module';
+import { SharedModule } from './common/shared.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
 
@@ -23,14 +25,22 @@ import Redis from 'ioredis';
     // Rate limiting configuration with Redis storage for global consistency
     ThrottlerModule.forRootAsync({
       useFactory: () => ({
-        throttlers: [{
-          ttl: 60000,
-          limit: 10,
-        }],
-        storage: new ThrottlerStorageRedisService(new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-          keyPrefix: 'tt:throttle:',
-          tls: (process.env.REDIS_URL || '').startsWith('rediss://') || (process.env.REDIS_URL || '').includes('upstash.io') ? {} : undefined,
-        })),
+        throttlers: [
+          {
+            ttl: 60000,
+            limit: 10,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+            keyPrefix: 'tt:throttle:',
+            tls:
+              (process.env.REDIS_URL || '').startsWith('rediss://') ||
+              (process.env.REDIS_URL || '').includes('upstash.io')
+                ? {}
+                : undefined,
+          }),
+        ),
       }),
     }),
     AuthModule,
@@ -43,10 +53,12 @@ import Redis from 'ioredis';
     FaqModule,
     ChatModule,
     DocumentsModule,
+    SMSModule,
     FirebaseModule,
-    RedisModule
+    RedisModule,
+    SharedModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

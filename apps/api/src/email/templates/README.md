@@ -5,8 +5,10 @@ Professional HTML email templates for TrustTax application.
 ## Templates Available
 
 ### 1. `password-reset.html`
+
 **Purpose**: Password reset emails  
 **Variables**:
+
 - `{{userName}}` - User's name or "there"
 - `{{resetUrl}}` - Password reset link
 - `{{userEmail}}` - User's email address
@@ -17,8 +19,10 @@ Professional HTML email templates for TrustTax application.
 ---
 
 ### 2. `account-not-found.html`
+
 **Purpose**: Marketing email when reset requested for non-existent account  
 **Variables**:
+
 - `{{userEmail}}` - Email address entered
 - `{{year}}` - Current year
 
@@ -28,8 +32,10 @@ Professional HTML email templates for TrustTax application.
 ---
 
 ### 3. `email-verification.html`
+
 **Purpose**: Email address verification for new registrations  
 **Variables**:
+
 - `{{userName}}` - User's name or "there"
 - `{{verifyUrl}}` - Email verification link
 - `{{userEmail}}` - User's email address
@@ -42,6 +48,7 @@ Professional HTML email templates for TrustTax application.
 ## Design Features
 
 All templates include:
+
 - ✅ **Responsive design** - Mobile and desktop friendly
 - ✅ **Table-based layout** - Maximum email client compatibility
 - ✅ **Professional branding** - TrustTax logo and colors
@@ -50,6 +57,7 @@ All templates include:
 - ✅ **Footer** - Company info and social links
 
 **Color Scheme**:
+
 - Primary: `#0F172A` (Dark blue-gray)
 - Accent: `#3B82F6` (Blue)
 - Success: `#10B981` (Green)
@@ -71,7 +79,7 @@ async sendNewEmail(email: string, customVar: string) {
         userEmail: email,
         year: new Date().getFullYear().toString()
     });
-    
+
     // ... send email
 }
 ```
@@ -81,11 +89,13 @@ async sendNewEmail(email: string, customVar: string) {
 ## Testing Templates
 
 To preview templates:
+
 1. Open `.html` file in browser
 2. Manually replace `{{variables}}` with test data
 3. Test in https://www.emailonacid.com/ or https://litmus.com/
 
 **Note**: Email clients have limited CSS support. Avoid:
+
 - Flexbox
 - Grid
 - Advanced CSS selectors
@@ -98,6 +108,7 @@ Always use inline styles and tables for layout.
 ## Template Guidelines
 
 ### DO:
+
 ✅ Use tables for layout  
 ✅ Inline CSS styles  
 ✅ Web-safe fonts  
@@ -106,6 +117,7 @@ Always use inline styles and tables for layout.
 ✅ Mobile-friendlyWidth (max 600px)
 
 ### DON'T:
+
 ❌ External CSS files  
 ❌ JavaScript  
 ❌ Flash or plugins  
@@ -117,6 +129,7 @@ Always use inline styles and tables for layout.
 ## Compatibility
 
 Templates tested with:
+
 - ✅ Gmail (Web, iOS, Android)
 - ✅ Outlook (Web, Desktop, Mobile)
 - ✅ Apple Mail (macOS, iOS)

@@ -3,21 +3,21 @@
  * Uses admin_token and admin_user. Secure only on HTTPS.
  */
 
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
-export const COOKIE_TOKEN = 'admin_token';
-export const COOKIE_USER = 'admin_user';
+export const COOKIE_TOKEN = "admin_token";
+export const COOKIE_USER = "admin_user";
 
 const DEFAULT_EXPIRES = 30;
-const COOKIE_PATH = '/';
+const COOKIE_PATH = "/";
 
 function defaultOptions(): Cookies.CookieAttributes {
   const isSecure =
-    typeof window !== 'undefined' && window.location?.protocol === 'https:';
+    typeof window !== "undefined" && window.location?.protocol === "https:";
   return {
     expires: DEFAULT_EXPIRES,
     secure: isSecure,
-    sameSite: 'strict',
+    sameSite: "strict",
     path: COOKIE_PATH,
   };
 }
@@ -26,7 +26,10 @@ export function getToken(): string | undefined {
   return Cookies.get(COOKIE_TOKEN);
 }
 
-export function setToken(value: string, options?: Cookies.CookieAttributes): void {
+export function setToken(
+  value: string,
+  options?: Cookies.CookieAttributes,
+): void {
   Cookies.set(COOKIE_TOKEN, value, { ...defaultOptions(), ...options });
 }
 
@@ -44,8 +47,14 @@ export function getUser(): Record<string, unknown> | null {
   }
 }
 
-export function setUser(value: Record<string, unknown>, options?: Cookies.CookieAttributes): void {
-  Cookies.set(COOKIE_USER, JSON.stringify(value), { ...defaultOptions(), ...options });
+export function setUser(
+  value: Record<string, unknown>,
+  options?: Cookies.CookieAttributes,
+): void {
+  Cookies.set(COOKIE_USER, JSON.stringify(value), {
+    ...defaultOptions(),
+    ...options,
+  });
 }
 
 export function removeUser(): void {

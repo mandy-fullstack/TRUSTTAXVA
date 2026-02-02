@@ -29,12 +29,12 @@ export const space = {
   md: spacing[3],
   lg: spacing[4],
   xl: spacing[5],
-  '2xl': spacing[6],
-  '3xl': spacing[8],
-  '4xl': spacing[10],
-  '5xl': spacing[12],
-  '6xl': spacing[16],
-  '7xl': spacing[20],
+  "2xl": spacing[6],
+  "3xl": spacing[8],
+  "4xl": spacing[10],
+  "5xl": spacing[12],
+  "6xl": spacing[16],
+  "7xl": spacing[20],
 } as const;
 
 export type SpaceKey = keyof typeof space;

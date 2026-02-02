@@ -15,6 +15,11 @@ firebase-key.json
 service-account.json
 secrets.json
 
+# RingCentral Credentials
+rc-credentials*.json
+*credentials*.json
+*ringcentral*.json
+
 # Database (local / SQLite dev)
 *.db
 *.db-journal

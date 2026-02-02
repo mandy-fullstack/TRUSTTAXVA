@@ -21,12 +21,12 @@ Este proyecto usa un **Blueprint** (`render.yaml`) para definir API, web-client 
 
 Render te pedirá valores para las variables con `sync: false`:
 
-| Variable | Servicio | Descripción |
-|----------|----------|-------------|
-| **DATABASE_URL** | `trusttax-api` | URL de PostgreSQL (el que usas con Prisma). |
-| **JWT_SECRET** | `trusttax-api` | Clave secreta para JWT (genera una segura, ≥32 chars). |
+| Variable         | Servicio              | Descripción                                                     |
+| ---------------- | --------------------- | --------------------------------------------------------------- |
+| **DATABASE_URL** | `trusttax-api`        | URL de PostgreSQL (el que usas con Prisma).                     |
+| **JWT_SECRET**   | `trusttax-api`        | Clave secreta para JWT (genera una segura, ≥32 chars).          |
 | **VITE_API_URL** | `trusttax-web-client` | URL pública de la API, ej. `https://trusttax-api.onrender.com`. |
-| **VITE_API_URL** | `trusttax-web-admin` | La misma URL de la API. |
+| **VITE_API_URL** | `trusttax-web-admin`  | La misma URL de la API.                                         |
 
 **Orden recomendado:**
 

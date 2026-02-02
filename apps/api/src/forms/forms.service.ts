@@ -2,8 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 const FIELD_TYPES = [
-  'text', 'textarea', 'number', 'phone', 'email', 'date',
-  'select', 'checkbox', 'ssn', 'file_upload', 'image_upload', 'signature',
+  'text',
+  'textarea',
+  'number',
+  'phone',
+  'email',
+  'date',
+  'select',
+  'checkbox',
+  'ssn',
+  'file_upload',
+  'image_upload',
+  'signature',
 ] as const;
 
 @Injectable()
@@ -23,7 +33,10 @@ export class FormsService {
     const form = await this.prisma.client.form.findUnique({
       where: { id },
       include: {
-        sections: { orderBy: { order: 'asc' }, include: { fields: { orderBy: { order: 'asc' } } } },
+        sections: {
+          orderBy: { order: 'asc' },
+          include: { fields: { orderBy: { order: 'asc' } } },
+        },
         fields: { where: { sectionId: null }, orderBy: { order: 'asc' } },
       },
     });
@@ -31,7 +44,12 @@ export class FormsService {
     return form;
   }
 
-  async create(dto: { name: string; description?: string; version?: string; active?: boolean }) {
+  async create(dto: {
+    name: string;
+    description?: string;
+    version?: string;
+    active?: boolean;
+  }) {
     return this.prisma.client.form.create({
       data: {
         name: dto.name,
@@ -57,7 +75,8 @@ export class FormsService {
     if (dto.name != null) data.name = dto.name;
     if (dto.description != null) data.description = dto.description;
     if (dto.nameI18n !== undefined) data.nameI18n = dto.nameI18n;
-    if (dto.descriptionI18n !== undefined) data.descriptionI18n = dto.descriptionI18n;
+    if (dto.descriptionI18n !== undefined)
+      data.descriptionI18n = dto.descriptionI18n;
     if (dto.version != null) data.version = dto.version;
     if (dto.active != null) data.active = dto.active;
     return this.prisma.client.form.update({ where: { id }, data });
@@ -74,16 +93,29 @@ export class FormsService {
     const form = await this.prisma.client.form.create({
       data: {
         name: 'Formulario de Impuesto',
-        description: 'Plantilla para declaración de impuestos con lógica condicional (sí/no). Secciones: situación fiscal, ingresos, deducciones.',
+        description:
+          'Plantilla para declaración de impuestos con lógica condicional (sí/no). Secciones: situación fiscal, ingresos, deducciones.',
         version: '1.0',
         active: true,
       },
     });
 
-    const sec1 = await this.createSection(form.id, { title: 'Situación fiscal', order: 0 });
-    const sec2 = await this.createSection(form.id, { title: 'Ingresos', order: 1 });
-    const sec3 = await this.createSection(form.id, { title: 'Deducciones', order: 2 });
-    const sec4 = await this.createSection(form.id, { title: 'Información adicional', order: 3 });
+    const sec1 = await this.createSection(form.id, {
+      title: 'Situación fiscal',
+      order: 0,
+    });
+    const sec2 = await this.createSection(form.id, {
+      title: 'Ingresos',
+      order: 1,
+    });
+    const sec3 = await this.createSection(form.id, {
+      title: 'Deducciones',
+      order: 2,
+    });
+    const sec4 = await this.createSection(form.id, {
+      title: 'Información adicional',
+      order: 3,
+    });
 
     await this.createField(form.id, {
       sectionId: sec1.id,
@@ -166,7 +198,11 @@ export class FormsService {
 
   async createSection(
     formId: string,
-    dto: { title: string; order?: number; titleI18n?: { en?: string; es?: string } },
+    dto: {
+      title: string;
+      order?: number;
+      titleI18n?: { en?: string; es?: string };
+    },
   ) {
     const last = await this.prisma.client.formSection.findFirst({
       where: { formId },
@@ -186,14 +222,21 @@ export class FormsService {
   async updateSection(
     formId: string,
     sectionId: string,
-    dto: { title?: string; order?: number; titleI18n?: { en?: string; es?: string } },
+    dto: {
+      title?: string;
+      order?: number;
+      titleI18n?: { en?: string; es?: string };
+    },
   ) {
     await this.ensureSectionInForm(formId, sectionId);
     const data: any = {};
     if (dto.title != null) data.title = dto.title;
     if (dto.order != null) data.order = dto.order;
     if (dto.titleI18n !== undefined) data.titleI18n = dto.titleI18n;
-    return this.prisma.client.formSection.update({ where: { id: sectionId }, data });
+    return this.prisma.client.formSection.update({
+      where: { id: sectionId },
+      data,
+    });
   }
 
   async deleteSection(formId: string, sectionId: string) {
@@ -223,12 +266,16 @@ export class FormsService {
     },
   ) {
     if (!FIELD_TYPES.includes(dto.type as any)) {
-      throw new Error(`Invalid field type: ${dto.type}. Allowed: ${FIELD_TYPES.join(', ')}`);
+      throw new Error(
+        `Invalid field type: ${dto.type}. Allowed: ${FIELD_TYPES.join(', ')}`,
+      );
     }
     if (dto.sectionId) await this.ensureSectionInForm(formId, dto.sectionId);
 
     const last = await this.prisma.client.formField.findFirst({
-      where: dto.sectionId ? { sectionId: dto.sectionId } : { formId, sectionId: null },
+      where: dto.sectionId
+        ? { sectionId: dto.sectionId }
+        : { formId, sectionId: null },
       orderBy: { order: 'desc' },
     });
     const order = dto.order ?? (last ? last.order + 1 : 0);
@@ -294,7 +341,8 @@ export class FormsService {
     if (dto.placeholder !== undefined) data.placeholder = dto.placeholder;
     if (dto.helpText !== undefined) data.helpText = dto.helpText;
     if (dto.labelI18n !== undefined) data.labelI18n = dto.labelI18n;
-    if (dto.placeholderI18n !== undefined) data.placeholderI18n = dto.placeholderI18n;
+    if (dto.placeholderI18n !== undefined)
+      data.placeholderI18n = dto.placeholderI18n;
     if (dto.helpTextI18n !== undefined) data.helpTextI18n = dto.helpTextI18n;
     if (dto.required !== undefined) data.required = dto.required;
     if (dto.order != null) data.order = dto.order;
@@ -319,7 +367,8 @@ export class FormsService {
     const s = await this.prisma.client.formSection.findFirst({
       where: { id: sectionId, formId },
     });
-    if (!s) throw new Error('Section not found or does not belong to this form');
+    if (!s)
+      throw new Error('Section not found or does not belong to this form');
   }
 
   private async ensureFieldInForm(formId: string, fieldId: string) {

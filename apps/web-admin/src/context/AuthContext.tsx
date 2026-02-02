@@ -1,7 +1,12 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import * as cookieStorage from '../lib/cookies';
-import { api, AuthenticationError, NotFoundError, NetworkError } from '../services/api';
+import { createContext, useContext, useState, useEffect } from "react";
+import type { ReactNode } from "react";
+import * as cookieStorage from "../lib/cookies";
+import {
+  api,
+  AuthenticationError,
+  NotFoundError,
+  NetworkError,
+} from "../services/api";
 
 interface User {
   id: string;
@@ -42,8 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await api.getMe();
         if (cancelled) return;
 
-        if (userData?.role !== 'ADMIN') {
-          setError('Access denied. Admin privileges required.');
+        if (userData?.role !== "ADMIN") {
+          setError("Access denied. Admin privileges required.");
           cookieStorage.clearAuth();
           setToken(null);
           setUser(null);
@@ -54,16 +59,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setError(null);
       } catch (err) {
         if (cancelled) return;
-        if (err instanceof AuthenticationError || err instanceof NotFoundError) {
+        if (
+          err instanceof AuthenticationError ||
+          err instanceof NotFoundError
+        ) {
           cookieStorage.clearAuth();
           setToken(null);
           setUser(null);
-          setError(err instanceof NotFoundError ? 'Your account is no longer active. Please contact support.' : null);
+          setError(
+            err instanceof NotFoundError
+              ? "Your account is no longer active. Please contact support."
+              : null,
+          );
           setIsLoading(false);
           return;
         }
         if (err instanceof NetworkError) {
-          setError('Connection issue. Retrying...');
+          setError("Connection issue. Retrying...");
           setIsLoading(false);
           setTimeout(() => {
             setError(null);
@@ -71,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }, 3000);
           return;
         }
-        console.error('Failed to restore session:', err);
+        console.error("Failed to restore session:", err);
         cookieStorage.clearAuth();
         setToken(null);
         setUser(null);
@@ -81,12 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     initAuth();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = (newToken: string, userData: User) => {
-    if (userData?.role !== 'ADMIN') {
-      setError('Access denied. Admin privileges required.');
+    if (userData?.role !== "ADMIN") {
+      setError("Access denied. Admin privileges required.");
       return;
     }
     setToken(newToken);
@@ -115,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         clearError,
-        isAuthenticated: !!token && !!user && user.role === 'ADMIN',
+        isAuthenticated: !!token && !!user && user.role === "ADMIN",
       }}
     >
       {children}
@@ -125,6 +139,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }

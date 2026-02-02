@@ -1,52 +1,53 @@
 import {
-    Injectable,
-    NestInterceptor,
-    ExecutionContext,
-    CallHandler,
-    HttpException,
-    HttpStatus,
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 /**
  * Error Interceptor for HTTP responses
- * 
+ *
  * NOTE: This interceptor works alongside PrismaExceptionFilter.
  * The filter handles Prisma errors, this interceptor handles HTTP errors.
  */
 @Injectable()
 export class ErrorInterceptor implements NestInterceptor {
-    intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-        return next.handle().pipe(
-            catchError((err) => {
-                // Log the full error to the console for debugging (especially on Render)
-                console.error('[ErrorInterceptor] Caught error:', {
-                    message: err.message,
-                    stack: err.stack,
-                    response: err.getResponse ? err.getResponse() : undefined,
-                });
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    return next.handle().pipe(
+      catchError((err) => {
+        // Log the full error to the console for debugging (especially on Render)
+        console.error('[ErrorInterceptor] Caught error:', {
+          message: err.message,
+          stack: err.stack,
+          response: err.getResponse ? err.getResponse() : undefined,
+        });
 
-                const status =
-                    err instanceof HttpException
-                        ? err.getStatus()
-                        : HttpStatus.INTERNAL_SERVER_ERROR;
+        const status =
+          err instanceof HttpException
+            ? err.getStatus()
+            : HttpStatus.INTERNAL_SERVER_ERROR;
 
-                // Don't expose internal error details
-                const message = err instanceof HttpException
-                    ? err.message
-                    : 'An unexpected error occurred';
+        // Don't expose internal error details
+        const message =
+          err instanceof HttpException
+            ? err.message
+            : 'An unexpected error occurred';
 
-                const response = {
-                    success: false,
-                    statusCode: status,
-                    message,
-                    timestamp: new Date().toISOString(),
-                    path: context.switchToHttp().getRequest().url,
-                };
+        const response = {
+          success: false,
+          statusCode: status,
+          message,
+          timestamp: new Date().toISOString(),
+          path: context.switchToHttp().getRequest().url,
+        };
 
-                return throwError(() => new HttpException(response, status));
-            }),
-        );
-    }
+        return throwError(() => new HttpException(response, status));
+      }),
+    );
+  }
 }

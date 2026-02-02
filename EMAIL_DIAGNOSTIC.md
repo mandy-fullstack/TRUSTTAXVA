@@ -59,19 +59,22 @@ constructor() {
 ## ✅ Emails Implementados
 
 ### 1. Password Reset Email ✅
+
 - **Método**: `sendPasswordResetEmail()`
 - **Trigger**: Usuario olvida contraseña
 - **Contenido**: Link de reset + instrucciones
 - **Destinatario**: Usuarios existentes
 
 ### 2. Account Not Found Email ✅ (NUEVO)
+
 - **Método**: `sendAccountNotFoundEmail()`
 - **Trigger**: Reset solicitado para email no registrado
 - **Contenido**: Marketing + info de contacto sales
 - **Objetivo**: Convertir intento fallido en oportunidad de venta
 
 ### 3. Email Verification Email ✅
-- **Método**: `sendEmailVerification()`  
+
+- **Método**: `sendEmailVerification()`
 - **Trigger**: Nuevo registro de usuario
 - **Contenido**: Link de verificación
 - **Objetivo**: Confirmar email válido
@@ -81,12 +84,14 @@ constructor() {
 ## 🧪 Pruebas de Funcionamiento
 
 ### Test 1: Verificar Configuración
+
 ```bash
 # En el terminal del servidor, al arrancar deberías ver:
 ✅ Email service configured with SMTP
 ```
 
 ### Test 2: Probar Password Reset
+
 ```bash
 # 1. Ir a la página de forgot password
 # 2. Ingresar: admin@trusttax.com (o cualquier email registrado)
@@ -95,19 +100,22 @@ constructor() {
 ```
 
 **Resultado Esperado**:
+
 - Subject: "Password Reset Request - TrustTax"
 - From: TrustTax Support
 - Body: HTML con link de reset
 
 ### Test 3: Probar Account Not Found Email
+
 ```bash
-# 1. Ir a la página de forgot password  
+# 1. Ir a la página de forgot password
 # 2. Ingresar: noexiste@ejemplo.com (email NO registrado)
 # 3. Esperar 5-10 segundos
 # 4. Revisar bandeja de entrada
 ```
 
 **Resultado Esperado**:
+
 - Subject: "Account Not Found - TrustTax Services"
 - From: TrustTax Support
 - Body: HTML con info de marketing y contacto sales
@@ -119,13 +127,12 @@ constructor() {
 ### Problema 1: Emails no llegan
 
 **Causas Posibles**:
+
 1. ✅ **App Password inválida**
    - Solución: Regenerar en Google Account → Security → App Passwords
-   
 2. ✅ **Cuenta Gmail bloqueada**
    - Google puede bloquear si detecta envío masivo
    - Solución: Revisar https://myaccount.google.com/security
-   
 3. ✅ **Emails en spam**
    - Primera vez siempre van a spam
    - Solución: Marcar como "No es spam"
@@ -137,6 +144,7 @@ constructor() {
 ### Problema 2: "Invalid login" error
 
 **Solución**:
+
 ```bash
 # 1. Ve a https://myaccount.google.com/security
 # 2. Verifica que "2-Step Verification" esté ACTIVADO
@@ -151,11 +159,13 @@ SMTP_PASSWORD=tu_nueva_password_16_caracteres
 ### Problema 3: SMTP_FROM mal configurado
 
 **Actual**:
+
 ```env
 SMTP_FROM="TrustTax Support <tu-email@gmail.com>"
 ```
 
 **Debería ser**:
+
 ```env
 SMTP_FROM="TrustTax Support <info@trusttaxllc.com>"
 ```
@@ -167,6 +177,7 @@ SMTP_FROM="TrustTax Support <info@trusttaxllc.com>"
 ## 🔧 Recomendaciones
 
 ### 1. Actualizar SMTP_FROM ⚠️
+
 ```env
 # Cambiar de:
 SMTP_FROM="TrustTax Support <tu-email@gmail.com>"
@@ -176,7 +187,9 @@ SMTP_FROM="TrustTax Support <info@trusttaxllc.com>"
 ```
 
 ### 2. Monitoreo de Emails
+
 Agregar logs más detallados:
+
 ```typescript
 console.log(`📧 Email sent: ${mailOptions.subject} → ${mailOptions.to}`);
 ```
@@ -186,12 +199,14 @@ console.log(`📧 Email sent: ${mailOptions.subject} → ${mailOptions.to}`);
 **Opciones Recomendadas**:
 
 #### A. SendGrid (Recomendado)
+
 - ✅ 100 emails/día gratis
 - ✅ API simple
 - ✅ Analytics incluido
 - ✅ No requiere "App Password"
 
 **Setup**:
+
 ```env
 SMTP_HOST=smtp.sendgrid.net
 SMTP_PORT=587
@@ -201,12 +216,14 @@ SMTP_FROM="TrustTax Support <noreply@trusttax.com>"
 ```
 
 #### B. AWS SES
+
 - ✅ 62,000 emails/mes gratis (primer año)
 - ✅ Muy barato después
 - ✅ Escalable
 - ⚠️ Requiere verificar dominio
 
 #### C. Mailgun
+
 - ✅ 5,000 emails/mes gratis (3 meses)
 - ✅ Fácil de usar
 - ✅ Buenos analytics
@@ -235,11 +252,13 @@ Luego visita: `http://localhost:4000/auth/test-email`
 ## 📈 Estadísticas de Uso
 
 ### Límites de Gmail (Cuenta Gratuita)
+
 - **Por día**: ~500 emails
-- **Por minuto**: ~10 emails  
+- **Por minuto**: ~10 emails
 - **Destinatarios por email**: 100 máximo
 
 ### Para Producción
+
 Si esperas más de 100 usuarios/día → **Usar SendGrid o AWS SES**
 
 ---
@@ -261,6 +280,7 @@ Si esperas más de 100 usuarios/día → **Usar SendGrid o AWS SES**
 ## 🎯 Próximos Pasos
 
 1. **Actualizar SMTP_FROM** en `.env`
+
    ```env
    SMTP_FROM="TrustTax Support <info@trusttaxllc.com>"
    ```
@@ -285,6 +305,7 @@ Si esperas más de 100 usuarios/día → **Usar SendGrid o AWS SES**
 ### Estado: ✅ FUNCIONANDO
 
 **Configuración actual**:
+
 - ✅ SMTP configurado correctamente
 - ✅ Credenciales Gmail válidas
 - ✅ 3 tipos de emails listos
@@ -292,9 +313,10 @@ Si esperas más de 100 usuarios/día → **Usar SendGrid o AWS SES**
 - ⚠️ SMTP_FROM necesita actualización menor
 
 **Los emails SÍ se están enviando**. Solo necesitas:
+
 1. Actualizar `SMTP_FROM` en `.env`
 2. Reiniciar servidor
 3. Probar con un reset de contraseña real
 
-**Calificación del Sistema**: 9/10 
+**Calificación del Sistema**: 9/10
 (Solo falta actualizar SMTP_FROM para perfecto)
