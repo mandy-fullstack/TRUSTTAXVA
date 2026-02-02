@@ -7,6 +7,7 @@ import {
   Get,
   Patch,
   UnauthorizedException,
+  HttpException,
   Param,
   Query,
   Headers,
@@ -73,7 +74,7 @@ export class AuthController {
         errorStack: error instanceof Error ? error.stack : undefined,
         errorKeys: error ? Object.keys(error) : [],
       });
-      
+
       // En desarrollo, incluir más detalles del error en la respuesta
       if (process.env.NODE_ENV !== 'production') {
         const errorResponse: any = {
@@ -83,7 +84,7 @@ export class AuthController {
           timestamp: new Date().toISOString(),
           path: '/auth/login',
         };
-        
+
         // Agregar detalles adicionales en desarrollo
         if (error instanceof Error) {
           errorResponse.errorDetails = {
@@ -92,10 +93,10 @@ export class AuthController {
             stack: error.stack,
           };
         }
-        
+
         throw new HttpException(errorResponse, errorResponse.statusCode);
       }
-      
+
       // Re-throw to let error interceptor handle it
       throw error;
     }
