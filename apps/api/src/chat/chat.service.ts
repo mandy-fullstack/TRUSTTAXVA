@@ -106,6 +106,19 @@ export class ChatService {
         `active_messages:${id}`,
       );
       if (cachedMessages) {
+        // Ensure cached messages have proxy URLs (in case cache was created before fix)
+        const messagesWithProxyUrls = cachedMessages.map((msg: any) => {
+          if (msg.document && msg.document.id) {
+            return {
+              ...msg,
+              document: {
+                ...msg.document,
+                url: `/documents/${msg.document.id}/content`,
+              },
+            };
+          }
+          return msg;
+        });
         // Return conversation with cached messages
         // We still need the conversation metadata
         const metadata = await this.prisma.conversation.findUnique({
@@ -115,7 +128,7 @@ export class ChatService {
             preparer: { select: { id: true, name: true, email: true } },
           },
         });
-        return { ...metadata, messages: cachedMessages };
+        return { ...metadata, messages: messagesWithProxyUrls };
       }
     }
 
@@ -132,6 +145,20 @@ export class ChatService {
       },
     });
 
+    // Transform document URLs to use backend proxy instead of direct Firebase Storage URLs
+    const messagesWithProxyUrls = messages.map((msg: any) => {
+      if (msg.document && msg.document.id) {
+        return {
+          ...msg,
+          document: {
+            ...msg.document,
+            url: `/documents/${msg.document.id}/content`, // Use backend proxy URL
+          },
+        };
+      }
+      return msg;
+    });
+
     const conversation = await this.prisma.conversation.findUnique({
       where: { id },
       include: {
@@ -140,10 +167,10 @@ export class ChatService {
       },
     });
 
-    const result = { ...conversation, messages: messages.reverse() }; // Reverse to keep chronological order in UI
+    const result = { ...conversation, messages: messagesWithProxyUrls.reverse() }; // Reverse to keep chronological order in UI
 
-    // Cache the first page if it's new
-    if (!cursor && messages.length > 0) {
+    // Cache the first page if it's new (with proxy URLs)
+    if (!cursor && messagesWithProxyUrls.length > 0) {
       await this.redisService.set(
         `active_messages:${id}`,
         result.messages,
@@ -203,6 +230,17 @@ export class ChatService {
       },
     });
 
+    // Transform document URL to use backend proxy
+    const messageWithProxyUrl = message.document
+      ? {
+          ...message,
+          document: {
+            ...message.document,
+            url: `/documents/${message.document.id}/content`,
+          },
+        }
+      : message;
+
     // Update conversation timestamp
     await this.prisma.conversation.update({
       where: { id: conversationId },
@@ -223,7 +261,7 @@ export class ChatService {
     // Trigger Push Notification
     this.triggerPushNotification(message);
 
-    return message;
+    return messageWithProxyUrl;
   }
 
   private async triggerPushNotification(message: any) {

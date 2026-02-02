@@ -241,13 +241,24 @@ export const ConversationView = ({
                             {isImage(msg.document.mimeType) ? (
                               <TouchableOpacity
                                 activeOpacity={0.9}
-                                onPress={() =>
-                                  setPreviewImage(msg.document.url)
-                                }
+                                onPress={() => {
+                                  // If URL is a relative path, make it absolute
+                                  const imageUrl = msg.document.url?.startsWith('/')
+                                    ? `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${msg.document.url}`
+                                    : msg.document.url;
+                                  setPreviewImage(imageUrl);
+                                }}
                                 style={styles.imagePreviewWrapper}
                               >
                                 <Image
-                                  source={{ uri: msg.document.url }}
+                                  source={{
+                                    uri: msg.document.url?.startsWith('/')
+                                      ? `${import.meta.env.VITE_API_URL || 'http://localhost:4000'}${msg.document.url}`
+                                      : msg.document.url,
+                                    headers: {
+                                      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+                                    },
+                                  }}
                                   style={styles.imagePreview}
                                   resizeMode="cover"
                                 />
