@@ -28,6 +28,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { API_BASE_URL } from "../../config/api";
 
 interface ConversationViewProps {
   messages: any[];

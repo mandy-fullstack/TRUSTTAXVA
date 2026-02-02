@@ -447,11 +447,11 @@ export class DocumentsService {
         'You do not have permission to access this document',
       );
 
-    if (doc.s3Key) {
-      const url = await this.storageService.getSignedUrl(doc.s3Key);
-      return { ...doc, url };
-    }
-    return doc;
+    // Always return proxy URL instead of direct Firebase Storage URL
+    return {
+      ...doc,
+      url: `/documents/${doc.id}/content`,
+    };
   }
 
   async updateMetadata(userId: string, id: string, dto: UpdateDocumentDto) {
