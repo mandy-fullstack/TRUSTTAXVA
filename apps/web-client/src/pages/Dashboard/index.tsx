@@ -275,22 +275,25 @@ const styles = StyleSheet.create({
   },
   gridSmallMobile: {
     flexDirection: "column",
-    gap: 8,
+    gap: 16,
     width: "100%",
     maxWidth: "100%",
+    alignItems: "stretch",
   },
   gridMobile: {
     flexDirection: "column",
-    gap: 8,
+    gap: 16,
     width: "100%",
     maxWidth: "100%",
+    alignItems: "stretch",
   },
   gridTablet: {
     flexDirection: "row",
-    gap: 8,
+    gap: 10,
     flexWrap: "wrap",
     width: "100%",
     maxWidth: "100%",
+    alignItems: "flex-start",
   },
   gridDesktop: {
     flexDirection: "row",
@@ -298,6 +301,7 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
     width: "100%",
     maxWidth: "100%",
+    alignItems: "flex-start",
   },
   notificationBanner: {
     backgroundColor: "#EFF6FF",

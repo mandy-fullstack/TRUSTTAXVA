@@ -86,13 +86,32 @@ export const DashboardRecentOrders = ({
                 i === orders.length - 1 && styles.noBorder,
               ]}
             >
-              <View style={styles.orderHeader}>
+              <View
+                style={[
+                  styles.orderHeader,
+                  isSmallMobile && styles.orderHeaderSmallMobile,
+                ]}
+              >
                 <View style={styles.orderInfo}>
-                  <View style={styles.orderIconWrapper}>
-                    <LayoutDashboard size={18} color="#2563EB" />
+                  <View
+                    style={[
+                      styles.orderIconWrapper,
+                      isSmallMobile && styles.orderIconWrapperSmallMobile,
+                    ]}
+                  >
+                    <LayoutDashboard
+                      size={isSmallMobile ? 16 : 18}
+                      color="#2563EB"
+                    />
                   </View>
                   <View style={styles.orderDetails}>
-                    <Text style={styles.orderText}>
+                    <Text
+                      style={[
+                        styles.orderText,
+                        isSmallMobile && styles.orderTextSmallMobile,
+                      ]}
+                      numberOfLines={2}
+                    >
                       {order.service?.name ||
                         t("dashboard.default_service", "Tax Service")}
                     </Text>
@@ -103,11 +122,27 @@ export const DashboardRecentOrders = ({
                   variant={order.status === "DRAFT" ? "warning" : "primary"}
                 />
               </View>
-              <View style={styles.orderMetaRow}>
-                <Text style={styles.displayId}>
+              <View
+                style={[
+                  styles.orderMetaRow,
+                  isSmallMobile && styles.orderMetaRowSmallMobile,
+                  isMobile && !isSmallMobile && styles.orderMetaRowMobile,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.displayId,
+                    isSmallMobile && styles.displayIdSmallMobile,
+                  ]}
+                >
                   {order.displayId || `#${order.id.substring(0, 8)}`}
                 </Text>
-                <Text style={styles.orderDate}>
+                <Text
+                  style={[
+                    styles.orderDate,
+                    isSmallMobile && styles.orderDateSmallMobile,
+                  ]}
+                >
                   {new Date(order.createdAt).toLocaleDateString()}
                 </Text>
               </View>
@@ -116,6 +151,7 @@ export const DashboardRecentOrders = ({
                   style={[
                     styles.draftActions,
                     isSmallMobile && styles.draftActionsSmallMobile,
+                    isMobile && !isSmallMobile && styles.draftActionsMobile,
                   ]}
                 >
                   <Button
@@ -185,13 +221,24 @@ export const DashboardRecentOrders = ({
 
 const styles = StyleSheet.create({
   wrapper: { flex: 1, minWidth: 0, gap: 8, width: "100%" },
-  wrapperSmallMobile: { minWidth: "100%", gap: 8, width: "100%" },
-  wrapperMobile: { minWidth: "100%", gap: 8, width: "100%" },
+  wrapperSmallMobile: {
+    width: "100%",
+    maxWidth: "100%",
+    gap: 8,
+    marginBottom: 0,
+  },
+  wrapperMobile: {
+    width: "100%",
+    maxWidth: "100%",
+    gap: 8,
+    marginBottom: 0,
+  },
   wrapperTablet: {
     minWidth: 0,
     flex: 1,
     gap: 8,
     width: "48%",
+    maxWidth: "48%",
   },
   gridTitle: { marginBottom: 8 },
   gridTitleSmallMobile: { marginBottom: 6, fontSize: 16 },
@@ -208,6 +255,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
+  },
+  orderHeaderSmallMobile: {
+    marginBottom: 6,
+    flexWrap: "wrap",
+    gap: 8,
   },
   noBorder: { borderBottomWidth: 0 },
   orderInfo: {
@@ -229,11 +281,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
+  orderIconWrapperSmallMobile: {
+    width: 32,
+    height: 32,
+  },
   orderText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#1E293B",
     marginBottom: 4,
+  },
+  orderTextSmallMobile: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 2,
   },
   orderMetaRow: {
     flexDirection: "row",
@@ -243,14 +304,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     paddingLeft: 52,
   },
+  orderMetaRowSmallMobile: {
+    paddingLeft: 0,
+    marginTop: 4,
+  },
+  orderMetaRowMobile: {
+    paddingLeft: 44,
+  },
   displayId: {
     fontSize: 12,
     color: "#64748B",
     fontFamily: "monospace",
   },
+  displayIdSmallMobile: {
+    fontSize: 11,
+  },
   orderDate: {
     fontSize: 12,
     color: "#94A3B8",
+  },
+  orderDateSmallMobile: {
+    fontSize: 11,
   },
   emptyState: { padding: 48, alignItems: "center", gap: 12 },
   emptyText: {
@@ -275,5 +349,9 @@ const styles = StyleSheet.create({
     gap: 6,
     width: "100%",
     maxWidth: "100%",
+    marginTop: 8,
+  },
+  draftActionsMobile: {
+    paddingLeft: 44,
   },
 });

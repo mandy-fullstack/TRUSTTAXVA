@@ -103,11 +103,11 @@ const styles = StyleSheet.create({
   },
   wrapperSmallMobile: {
     paddingHorizontal: 12,
-    paddingBottom: 20,
+    paddingBottom: 16,
   },
   wrapperMobile: {
     paddingHorizontal: 14,
-    paddingBottom: 22,
+    paddingBottom: 18,
   },
   wrapperTablet: {
     paddingHorizontal: 20,
@@ -135,10 +135,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   greetingSmallMobile: {
-    fontSize: 12,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
   greetingMobile: {
-    fontSize: 13,
+    fontSize: 12,
+    letterSpacing: 0.25,
   },
   greetingTablet: {
     fontSize: 14,
@@ -151,14 +153,16 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
   titleSmallMobile: {
-    fontSize: 24,
-    lineHeight: 30,
-    letterSpacing: -0.5,
+    fontSize: 22,
+    lineHeight: 28,
+    letterSpacing: -0.4,
+    marginBottom: 6,
   },
   titleMobile: {
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: -0.8,
+    fontSize: 26,
+    lineHeight: 32,
+    letterSpacing: -0.7,
+    marginBottom: 7,
   },
   titleTablet: {
     fontSize: 30,
@@ -172,12 +176,12 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   subtitleSmallMobile: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 18,
   },
   subtitleMobile: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 20,
   },
   subtitleTablet: {
     fontSize: 15,

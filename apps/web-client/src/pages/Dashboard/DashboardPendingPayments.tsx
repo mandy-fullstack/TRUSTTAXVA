@@ -55,6 +55,8 @@ export const DashboardPendingPayments = ({
             key={inv.id}
             style={[
               styles.actionItem,
+              isSmallMobile && styles.actionItemSmallMobile,
+              isMobile && !isSmallMobile && styles.actionItemMobile,
               i === invoices.length - 1 && styles.noBorder,
             ]}
           >
@@ -62,20 +64,28 @@ export const DashboardPendingPayments = ({
               style={[
                 styles.actionInfo,
                 isSmallMobile && styles.actionInfoSmallMobile,
+                isMobile && !isSmallMobile && styles.actionInfoMobile,
               ]}
             >
-              <View style={styles.actionIconWrapper}>
+              <View
+                style={[
+                  styles.actionIconWrapper,
+                  isSmallMobile && styles.actionIconWrapperSmallMobile,
+                ]}
+              >
                 <AlertCircle
                   size={isSmallMobile ? 16 : isMobile ? 17 : 18}
                   color="#F59E0B"
                 />
               </View>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
                   style={[
                     styles.actionText,
                     isSmallMobile && styles.actionTextSmallMobile,
+                    isMobile && !isSmallMobile && styles.actionTextMobile,
                   ]}
+                  numberOfLines={2}
                 >
                   {inv.description ||
                     t("dashboard.service_invoice", "Service Invoice")}
@@ -84,6 +94,7 @@ export const DashboardPendingPayments = ({
                   style={[
                     styles.actionSubtext,
                     isSmallMobile && styles.actionSubtextSmallMobile,
+                    isMobile && !isSmallMobile && styles.actionSubtextMobile,
                   ]}
                 >
                   {t("dashboard.amount_due", "Amount due")}: $
@@ -98,8 +109,10 @@ export const DashboardPendingPayments = ({
               variant="warning"
               style={
                 isSmallMobile
-                  ? ({ marginTop: 8 } as any)
-                  : undefined
+                  ? ({ marginTop: 8, alignSelf: "flex-start" } as any)
+                  : isMobile && !isSmallMobile
+                    ? ({ marginLeft: 8 } as any)
+                    : undefined
               }
             />
           </View>
@@ -134,6 +147,12 @@ const styles = StyleSheet.create({
     padding: 10,
     paddingHorizontal: 12,
     minHeight: "auto",
+    gap: 8,
+  },
+  actionItemMobile: {
+    padding: 11,
+    paddingHorizontal: 14,
+    minHeight: 60,
   },
   noBorder: { borderBottomWidth: 0 },
   actionInfo: {
@@ -144,10 +163,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   actionInfoSmallMobile: {
-    flexDirection: "column",
+    flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
+    gap: 10,
     width: "100%",
+  },
+  actionInfoMobile: {
+    gap: 12,
   },
   actionIconWrapper: {
     width: 44,
@@ -157,8 +179,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  actionText: { fontSize: 14, fontWeight: "600", color: "#1E293B", flexShrink: 1 },
-  actionTextSmallMobile: { fontSize: 13 },
+  actionIconWrapperSmallMobile: {
+    width: 36,
+    height: 36,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+    flexShrink: 1,
+  },
+  actionTextSmallMobile: { fontSize: 13, lineHeight: 18 },
+  actionTextMobile: { fontSize: 13.5 },
   actionSubtext: { fontSize: 12, color: "#64748B", marginTop: 2 },
   actionSubtextSmallMobile: { fontSize: 11, marginTop: 4 },
+  actionSubtextMobile: { fontSize: 11.5, marginTop: 3 },
 });
