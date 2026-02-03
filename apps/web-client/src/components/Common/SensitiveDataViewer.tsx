@@ -104,11 +104,10 @@ export const SensitiveDataViewer: React.FC<SensitiveDataViewerProps> = ({
           <button
             onClick={handleViewClick}
             disabled={isLoading}
-            className={`p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 h-10 w-10 flex items-center justify-center ${
-              isVisible
+            className={`p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 h-10 w-10 flex items-center justify-center ${isVisible
                 ? "text-amber-600 bg-amber-50 dark:bg-amber-900/20"
                 : "text-gray-500"
-            }`}
+              }`}
             title={
               isVisible
                 ? t("hide", "Hide")

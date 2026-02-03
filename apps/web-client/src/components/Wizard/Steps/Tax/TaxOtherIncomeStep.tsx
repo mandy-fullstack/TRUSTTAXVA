@@ -24,21 +24,21 @@ const OTHER_INCOME_ITEMS: {
   labelKey: string;
   hintKey: string;
 }[] = [
-  { key: "has1099NEC", labelKey: "has_1099nec", hintKey: "has_1099nec_hint" },
-  { key: "has1099K", labelKey: "has_1099k", hintKey: "has_1099k_hint" },
-  { key: "has1099G", labelKey: "has_1099g", hintKey: "has_1099g_hint" },
-  {
-    key: "has1099INTorDIV",
-    labelKey: "has_1099int",
-    hintKey: "has_1099int_hint",
-  },
-  { key: "has1099R", labelKey: "has_1099r", hintKey: "has_1099r_hint" },
-  { key: "hasSSA1099", labelKey: "has_ssa1099", hintKey: "has_ssa1099_hint" },
-  { key: "hasCrypto", labelKey: "has_crypto", hintKey: "has_crypto_hint" },
-  { key: "hasW2G", labelKey: "has_w2g", hintKey: "has_w2g_hint" },
-  { key: "has1099B", labelKey: "has_1099b", hintKey: "has_1099b_hint" },
-  { key: "hasRental", labelKey: "has_rental", hintKey: "has_rental_hint" },
-];
+    { key: "has1099NEC", labelKey: "has_1099nec", hintKey: "has_1099nec_hint" },
+    { key: "has1099K", labelKey: "has_1099k", hintKey: "has_1099k_hint" },
+    { key: "has1099G", labelKey: "has_1099g", hintKey: "has_1099g_hint" },
+    {
+      key: "has1099INTorDIV",
+      labelKey: "has_1099int",
+      hintKey: "has_1099int_hint",
+    },
+    { key: "has1099R", labelKey: "has_1099r", hintKey: "has_1099r_hint" },
+    { key: "hasSSA1099", labelKey: "has_ssa1099", hintKey: "has_ssa1099_hint" },
+    { key: "hasCrypto", labelKey: "has_crypto", hintKey: "has_crypto_hint" },
+    { key: "hasW2G", labelKey: "has_w2g", hintKey: "has_w2g_hint" },
+    { key: "has1099B", labelKey: "has_1099b", hintKey: "has_1099b_hint" },
+    { key: "hasRental", labelKey: "has_rental", hintKey: "has_rental_hint" },
+  ];
 
 interface TaxOtherIncomeStepProps {
   data: TaxIntakeData;

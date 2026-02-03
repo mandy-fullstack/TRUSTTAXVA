@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, useWindowDimensions } from "react-native";
 import { Button, Input } from "@trusttax/ui";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import {
   api,
   AuthenticationError,
@@ -17,6 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { t } = useTranslation();
 
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
@@ -25,7 +27,7 @@ export function LoginPage() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError("Please fill in all fields");
+      setError(t("auth.error_fill_all", "Please fill in all fields"));
       return;
     }
     setLoading(true);
@@ -34,7 +36,7 @@ export function LoginPage() {
       const data = await api.login(email.trim(), password);
 
       if (data.user?.role !== "ADMIN") {
-        setError("Access denied. Admin privileges required.");
+        setError(t("auth.access_denied", "Access denied. Admin privileges required."));
         setLoading(false);
         return;
       }
@@ -42,15 +44,15 @@ export function LoginPage() {
       navigate("/dashboard");
     } catch (err: unknown) {
       if (err instanceof AuthenticationError) {
-        setError("Invalid email or password. Please try again.");
+        setError(t("auth.error_invalid", "Invalid email or password. Please try again."));
       } else if (err instanceof ForbiddenError) {
-        setError("Access denied. Admin privileges required.");
+        setError(t("auth.access_denied", "Access denied. Admin privileges required."));
       } else if (err instanceof NetworkError) {
-        setError("Unable to connect to server. Please check your connection.");
+        setError(t("auth.error_network", "Unable to connect to server. Please check your connection."));
       } else {
         setError(
           (err as Error)?.message ||
-            "An unexpected error occurred. Please try again.",
+            t("auth.error_unexpected", "An unexpected error occurred. Please try again."),
         );
       }
     } finally {
@@ -65,7 +67,7 @@ export function LoginPage() {
           <View style={styles.brandOverlay}>
             <Text style={styles.brandTitle}>TrustTax Admin</Text>
             <Text style={styles.brandSubtitle}>
-              Manage your tax services with confidence.
+              {t("auth.brand_subtitle", "Manage your tax services with confidence.")}
             </Text>
           </View>
         </View>
@@ -77,14 +79,14 @@ export function LoginPage() {
             <Text style={styles.brandTitleMobile}>TrustTax Admin</Text>
           )}
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.title}>{t("auth.welcome_back")}</Text>
             <Text style={styles.subtitle}>
-              Please sign in to access the dashboard
+              {t("auth.sign_in_subtitle")}
             </Text>
           </View>
 
           <Input
-            label="Email Address"
+            label={t("auth.email_address")}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -92,7 +94,7 @@ export function LoginPage() {
             style={styles.inputWrap}
           />
           <Input
-            label="Password"
+            label={t("auth.password")}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -104,20 +106,20 @@ export function LoginPage() {
             style={styles.forgotPasswordLink}
             onPress={() => navigate("/forgot-password")}
           >
-            Forgot Password?
+            {t("auth.forgot_password")}
           </Text>
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <Button
-            title="Sign In"
+            title={t("auth.sign_in")}
             onPress={handleLogin}
             loading={loading}
             style={styles.button}
           />
 
           <Text style={styles.footerText}>
-            Protected area. Unauthorized access is prohibited.
+            {t("auth.protected_area")}
           </Text>
         </View>
       </View>

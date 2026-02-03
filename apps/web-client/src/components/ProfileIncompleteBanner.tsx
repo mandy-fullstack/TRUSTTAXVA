@@ -54,7 +54,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FDE68A",
     borderRadius: 0,
-    marginBottom: 24,
+    marginBottom: 8,
+    marginLeft: 0,
+    marginRight: 0,
     ...(Platform.OS === "web"
       ? {
           boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
@@ -64,8 +66,8 @@ const styles = StyleSheet.create({
   bannerContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    padding: 20,
+    gap: 10,
+    padding: 10,
     flexWrap: "wrap",
   },
   iconBox: {

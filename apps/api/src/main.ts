@@ -86,6 +86,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      skipMissingProperties: true,
     }),
   );
 

@@ -34,6 +34,7 @@ const MOBILE_BREAKPOINT = 768;
 
 export function StaffPage() {
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
   const isMobile = width < MOBILE_BREAKPOINT;
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,7 +49,7 @@ export function StaffPage() {
         const data = await api.getStaff();
         if (!cancelled) setStaff(Array.isArray(data) ? data : []);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load staff");
+        if (!cancelled) setError(e?.message || t("staff.load_error", "Failed to load staff"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -91,18 +92,20 @@ export function StaffPage() {
         <View style={styles.header}>
           <View>
             <H1 style={isMobile ? styles.titleMobile : undefined}>
-              Staff & Team
+              {t("staff.title")}
             </H1>
-            <Text style={styles.subtitle}>{staff.length} team members</Text>
+            <Text style={styles.subtitle}>
+              {t("staff.team_members", { count: staff.length })}
+            </Text>
           </View>
         </View>
 
         {staff.length === 0 ? (
           <View style={styles.emptyState}>
             <Users size={48} color="#E2E8F0" />
-            <H4 style={styles.emptyTitle}>No Staff Members</H4>
+            <H4 style={styles.emptyTitle}>{t("staff.no_staff")}</H4>
             <Text style={styles.emptyText}>
-              Staff members will appear here once they are added.
+              {t("staff.no_staff_message")}
             </Text>
           </View>
         ) : isMobile ? (

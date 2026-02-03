@@ -55,10 +55,12 @@ En el dashboard de Render, agrega la variable de entorno:
 1. Ve a tu servicio `trusttax-api`
 2. Settings → Environment Variables
 3. Agrega:
+
    ```
    Key: CORS_ORIGINS
    Value: https://trusttax-web-client.onrender.com,https://trusttax-web-admin.onrender.com
    ```
+
 4. Guarda y redeploy
 
 ## ⚠️ Importante

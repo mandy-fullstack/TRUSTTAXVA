@@ -20,30 +20,32 @@ import {
   X,
   ClipboardList,
   MessageCircle,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useNotification } from "../context/NotificationContext";
+import { useSocketContext } from "../context/SocketContext";
 import { ChatWidget } from "./Chat/ChatWidget";
+import { NotificationsPanel } from "./NotificationsPanel";
+import { LanguageSelector } from "./LanguageSelector";
+import { useTranslation } from "react-i18next";
+import { api } from "../services/api";
 
 const MOBILE_BREAKPOINT = 768;
 
-const navItems: {
-  path: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  match?: "startsWith";
-}[] = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/clients", label: "Clients", icon: Users },
-  { path: "/staff", label: "Staff", icon: Users },
-  { path: "/orders", label: "Orders", icon: FileText, match: "startsWith" },
+const getNavItems = (t: (key: string) => string) => [
+  { path: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard },
+  { path: "/clients", label: t("nav.clients"), icon: Users },
+  { path: "/staff", label: t("nav.staff"), icon: Users },
+  { path: "/orders", label: t("nav.orders"), icon: FileText, match: "startsWith" as const },
   {
     path: "/services",
-    label: "Services",
+    label: t("nav.services"),
     icon: Briefcase,
-    match: "startsWith",
+    match: "startsWith" as const,
   },
-  { path: "/forms", label: "Forms", icon: ClipboardList, match: "startsWith" },
-  { path: "/settings", label: "Settings", icon: Settings, match: "startsWith" },
+  { path: "/forms", label: t("nav.forms"), icon: ClipboardList, match: "startsWith" as const },
+  { path: "/settings", label: t("nav.settings"), icon: Settings, match: "startsWith" as const },
 ];
 
 function NavItem({
@@ -94,11 +96,17 @@ export function Layout({
   const navigate = useNavigate();
   const location = useLocation();
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { notifications, unreadCount } = useNotification();
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const { socket, isConnected } = useSocketContext();
 
   const isMobile = width < MOBILE_BREAKPOINT;
   const isChatRoute = location.pathname.startsWith("/chat");
+  const navItems = getNavItems(t);
 
   // Close chat widget if navigating to full chat page
   useEffect(() => {
@@ -106,6 +114,77 @@ export function Layout({
       setIsChatOpen(false);
     }
   }, [isChatRoute, isChatOpen]);
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUnreadCount = async () => {
+      try {
+        const data = await api.getUnreadMessageCount();
+        setUnreadMessageCount(data.count || 0);
+      } catch (error) {
+        console.error("Failed to fetch unread message count:", error);
+      }
+    };
+
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 15000); // Refresh every 15 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Listen for new messages to update count in real-time
+  useEffect(() => {
+    if (!isConnected || !socket || !user?.id) return;
+
+    const refreshUnreadCount = async () => {
+      try {
+        const data = await api.getUnreadMessageCount();
+        setUnreadMessageCount(data.count || 0);
+      } catch (error) {
+        console.error("Failed to refresh unread count:", error);
+      }
+    };
+
+    const handleNewMessage = (data: any) => {
+      // Only increment if message is not from the current user and not already read
+      if (data.senderId !== user.id && !data.isRead) {
+        // Increment count immediately for better UX
+        setUnreadMessageCount((prev) => prev + 1);
+        // Then refresh to get accurate count from server
+        refreshUnreadCount();
+      }
+    };
+
+    const handleMessagesRead = (data: any) => {
+      // When messages are marked as read, refresh the count
+      if (data.userId === user.id) {
+        // If current user marked messages as read, refresh count
+        refreshUnreadCount();
+      } else {
+        // If other user marked messages as read, we might need to refresh too
+        refreshUnreadCount();
+      }
+    };
+
+    const handleNotification = (payload: any) => {
+      // Update count when notification is received
+      if (payload.type === "message") {
+        refreshUnreadCount();
+      }
+    };
+
+    socket.on("newMessage", handleNewMessage);
+    socket.on("messagesRead", handleMessagesRead);
+    socket.on("notification", handleNotification);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+      socket.off("messagesRead", handleMessagesRead);
+      socket.off("notification", handleNotification);
+    };
+  }, [isConnected, socket, user?.id]);
 
   const isActive = (item: (typeof navItems)[number]) => {
     if (item.match === "startsWith")
@@ -168,47 +247,89 @@ export function Layout({
         activeOpacity={0.7}
       >
         <LogOut size={20} color="#EF4444" />
-        <Text style={styles.logoutText}>Logout</Text>
+        <Text style={styles.logoutText}>{t("nav.logout")}</Text>
       </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {isMobile && (
-        <View style={styles.mobileHeader}>
-          <TouchableOpacity
-            onPress={() => setMobileMenuOpen((o) => !o)}
-            style={styles.menuButton}
-            activeOpacity={0.7}
-            accessibilityLabel={mobileMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {mobileMenuOpen ? (
-              <X size={24} color="#0F172A" />
-            ) : (
-              <Menu size={24} color="#0F172A" />
-            )}
-          </TouchableOpacity>
-          <Text style={styles.mobileHeaderTitle}>TrustTax Admin</Text>
-          <View style={styles.menuButton} />
+      {/* Top Header Bar - Desktop and Mobile */}
+      <View style={[styles.topHeader, isMobile && styles.topHeaderMobile]}>
+        <View style={styles.topHeaderInner}>
+          {isMobile && (
+            <TouchableOpacity
+              onPress={() => setMobileMenuOpen((o) => !o)}
+              style={styles.menuButton}
+              activeOpacity={0.7}
+              accessibilityLabel={mobileMenuOpen ? "Close menu" : "Open menu"}
+            >
+              {mobileMenuOpen ? (
+                <X size={24} color="#0F172A" />
+              ) : (
+                <Menu size={24} color="#0F172A" />
+              )}
+            </TouchableOpacity>
+          )}
+          {!isMobile && (
+            <Text style={styles.topHeaderTitle}>TrustTax Admin</Text>
+          )}
+          {isMobile && (
+            <Text style={styles.mobileHeaderTitle}>TrustTax Admin</Text>
+          )}
+          <View style={styles.topHeaderRight}>
+            {/* Notifications */}
+            <View
+              style={{
+                position: "relative",
+                zIndex: 9999,
+                ...(Platform.OS === "web"
+                  ? { overflow: "visible" as any }
+                  : {}),
+              }}
+            >
+              <TouchableOpacity
+                style={styles.notificationIconBox}
+                onPress={() => setShowNotifications(!showNotifications)}
+                activeOpacity={0.7}
+              >
+                <Bell size={isMobile ? 20 : 22} color="#0F172A" />
+                {unreadCount > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <NotificationsPanel
+                isOpen={showNotifications}
+                onClose={() => setShowNotifications(false)}
+              />
+            </View>
+            {/* Language Selector */}
+            <LanguageSelector variant={isMobile ? "mobile" : "desktop"} />
+          </View>
         </View>
-      )}
+      </View>
 
-      {!isMobile && sidebar}
+      <View style={styles.contentWrapper}>
+        {!isMobile && sidebar}
 
-      {isMobile && mobileMenuOpen && (
-        <>
-          <TouchableOpacity
-            style={styles.overlay}
-            onPress={closeMobileMenu}
-            activeOpacity={1}
-          />
-          {sidebar}
-        </>
-      )}
+        {isMobile && mobileMenuOpen && (
+          <>
+            <TouchableOpacity
+              style={styles.overlay}
+              onPress={closeMobileMenu}
+              activeOpacity={1}
+            />
+            {sidebar}
+          </>
+        )}
 
-      <View style={[styles.main, isMobile && styles.mainMobile]}>
-        <View style={styles.contentRow}>
+        <View style={[styles.main, isMobile && styles.mainMobile]}>
+          <View style={styles.contentRow}>
           {noScroll ? (
             <View style={{ flex: 1 }}>{children}</View>
           ) : (
@@ -225,21 +346,70 @@ export function Layout({
             <View
               style={[styles.chatPanel, isMobile && styles.chatPanelMobile]}
             >
-              <ChatWidget onClose={() => setIsChatOpen(false)} />
+              <ChatWidget 
+                onClose={async () => {
+                  setIsChatOpen(false);
+                  // Refresh unread count when closing chat
+                  try {
+                    const data = await api.getUnreadMessageCount();
+                    setUnreadMessageCount(data.count || 0);
+                  } catch (error) {
+                    console.error("Failed to fetch unread count:", error);
+                  }
+                }}
+                onUnreadCountChange={(count) => {
+                  setUnreadMessageCount(count);
+                }}
+              />
             </View>
           )}
         </View>
 
         {/* Floating Chat Button */}
         {!isChatRoute && !isChatOpen && (
-          <TouchableOpacity
-            style={styles.floatingChatBtn}
-            onPress={() => setIsChatOpen(true)}
-            activeOpacity={0.9}
+          <View
+            style={{
+              position: "fixed" as any,
+              bottom: 32,
+              right: 32,
+              zIndex: 50,
+              ...(Platform.OS === "web"
+                ? { overflow: "visible" as any }
+                : {}),
+            }}
           >
-            <MessageCircle size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.floatingChatBtn}
+              onPress={async () => {
+                setIsChatOpen(true);
+                // Mark all messages as read when opening chat
+                try {
+                  await api.markAllMessagesAsRead();
+                  setUnreadMessageCount(0);
+                } catch (error) {
+                  console.error("Failed to mark messages as read:", error);
+                  // Refresh count on error
+                  api.getUnreadMessageCount()
+                    .then((data) => {
+                      setUnreadMessageCount(data.count || 0);
+                    })
+                    .catch(() => {});
+                }
+              }}
+              activeOpacity={0.9}
+            >
+              <MessageCircle size={24} color="#FFFFFF" />
+              {unreadMessageCount > 0 && (
+                <View style={styles.chatBadge}>
+                  <Text style={styles.chatBadgeText}>
+                    {unreadMessageCount > 9 ? "9+" : unreadMessageCount}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         )}
+        </View>
       </View>
     </View>
   );
@@ -248,7 +418,7 @@ export function Layout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: "column",
     minHeight: "100vh" as any,
     width: "100%",
     backgroundColor: "#F8FAFC",
@@ -309,17 +479,25 @@ const styles = StyleSheet.create({
     minWidth: 280,
     backgroundColor: "#0F172A",
     padding: spacing[6],
-    height: "100vh" as any,
+    height: "calc(100vh - 64px)" as any,
     justifyContent: "space-between",
-  },
+    position: "fixed" as any,
+    top: 64,
+    left: 0,
+    bottom: 0,
+    ...(Platform.OS === "web"
+      ? { overflow: "auto" as any }
+      : {}),
+  } as any,
   sidebarMobile: {
     position: "fixed" as any,
-    top: 0,
+    top: 64,
     left: 0,
     bottom: 0,
     width: 280,
-    height: "100%",
+    height: "calc(100% - 64px)" as any,
     zIndex: 201,
+    marginTop: 0,
     ...(Platform.OS === "web"
       ? { boxShadow: "4px 0 20px rgba(0,0,0,0.15)" }
       : {}),
@@ -344,7 +522,7 @@ const styles = StyleSheet.create({
   navLabel: { color: "#94A3B8", fontSize: 14, fontWeight: "500" },
   navLabelActive: { color: "#FFF" },
   navLink: {
-    textDecoration: "none",
+    textDecorationLine: "none",
     ...(Platform.OS === "web" ? { display: "block" } : {}),
   } as any,
   logoutButton: {
@@ -364,10 +542,98 @@ const styles = StyleSheet.create({
     minWidth: 0,
     backgroundColor: "#F8FAFC",
     overflow: "auto" as any,
-    minHeight: "100vh" as any,
-  },
+    minHeight: "calc(100vh - 64px)" as any,
+    marginLeft: 280,
+    ...(Platform.OS === "web"
+      ? {
+          width: "calc(100% - 280px)" as any,
+        }
+      : {}),
+  } as any,
   mainMobile: {
-    paddingTop: 56,
+    marginLeft: 0,
+    width: "100%",
+    minHeight: "calc(100vh - 64px)" as any,
+  },
+  topHeader: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 64,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    zIndex: 50,
+    ...(Platform.OS === "web"
+      ? {
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          overflow: "visible",
+        }
+      : {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.04,
+          shadowRadius: 2,
+          elevation: 2,
+        }),
+  } as any,
+  topHeaderMobile: {
+    height: 64,
+  },
+  topHeaderInner: {
+    maxWidth: "100%",
+    width: "100%",
+    height: "100%",
+    marginHorizontal: "auto",
+    paddingHorizontal: spacing[6],
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    ...(Platform.OS === "web"
+      ? {
+          overflow: "visible",
+        }
+      : {}),
+  } as any,
+  topHeaderTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0F172A",
+    letterSpacing: -0.3,
+  },
+  topHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[4],
+  },
+  notificationIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 0,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center",
+    justifyContent: "center",
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  } as any,
+  notificationBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    backgroundColor: "#EF4444",
+    borderRadius: 0,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFF",
+  },
+  notificationBadgeText: {
+    color: "#FFF",
+    fontSize: 10,
+    fontWeight: "bold",
+    paddingHorizontal: 4,
   },
   contentRow: {
     flexDirection: "row",
@@ -400,9 +666,6 @@ const styles = StyleSheet.create({
     zIndex: 900,
   } as any,
   floatingChatBtn: {
-    position: "absolute",
-    bottom: 32,
-    right: 32,
     width: 56,
     height: 56,
     borderRadius: 0,
@@ -414,6 +677,38 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-    zIndex: 50,
+    position: "relative" as any,
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  } as any,
+  chatBadge: {
+    position: "absolute" as any,
+    top: -4,
+    right: -4,
+    backgroundColor: "#EF4444",
+    borderRadius: 0,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    paddingHorizontal: 4,
+    ...(Platform.OS === "web"
+      ? {
+          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        }
+      : {}),
+  } as any,
+  chatBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
+    lineHeight: 12,
+  },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    marginTop: 64,
+    minHeight: "calc(100vh - 64px)" as any,
   },
 });

@@ -281,28 +281,28 @@ Usar:
 
 ### 🟡 MEDIA PRIORIDAD
 
-4. **Modal de Preview**
+1. **Modal de Preview**
    - Implementar preview de PDFs
    - Preview de imágenes
    - Navegación entre documentos
 
-5. **Indicadores Visuales**
+2. **Indicadores Visuales**
    - Badges de estado
    - Iconos por tipo
    - Indicadores de "Nuevo"
 
-6. **Filtros y Búsqueda**
+3. **Filtros y Búsqueda**
    - Filtrar por tipo
    - Buscar por nombre
    - Vista Grid/Lista
 
 ### 🟢 BAJA PRIORIDAD
 
-7. **Mejoras de Performance**
+1. **Mejoras de Performance**
    - Lazy loading de documentos
    - Virtualización si hay muchos documentos
 
-8. **Funcionalidades Extra**
+2. **Funcionalidades Extra**
    - Copiar link al clipboard
    - Compartir documento (si aplica)
    - Historial de visualizaciones

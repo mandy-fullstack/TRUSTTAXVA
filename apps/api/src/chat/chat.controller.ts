@@ -9,11 +9,12 @@ import {
   NotFoundException,
   Delete,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ChatService } from './chat.service';
-
 import { ChatGateway } from './chat.gateway';
+import { CompanyService } from '../company/company.service';
 
 @Controller('chat')
 @UseGuards(AuthGuard('jwt'))
@@ -21,6 +22,7 @@ export class ChatController {
   constructor(
     private readonly chatService: ChatService,
     private readonly chatGateway: ChatGateway,
+    private readonly companyService: CompanyService,
   ) {}
 
   @Get('conversations')
@@ -31,6 +33,14 @@ export class ChatController {
   @Get('unread-count')
   async getUnreadCount(@Request() req: any) {
     return this.chatService.getUnreadMessageCount(req.user.userId);
+  }
+
+  @Post('mark-all-read')
+  async markAllRead(@Request() req: any) {
+    await this.chatService.markAllMessagesAsRead(req.user.userId);
+    // Note: We don't emit 'messagesRead' here because it requires a conversationId
+    // The frontend will update the unread count when it fetches conversations
+    return { success: true };
   }
 
   @Post('conversations')
@@ -88,39 +98,79 @@ export class ChatController {
 
     if (senderRole === 'CLIENT') {
       // If sender is Client -> Notify assigned preparer OR all admins
+      const senderName = message.sender?.name || 'Client';
       if (conv.preparerId) {
         this.chatGateway.server
           .to(`user_${conv.preparerId}`)
           .emit('notification', {
             type: 'message',
-            title: 'New Message',
-            message: `You have a new message from ${message.sender?.name || 'Client'}`,
+            title: senderName, // Use sender name as title
+            body: `You have a new message`,
+            message: `You have a new message from ${senderName}`,
+            senderName: senderName,
+            senderId: message.senderId,
             conversationId: id,
+            link: `/admin/chat/${id}`,
           });
       } else {
         // If unassigned, notify all admins
         this.chatGateway.server.to('admin_notifications').emit('notification', {
           type: 'message',
-          title: 'Unassigned Message',
-          message: `New message from ${message.sender?.name || 'Client'} in unassigned chat`,
+          title: senderName, // Use sender name as title
+          body: `New message`,
+          message: `New message from ${senderName}`,
+          senderName: senderName,
+          senderId: message.senderId,
           conversationId: id,
+          link: `/admin/chat/${id}`,
         });
       }
     } else {
       // If sender is Admin/Preparer -> Notify Client
       if (conv.clientId) {
+        // Get notification sender name from company profile
+        let senderName = message.sender?.name || 'Support';
+        try {
+          const companyProfile = await this.companyService.getProfile();
+          // Check if company has a custom notification sender name configured
+          // If notificationSenderName is set and not empty, use it; otherwise use admin name
+          if (companyProfile.notificationSenderName && companyProfile.notificationSenderName.trim() !== '') {
+            senderName = companyProfile.notificationSenderName.trim();
+          }
+          // If notificationSenderName is empty/null/undefined, use admin name (default behavior)
+        } catch (error) {
+          console.error('Failed to get company profile for notification sender name:', error);
+          // Fallback to admin name if error
+        }
+        
         this.chatGateway.server
           .to(`user_${conv.clientId}`)
           .emit('notification', {
             type: 'message',
-            title: 'New Message from Support',
-            message: message.content, // Maybe truncate?
+            title: senderName, // Use configured name or admin name
+            body: message.content.length > 100 ? message.content.substring(0, 97) + '...' : message.content,
+            message: message.content,
+            senderName: senderName,
+            senderId: message.senderId,
             conversationId: id,
+            link: `/chat/${id}`,
           });
       }
     }
 
     return message;
+  }
+
+  @Patch('conversations/:id/assign')
+  async assignPreparer(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { preparerId: string | null },
+  ) {
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'PREPARER') {
+      throw new NotFoundException('Unauthorized');
+    }
+    return this.chatService.assignPreparer(id, body.preparerId);
   }
 
   @Delete('conversations/:id')

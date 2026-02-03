@@ -72,14 +72,14 @@ export function getApiUrl(): string {
 
 ## 🔍 Cómo Verificar
 
-### 1. Verificar que el archivo .env existe:
+### 1. Verificar que el archivo .env existe
 
 ```bash
 cat apps/web-client/.env | grep VITE_API_URL
 cat apps/web-admin/.env | grep VITE_API_URL
 ```
 
-### 2. Verificar en la consola del navegador:
+### 2. Verificar en la consola del navegador
 
 Abre la consola del navegador (F12) y busca:
 
@@ -88,7 +88,7 @@ Abre la consola del navegador (F12) y busca:
 ✅ Usando VITE_API_URL de variables de entorno: http://localhost:4000
 ```
 
-### 3. Verificar en el código:
+### 3. Verificar en el código
 
 El código muestra logs automáticamente:
 
@@ -129,14 +129,14 @@ VITE_API_URL = http://localhost:4000  # ❌ Incorrecto (espacios)
 
 ## 📝 Formato Correcto del .env
 
-### ✅ CORRECTO:
+### ✅ CORRECTO
 
 ```env
 VITE_API_URL=http://localhost:4000
 VITE_API_URL=https://trusttax-api.onrender.com
 ```
 
-### ❌ INCORRECTO:
+### ❌ INCORRECTO
 
 ```env
 VITE_API_URL = http://localhost:4000  # Espacios alrededor del =

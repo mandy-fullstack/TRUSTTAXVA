@@ -25,27 +25,27 @@ const DEDUCTION_ITEMS: {
   labelKey: string;
   hintKey: string;
 }[] = [
-  {
-    key: "mortgageInterest",
-    labelKey: "has_mortgage",
-    hintKey: "has_mortgage_hint",
-  },
-  { key: "tuition1098T", labelKey: "has_tuition", hintKey: "has_tuition_hint" },
-  {
-    key: "studentLoanInterest",
-    labelKey: "has_student_loan",
-    hintKey: "has_student_loan_hint",
-  },
-  { key: "iraContribution", labelKey: "has_ira", hintKey: "has_ira_hint" },
-  { key: "hsa", labelKey: "has_hsa", hintKey: "has_hsa_hint" },
-  {
-    key: "charitable",
-    labelKey: "has_charitable",
-    hintKey: "has_charitable_hint",
-  },
-  { key: "medical", labelKey: "has_medical", hintKey: "has_medical_hint" },
-  { key: "energy", labelKey: "has_energy", hintKey: "has_energy_hint" },
-];
+    {
+      key: "mortgageInterest",
+      labelKey: "has_mortgage",
+      hintKey: "has_mortgage_hint",
+    },
+    { key: "tuition1098T", labelKey: "has_tuition", hintKey: "has_tuition_hint" },
+    {
+      key: "studentLoanInterest",
+      labelKey: "has_student_loan",
+      hintKey: "has_student_loan_hint",
+    },
+    { key: "iraContribution", labelKey: "has_ira", hintKey: "has_ira_hint" },
+    { key: "hsa", labelKey: "has_hsa", hintKey: "has_hsa_hint" },
+    {
+      key: "charitable",
+      labelKey: "has_charitable",
+      hintKey: "has_charitable_hint",
+    },
+    { key: "medical", labelKey: "has_medical", hintKey: "has_medical_hint" },
+    { key: "energy", labelKey: "has_energy", hintKey: "has_energy_hint" },
+  ];
 
 interface TaxDeductionsStepProps {
   data: TaxIntakeData;

@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { View, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 import { H4, Text } from "@trusttax/ui";
 import { Clock, Plus, Trash2 } from "lucide-react";
@@ -14,21 +15,78 @@ interface HoursFormProps {
 }
 
 export const HoursForm = ({ hours, onChange }: HoursFormProps) => {
+  const makeId = () => {
+    // Prefer crypto UUID when available
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c: any = typeof crypto !== "undefined" ? crypto : undefined;
+      if (c?.randomUUID) return String(c.randomUUID());
+    } catch {
+      // ignore
+    }
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
+
+  const { normalizedHours, changed } = useMemo(() => {
+    const seen = new Set<string>();
+    let didChange = false;
+
+    const normalized: HourEntry[] = (hours || []).map((raw: any, idx) => {
+      // Support legacy format: [label, value]
+      let entry: Partial<HourEntry>;
+      if (Array.isArray(raw)) {
+        entry = {
+          id: undefined,
+          label: String(raw[0] ?? ""),
+          value: String(raw[1] ?? ""),
+        };
+        didChange = true;
+      } else if (raw && typeof raw === "object") {
+        entry = raw as Partial<HourEntry>;
+      } else {
+        entry = { id: undefined, label: "", value: "" };
+        didChange = true;
+      }
+
+      let id = typeof entry.id === "string" && entry.id.trim() ? entry.id : "";
+      if (!id || seen.has(id)) {
+        id = `${makeId()}-${idx}`;
+        didChange = true;
+      }
+      seen.add(id);
+
+      const label = typeof entry.label === "string" ? entry.label : "";
+      const value = typeof entry.value === "string" ? entry.value : "";
+      if (label !== entry.label || value !== entry.value) didChange = true;
+
+      return { id, label, value };
+    });
+
+    return { normalizedHours: normalized, changed: didChange };
+  }, [hours]);
+
+  // If we had to normalize (missing/duplicate ids, legacy formats), persist it back up.
+  useEffect(() => {
+    if (changed) onChange(normalizedHours);
+  }, [changed, normalizedHours, onChange]);
+
   const addEntry = () => {
     const newEntry: HourEntry = {
-      id: Date.now().toString(),
+      id: makeId(),
       label: "",
       value: "",
     };
-    onChange([...hours, newEntry]);
+    onChange([...normalizedHours, newEntry]);
   };
 
   const removeEntry = (id: string) => {
-    onChange(hours.filter((h) => h.id !== id));
+    onChange(normalizedHours.filter((h) => h.id !== id));
   };
 
   const updateEntry = (id: string, field: "label" | "value", text: string) => {
-    onChange(hours.map((h) => (h.id === id ? { ...h, [field]: text } : h)));
+    onChange(
+      normalizedHours.map((h) => (h.id === id ? { ...h, [field]: text } : h)),
+    );
   };
 
   return (
@@ -42,7 +100,7 @@ export const HoursForm = ({ hours, onChange }: HoursFormProps) => {
       </Text>
 
       <View style={styles.list}>
-        {hours.map((entry) => (
+        {normalizedHours.map((entry) => (
           <View key={entry.id} style={styles.row}>
             <View style={styles.fieldCol}>
               <Text style={styles.label}>Label (e.g. Mon-Fri)</Text>

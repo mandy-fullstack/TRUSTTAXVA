@@ -3,6 +3,7 @@
 ## 🐛 Problema
 
 Error en producción:
+
 ```
 Access to fetch at 'https://trusttax-api.onrender.com/services' 
 from origin 'https://trusttaxllc.com' has been blocked by CORS policy: 
@@ -26,7 +27,8 @@ Key: CORS_ORIGINS
 Value: https://trusttaxllc.com,https://www.trusttaxllc.com
 ```
 
-**Importante**: 
+**Importante**:
+
 - Separa múltiples dominios con comas (sin espacios)
 - Incluye el protocolo `https://`
 - NO incluyas la barra final `/`
@@ -42,6 +44,7 @@ CORS_ORIGINS=https://trusttaxllc.com,https://www.trusttaxllc.com,https://admin.t
 ### Paso 3: Redeploy
 
 Después de agregar la variable:
+
 1. Guarda los cambios
 2. Render automáticamente hará redeploy
 3. Espera a que el deploy termine
@@ -51,6 +54,7 @@ Después de agregar la variable:
 ### 1. Verificar en los logs de Render
 
 Después del redeploy, en los logs deberías ver:
+
 ```
 ✅ [CORS] Orígenes permitidos en producción: [ 'https://trusttaxllc.com', 'https://www.trusttaxllc.com' ]
 ```
@@ -77,6 +81,7 @@ curl -H "Origin: https://trusttaxllc.com" \
 ```
 
 Deberías ver en los headers:
+
 ```
 < access-control-allow-origin: https://trusttaxllc.com
 < access-control-allow-credentials: true
@@ -86,7 +91,8 @@ Deberías ver en los headers:
 
 ### Error 1: CORS_ORIGINS no configurado
 
-**Síntoma**: 
+**Síntoma**:
+
 ```
 ⚠️ [CORS] CORS_ORIGINS no está configurado en producción!
 ```
@@ -96,6 +102,7 @@ Deberías ver en los headers:
 ### Error 2: Origen no permitido
 
 **Síntoma**:
+
 ```
 ⚠️ [CORS] Origen no permitido: https://trusttaxllc.com
 ```
@@ -105,11 +112,13 @@ Deberías ver en los headers:
 ### Error 3: Espacios en CORS_ORIGINS
 
 **Incorrecto**:
+
 ```
 CORS_ORIGINS=https://trusttaxllc.com, https://www.trusttaxllc.com
 ```
 
 **Correcto**:
+
 ```
 CORS_ORIGINS=https://trusttaxllc.com,https://www.trusttaxllc.com
 ```

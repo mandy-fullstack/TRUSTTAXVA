@@ -16,13 +16,15 @@ import { AdminConversationView } from "./AdminConversationView";
 
 interface ChatWidgetProps {
   onClose: () => void;
+  onUnreadCountChange?: (count: number) => void;
 }
 
-export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
+export const ChatWidget = ({ onClose, onUnreadCountChange }: ChatWidgetProps) => {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [staff, setStaff] = useState<any[]>([]);
 
   const {
     messages,
@@ -37,11 +39,46 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
   // Initial load
   useEffect(() => {
     fetchConversations();
+    fetchStaff();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const data = await api.getStaff();
+      setStaff(data);
+    } catch (error) {
+      console.error("Failed to fetch staff:", error);
+    }
+  };
 
   // Listen for events to update list or other typing
   useEffect(() => {
     if (!socket) return;
+
+    const handleNewMessage = (data: any) => {
+      // Only refresh if message is from a client (not from admin)
+      if (data.sender?.role === "CLIENT" || !data.sender?.role) {
+        // Refresh conversations and unread count when new message arrives
+        fetchConversations();
+      }
+    };
+
+    const handleMessagesRead = () => {
+      // Refresh when messages are marked as read
+      fetchConversations();
+    };
+
+    const handleNotification = (payload: any) => {
+      // Update unread count when notification is received
+      if (payload.type === "message" && onUnreadCountChange) {
+        api.getUnreadMessageCount()
+          .then((data) => {
+            onUnreadCountChange(data.count || 0);
+          })
+          .catch(() => {});
+      }
+    };
 
     socket.on("userTyping", (data: any) => {
       if (data.conversationId === selectedId && data.userId !== user?.id) {
@@ -49,16 +86,34 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
       }
     });
 
+    socket.on("newMessage", handleNewMessage);
+    socket.on("messagesRead", handleMessagesRead);
+    socket.on("notification", handleNotification);
+
     return () => {
       socket.off("userTyping");
+      socket.off("newMessage", handleNewMessage);
+      socket.off("messagesRead", handleMessagesRead);
+      socket.off("notification", handleNotification);
     };
-  }, [socket, selectedId, user, setIsOtherTyping]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, selectedId, user?.id, setIsOtherTyping, onUnreadCountChange]);
 
   const fetchConversations = async () => {
     try {
       setLoading(true);
       const data = await api.getConversations();
       setConversations(data);
+      
+      // Update unread count when conversations are loaded
+      if (onUnreadCountChange) {
+        try {
+          const unreadData = await api.getUnreadMessageCount();
+          onUnreadCountChange(unreadData.count || 0);
+        } catch (error) {
+          console.error("Failed to fetch unread count:", error);
+        }
+      }
     } catch (error) {
       console.error("Failed to fetch conversations:", error);
     } finally {
@@ -108,6 +163,33 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
           onSendMessage={sendMessage}
           onTyping={handleTyping}
           isOtherTyping={isOtherTyping}
+          conversation={currentConversation}
+          staff={staff}
+          onAssignPreparer={async (preparerId) => {
+            if (!selectedId) return;
+            try {
+              await api.assignPreparer(selectedId, preparerId);
+              await fetchConversations();
+              // Refresh unread count after assigning
+              if (onUnreadCountChange) {
+                const unreadData = await api.getUnreadMessageCount();
+                onUnreadCountChange(unreadData.count || 0);
+              }
+            } catch (error) {
+              console.error("Failed to assign preparer:", error);
+            }
+          }}
+          onMessagesRead={() => {
+            // Refresh conversations and unread count when messages are read
+            fetchConversations();
+            if (onUnreadCountChange) {
+              api.getUnreadMessageCount()
+                .then((data) => {
+                  onUnreadCountChange(data.count || 0);
+                })
+                .catch(() => {});
+            }
+          }}
         />
       ) : (
         <View style={styles.listContainer}>
@@ -130,7 +212,17 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                 <TouchableOpacity
                   key={conv.id}
                   style={styles.convItem}
-                  onPress={() => setSelectedId(conv.id)}
+                  onPress={() => {
+                    setSelectedId(conv.id);
+                    // Refresh unread count when selecting a conversation
+                    if (onUnreadCountChange) {
+                      api.getUnreadMessageCount()
+                        .then((data) => {
+                          onUnreadCountChange(data.count || 0);
+                        })
+                        .catch(() => {});
+                    }
+                  }}
                 >
                   <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
@@ -142,9 +234,18 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                       <Text style={styles.convName} numberOfLines={1}>
                         {conv.client?.name || "Unknown"}
                       </Text>
-                      <Text style={styles.convTime}>
-                        {new Date(conv.updatedAt).toLocaleDateString()}
-                      </Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                        {conv.unreadCount > 0 && (
+                          <View style={styles.unreadBadge}>
+                            <Text style={styles.unreadBadgeText}>
+                              {conv.unreadCount > 9 ? "9+" : conv.unreadCount}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={styles.convTime}>
+                          {new Date(conv.updatedAt).toLocaleDateString()}
+                        </Text>
+                      </View>
                     </View>
                     <Text style={styles.convSubject} numberOfLines={1}>
                       {conv.subject}
@@ -152,6 +253,9 @@ export const ChatWidget = ({ onClose }: ChatWidgetProps) => {
                     <Text style={styles.convPreview} numberOfLines={1}>
                       {conv.messages?.[0]?.content || "No messages"}
                     </Text>
+                    {!conv.preparerId && (
+                      <Text style={styles.unassignedText}>Unassigned</Text>
+                    )}
                   </View>
                 </TouchableOpacity>
               ))
@@ -246,6 +350,26 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   convPreview: { fontSize: 13, color: "#64748B" },
+  unreadBadge: {
+    backgroundColor: "#EF4444",
+    borderRadius: 0,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  unreadBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  unassignedText: {
+    fontSize: 11,
+    color: "#F59E0B",
+    fontWeight: "600",
+    marginTop: 4,
+  },
   emptyState: {
     flex: 1,
     alignItems: "center",

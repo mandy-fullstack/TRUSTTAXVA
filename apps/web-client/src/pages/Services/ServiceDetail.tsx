@@ -71,7 +71,7 @@ export const ServiceDetailPage = ({
         console.error("Service fetch failure:", error);
         setErrorMsg(
           error.message ||
-            t("common.error_connection", "Failed to connect to the server"),
+          t("common.error_connection", "Failed to connect to the server"),
         );
       } finally {
         setIsLoading(false);

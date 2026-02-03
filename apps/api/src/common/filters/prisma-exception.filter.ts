@@ -53,6 +53,25 @@ export class PrismaExceptionFilter implements ExceptionFilter {
       return this.handlePrismaError(exception, response, request);
     }
 
+    // Check if error is about missing column (common when schema is out of sync)
+    if (
+      exception?.message?.includes('column') ||
+      exception?.message?.includes('does not exist') ||
+      exception?.meta?.code === '42703' ||
+      exception?.code === 'P2010'
+    ) {
+      this.logger.warn(
+        'Database column missing error detected. This usually means a migration needs to be run.',
+        exception,
+      );
+      return this.sendSafeResponse(response, request, {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        message:
+          'Database schema is out of sync. Please contact support to run the required migration.',
+        error: 'Database Schema Error',
+      });
+    }
+
     // Generic server error (don't expose internal details)
     return this.sendSafeResponse(response, request, {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

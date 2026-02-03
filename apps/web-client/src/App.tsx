@@ -89,8 +89,8 @@ function App() {
     <AuthProvider>
       <CompanyProvider>
         <ToastProvider>
-          <NotificationProvider>
-            <SocketProvider>
+          <SocketProvider>
+            <NotificationProvider>
               <BrowserRouter>
                 <Routes>
                   {/* Public Website Routes */}
@@ -279,8 +279,8 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </BrowserRouter>
-            </SocketProvider>
-          </NotificationProvider>
+            </NotificationProvider>
+          </SocketProvider>
         </ToastProvider>
         <CookieConsent />
       </CompanyProvider>

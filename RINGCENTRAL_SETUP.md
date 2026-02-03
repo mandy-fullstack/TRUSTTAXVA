@@ -180,12 +180,12 @@ RINGCENTRAL_API_URL=https://platform.ringcentral.com
 
 ### Paso 6.2: Activar SMS en tu Cuenta
 
-#### Para Sandbox (Desarrollo):
+#### Para Sandbox (Desarrollo)
 
 1. El sandbox generalmente tiene SMS activado por defecto
 2. No necesitas configuración adicional
 
-#### Para Producción:
+#### Para Producción
 
 1. Inicia sesión en [RingCentral Admin Portal](https://service.ringcentral.com/)
 2. Ve a **"Settings"** > **"SMS"** o **"Messaging"**

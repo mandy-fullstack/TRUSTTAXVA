@@ -3,8 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { PrismaService } from '../prisma/prisma.service';
-
 import { ChatGateway } from './chat.gateway';
+import { CompanyModule } from '../company/company.module';
 
 @Module({
   imports: [
@@ -13,6 +13,7 @@ import { ChatGateway } from './chat.gateway';
         process.env.JWT_SECRET || 'your-secret-key-change-this-in-production',
       signOptions: { expiresIn: '7d' },
     }),
+    CompanyModule,
   ],
   providers: [ChatService, PrismaService, ChatGateway],
   controllers: [ChatController],

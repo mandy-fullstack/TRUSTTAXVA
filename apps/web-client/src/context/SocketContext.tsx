@@ -54,55 +54,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("Global Socket Disconnected");
     }
 
-    function onNotification(data: any) {
-      console.log("🔔 Global Notification:", data);
-
-      // Play notification sound
-      if (notificationSoundRef.current) {
-        notificationSoundRef.current.play().catch((err) => {
-          console.log("Could not play notification sound:", err);
-        });
-      }
-
-      // Show browser notification with click handler safely
-      if (
-        typeof window !== "undefined" &&
-        "Notification" in window &&
-        window.Notification.permission === "granted"
-      ) {
-        try {
-          const notification = new window.Notification(
-            data.title || "New Message",
-            {
-              body: data.message || "You have a new message",
-              icon: "/logo.png",
-              tag: data.conversationId,
-              requireInteraction: false,
-            },
-          );
-
-          // Make notification clickable - navigate to conversation
-          notification.onclick = () => {
-            window.focus();
-            if (data.conversationId) {
-              window.location.href = `/dashboard/chat/${data.conversationId}`;
-            }
-            notification.close();
-          };
-        } catch (e) {
-          console.warn("Failed to show notification", e);
-        }
-      }
-    }
-
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
-    socket.on("notification", onNotification);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
-      socket.off("notification", onNotification);
     };
   }, [token, user]);
 

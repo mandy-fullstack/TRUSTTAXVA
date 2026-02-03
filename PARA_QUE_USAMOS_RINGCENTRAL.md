@@ -245,7 +245,7 @@ No se envían más SMS (excepto confirmación de opt-out)
 
 ## 🎯 Beneficios para TrustTax
 
-### Para los Clientes:
+### Para los Clientes
 
 - ✅ **Información inmediata** - Se enteran al instante de cambios importantes
 - ✅ **Conveniencia** - No necesitan revisar la app constantemente
@@ -253,7 +253,7 @@ No se envían más SMS (excepto confirmación de opt-out)
 - ✅ **Seguridad** - Alertas inmediatas de actividad sospechosa
 - ✅ **Control** - Pueden darse de baja fácilmente (respondiendo "STOP")
 
-### Para TrustTax:
+### Para TrustTax
 
 - ✅ **Mejor comunicación** - Llegamos directamente al cliente
 - ✅ **Menos consultas de soporte** - Los clientes están más informados
@@ -265,7 +265,7 @@ No se envían más SMS (excepto confirmación de opt-out)
 
 ## 📊 Ejemplos de Integración en el Código
 
-### Cuando cambia el estado de un pedido:
+### Cuando cambia el estado de un pedido
 
 ```typescript
 // En orders.service.ts
@@ -281,7 +281,7 @@ async updateOrderStatus(orderId: string, status: string) {
 }
 ```
 
-### Cuando un cliente sube un documento:
+### Cuando un cliente sube un documento
 
 ```typescript
 // En documents.service.ts
@@ -297,7 +297,7 @@ async uploadDocument(userId: string, file: File) {
 }
 ```
 
-### Cuando hay una respuesta de soporte:
+### Cuando hay una respuesta de soporte
 
 ```typescript
 // En chat.service.ts
@@ -392,7 +392,7 @@ Sí, todos los mensajes son personalizables en el código. Puedes ajustar el con
 - **Guía de Configuración**: `RINGCENTRAL_SETUP.md`
 - **Documentación del Servicio**: `apps/api/src/sms/README.md`
 - **Política de Consentimiento SMS**: `/legal/sms-consent` (en la app)
-- **RingCentral Developer Portal**: https://developer.ringcentral.com/
+- **RingCentral Developer Portal**: <https://developer.ringcentral.com/>
 
 ---
 

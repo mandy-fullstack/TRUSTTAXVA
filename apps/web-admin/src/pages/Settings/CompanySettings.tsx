@@ -51,6 +51,7 @@ export const CompanySettingsPage = () => {
         secondaryColor: data.secondaryColor || "#2563EB",
         logoUrl: data.logoUrl || "",
         faviconUrl: data.faviconUrl || "",
+        notificationSenderName: data.notificationSenderName || "",
       });
 
       setThemeOptions(data.themeOptions || {});
@@ -124,6 +125,7 @@ export const CompanySettingsPage = () => {
       secondaryColor: "#2563EB",
       logoUrl: "",
       faviconUrl: "",
+      notificationSenderName: "",
     });
 
     setThemeOptions({
@@ -149,8 +151,20 @@ export const CompanySettingsPage = () => {
 
   const handleSave = async () => {
     try {
+      // Clean up the payload: remove empty strings and undefined values
+      const cleanGeneral = { ...general };
+      Object.keys(cleanGeneral).forEach((key) => {
+        if (cleanGeneral[key] === "" || cleanGeneral[key] === undefined) {
+          // For notificationSenderName, keep empty string as it's valid (means use admin name)
+          // For other fields, remove empty strings
+          if (key !== "notificationSenderName") {
+            delete cleanGeneral[key];
+          }
+        }
+      });
+
       const payload = {
-        ...general, // spread root fields
+        ...cleanGeneral, // spread root fields
         socialLinks,
         businessHours: hours, // Save as Array now
         themeOptions,
@@ -164,10 +178,12 @@ export const CompanySettingsPage = () => {
         variant: "success",
       });
     } catch (err: any) {
+      console.error("Error saving company settings:", err);
+      const errorMessage = err.message || "An unexpected error occurred";
       setAlertDialog({
         isOpen: true,
         title: "Error",
-        message: "Failed to save settings: " + err.message,
+        message: "Failed to save settings: " + errorMessage,
         variant: "error",
       });
     }

@@ -502,7 +502,31 @@ export class DocumentsService {
 
   async downloadDecryptedDocument(userId: string, id: string) {
     try {
-      const doc = await this.findOne(userId, id); // check ownership
+      // Allow access if:
+      // - user owns the document (doc.userId === userId), OR
+      // - document is linked to a conversation where the user is client/preparer
+      // This is required for chat attachments: the recipient should be able to view the file.
+      const doc = await this.findById(id);
+
+      const isOwner = doc.userId === userId;
+      let isConversationParticipant = false;
+
+      if (!isOwner && doc.conversationId) {
+        const conv = await this.prisma.conversation.findFirst({
+          where: {
+            id: doc.conversationId,
+            OR: [{ clientId: userId }, { preparerId: userId }],
+          },
+          select: { id: true },
+        });
+        isConversationParticipant = !!conv;
+      }
+
+      if (!isOwner && !isConversationParticipant) {
+        throw new ForbiddenException(
+          'You do not have permission to access this document',
+        );
+      }
 
       if (!doc.s3Key) {
         console.error(

@@ -4,14 +4,14 @@
 
 El error `FeatureNotAvailable` indica que la funcionalidad de SMS no está disponible en tu cuenta de RingCentral.
 
-### ✅ Lo que SÍ funciona:
+### ✅ Lo que SÍ funciona
 
 - ✅ Autenticación con JWT
 - ✅ Intercambio de JWT por access token
 - ✅ Acceso a la API de RingCentral
 - ✅ Lectura de información de cuenta
 
-### ❌ Lo que NO funciona:
+### ❌ Lo que NO funciona
 
 - ❌ Envío de SMS (Error 403: FeatureNotAvailable)
 
@@ -31,13 +31,13 @@ El error `FeatureNotAvailable` indica que la funcionalidad de SMS no está dispo
 
 ### 2. Activar SMS en tu Cuenta de RingCentral
 
-#### Para Sandbox (Desarrollo):
+#### Para Sandbox (Desarrollo)
 
 1. En el Developer Portal, ve a tu aplicación
 2. Verifica que estés usando el **Sandbox** (no Production)
 3. Algunos números de sandbox pueden tener limitaciones
 
-#### Para Producción:
+#### Para Producción
 
 1. Inicia sesión en [RingCentral Admin Portal](https://service.ringcentral.com/)
 2. Ve a **"Settings"** > **"Messaging"** o **"SMS"**

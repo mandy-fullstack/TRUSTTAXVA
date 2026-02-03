@@ -69,9 +69,28 @@ export class ChatService {
               email: true,
             },
           },
+          preparer: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
         orderBy: { updatedAt: 'desc' },
       });
+
+      // Add unread count for each conversation
+      for (const conv of conversations) {
+        const unreadCount = await this.prisma.message.count({
+          where: {
+            conversationId: conv.id,
+            senderId: { not: userId },
+            isRead: false,
+          },
+        });
+        (conv as any).unreadCount = unreadCount;
+      }
     }
 
     // Cache for 5 minutes
@@ -394,5 +413,57 @@ export class ChatService {
     const result = { count };
     await this.redisService.set(cacheKey, result, 300);
     return result;
+  }
+
+  async markAllMessagesAsRead(userId: string) {
+    await this.prisma.message.updateMany({
+      where: {
+        senderId: { not: userId },
+        isRead: false,
+        conversation: {
+          OR: [{ clientId: userId }, { preparerId: userId }],
+        },
+      },
+      data: {
+        isRead: true,
+        isDelivered: true,
+      },
+    });
+
+    // Invalidate cache
+    await this.redisService.del(`unread_count:${userId}`);
+  }
+
+  async assignPreparer(conversationId: string, preparerId: string | null) {
+    const conversation = await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: { preparerId },
+      include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        preparer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // Invalidate caches
+    await this.redisService.del(`conversations:${conversation.clientId}`);
+    await this.redisService.del(`conversations:admin`);
+
+    return conversation;
   }
 }

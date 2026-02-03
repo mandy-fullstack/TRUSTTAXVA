@@ -6,14 +6,17 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from "react-native";
 import { H1, H4, Text, StatsCard, spacing, Spacer } from "@trusttax/ui";
-import { LayoutDashboard, Bell } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useNotification } from "../context/NotificationContext";
+import { useSocketContext } from "../context/SocketContext";
 import { api } from "../services/api";
 import { Layout } from "../components/Layout";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const MOBILE_BREAKPOINT = 768;
 const TABLET_BREAKPOINT = 1024;
@@ -22,6 +25,7 @@ const SMALL_MOBILE_BREAKPOINT = 375;
 export function DashboardPage() {
   const { user, isLoading } = useAuth();
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
   const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
   const isMobile = width < MOBILE_BREAKPOINT;
   const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
@@ -34,16 +38,14 @@ export function DashboardPage() {
     totalRevenue?: number;
   } | null>(null);
   const [loadingMetrics, setLoadingMetrics] = useState(true);
-  const [showNotifications, setShowNotifications] = useState(false);
   const {
     permission,
     requestPermission,
-    notifications,
-    unreadCount,
-    markAsRead,
   } = useNotification();
+  const { socket, isConnected } = useSocketContext();
   const navigate = useNavigate();
 
+  // Load initial metrics
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -60,6 +62,69 @@ export function DashboardPage() {
       cancelled = true;
     };
   }, []);
+
+  // Real-time updates via socket
+  useEffect(() => {
+    if (!isConnected || !socket) return;
+
+    const handleOrderUpdate = (data: any) => {
+      console.log("📊 Dashboard: Order update received", data);
+      // Refresh metrics when order status changes
+      api.getDashboardMetrics()
+        .then((newMetrics) => {
+          setMetrics(newMetrics);
+        })
+        .catch((e) => {
+          console.error("Failed to refresh metrics:", e);
+        });
+    };
+
+    const handleNewOrder = (data: any) => {
+      console.log("📊 Dashboard: New order received", data);
+      // Refresh metrics when new order is created
+      api.getDashboardMetrics()
+        .then((newMetrics) => {
+          setMetrics(newMetrics);
+        })
+        .catch((e) => {
+          console.error("Failed to refresh metrics:", e);
+        });
+    };
+
+    const handleMetricsUpdate = (data: any) => {
+      console.log("📊 Dashboard: Metrics update received", data);
+      // Direct metrics update from server
+      if (data.metrics) {
+        setMetrics(data.metrics);
+      }
+    };
+
+    // Listen for order-related events
+    socket.on("orderUpdate", handleOrderUpdate);
+    socket.on("newOrder", handleNewOrder);
+    socket.on("metricsUpdate", handleMetricsUpdate);
+
+    // Also listen to notifications that might indicate changes
+    socket.on("notification", (payload: any) => {
+      if (payload.type === "order") {
+        // Refresh metrics when order notification is received
+        api.getDashboardMetrics()
+          .then((newMetrics) => {
+            setMetrics(newMetrics);
+          })
+          .catch((e) => {
+            console.error("Failed to refresh metrics:", e);
+          });
+      }
+    });
+
+    return () => {
+      socket.off("orderUpdate", handleOrderUpdate);
+      socket.off("newOrder", handleNewOrder);
+      socket.off("metricsUpdate", handleMetricsUpdate);
+      socket.off("notification");
+    };
+  }, [isConnected, socket]);
 
   if (isLoading) {
     return (
@@ -95,86 +160,8 @@ export function DashboardPage() {
             isMobile && !isSmallMobile && styles.titleMobile,
             isTablet && styles.titleTablet,
           ]}>
-            Welcome, {adminName}
+            {t("dashboard.welcome_user", { name: adminName })}
           </H1>
-
-          {/* Notification Area */}
-          <View style={{ position: "relative", zIndex: 9999 }}>
-            <TouchableOpacity
-              style={styles.iconBox}
-              onPress={() => setShowNotifications(!showNotifications)}
-            >
-              <Bell size={24} color="#0F172A" />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </TouchableOpacity>
-
-            {showNotifications && (
-              <View style={styles.notificationDropdown}>
-                <View style={styles.dropdownHeader}>
-                  <Text style={styles.dropdownTitle}>Notifications</Text>
-                  {unreadCount > 0 && (
-                    <Text
-                      style={styles.markAll}
-                      onPress={() =>
-                        notifications.forEach((n) => markAsRead(n.id))
-                      }
-                    >
-                      Mark all read
-                    </Text>
-                  )}
-                </View>
-                <ScrollView style={styles.dropdownList}>
-                  {notifications.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <Text style={styles.emptyText}>No new notifications</Text>
-                    </View>
-                  ) : (
-                    notifications.map((n) => (
-                      <TouchableOpacity
-                        key={n.id}
-                        style={[
-                          styles.notifItem,
-                          !n.read && styles.notifUnread,
-                        ]}
-                        onPress={() => {
-                          markAsRead(n.id);
-                          setShowNotifications(false);
-                          // Admin routes might differ, assuming typical dashboard routes for now
-                          // In a real app we'd map types to admin routes
-                          navigate(n.link.replace("/dashboard", "/admin"));
-                        }}
-                      >
-                        <View
-                          style={[
-                            styles.dot,
-                            {
-                              backgroundColor:
-                                n.type === "message" ? "#3B82F6" : "#10B981",
-                            },
-                          ]}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.notifTitle}>{n.title}</Text>
-                          <Text style={styles.notifBody} numberOfLines={2}>
-                            {n.body}
-                          </Text>
-                          <Text style={styles.notifTime}>
-                            {new Date(n.date).toLocaleTimeString()}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </ScrollView>
-              </View>
-            )}
-          </View>
         </View>
 
         <View style={[
@@ -187,17 +174,17 @@ export function DashboardPage() {
             isSmallMobile && styles.subtitleSmallMobile,
             isMobile && !isSmallMobile && styles.subtitleMobile,
           ]}>
-            Real-time platform status and business metrics.
+            {t("dashboard.subtitle")}
           </Text>
         </View>
 
         {permission === "default" && (
           <View style={styles.notificationBanner}>
             <Text style={styles.notificationText}>
-              Enable notifications to stay updated on new orders and messages.
+              {t("dashboard.enable_notifications")}
             </Text>
             <Text style={styles.bannerBtn} onPress={requestPermission}>
-              Enable
+              {t("dashboard.enable")}
             </Text>
           </View>
         )}
@@ -210,41 +197,41 @@ export function DashboardPage() {
           isTablet && styles.statsGridTablet,
         ]}>
           <StatsCard
-            label="Total Clients"
+            label={t("dashboard.total_clients")}
             value={loadingMetrics ? "..." : String(metrics?.totalClients ?? 0)}
             trend
-            trendValue="Active"
+            trendValue={t("common.active")}
             trendColor="#64748B"
           />
           <StatsCard
-            label="Active Orders"
+            label={t("dashboard.active_orders")}
             value={loadingMetrics ? "..." : String(metrics?.activeOrders ?? 0)}
             trend
-            trendValue="In Progress"
+            trendValue={t("orders.in_progress")}
             trendColor="#3B82F6"
           />
           <StatsCard
-            label="Pending"
+            label={t("dashboard.pending")}
             value={loadingMetrics ? "..." : String(metrics?.pendingOrders ?? 0)}
             trend
-            trendValue={
-              (metrics?.pendingOrders ?? 0) > 0
-                ? "Action Required"
-                : "All Clear"
-            }
+                  trendValue={
+                    (metrics?.pendingOrders ?? 0) > 0
+                      ? t("dashboard.action_required")
+                      : t("dashboard.all_clear")
+                  }
             trendColor={
               (metrics?.pendingOrders ?? 0) > 0 ? "#F59E0B" : "#10B981"
             }
           />
           <StatsCard
-            label="Revenue"
+            label={t("dashboard.revenue")}
             value={
               loadingMetrics
                 ? "..."
                 : `$${(metrics?.totalRevenue ?? 0).toFixed(2)}`
             }
             trend
-            trendValue="Completed"
+            trendValue={t("orders.completed")}
             trendColor="#10B981"
           />
         </View>
@@ -257,13 +244,16 @@ export function DashboardPage() {
         >
           <LayoutDashboard size={48} color="#E2E8F0" />
           <Spacer size="lg" />
-          <H4 style={styles.emptyTitle}>Operational Dashboard</H4>
-          <Spacer size="sm" />
-          <Text style={styles.emptyText}>
-            {(metrics?.totalOrders ?? 0) > 0
-              ? `You have ${metrics?.totalOrders} total orders. ${metrics?.completedOrders ?? 0} completed.`
-              : "All systems are running normally. No manual intervention required."}
-          </Text>
+                <H4 style={styles.emptyTitle}>{t("dashboard.operational_dashboard")}</H4>
+                <Spacer size="sm" />
+                <Text style={styles.emptyText}>
+                  {(metrics?.totalOrders ?? 0) > 0
+                    ? t("dashboard.total_orders_message", {
+                        total: metrics?.totalOrders ?? 0,
+                        completed: metrics?.completedOrders ?? 0,
+                      })
+                    : t("dashboard.all_systems_normal")}
+                </Text>
         </View>
       </ScrollView>
     </Layout>
@@ -386,110 +376,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 16,
     cursor: "pointer" as any,
-  },
-  iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 0,
-    backgroundColor: "#F1F5F9",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer" as any,
-  },
-  badge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: "#EF4444",
-    borderRadius: 0,
-    minWidth: 18,
-    height: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#FFF",
-  },
-  badgeText: {
-    color: "#FFF",
-    fontSize: 10,
-    fontWeight: "bold",
-    paddingHorizontal: 4,
-  },
-  notificationDropdown: {
-    position: "absolute",
-    top: 50,
-    right: 0,
-    width: 320,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    zIndex: 9999,
-    maxHeight: 400,
-  },
-  dropdownHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dropdownTitle: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#0F172A",
-  },
-  markAll: {
-    fontSize: 12,
-    color: "#3B82F6",
-    fontWeight: "500",
-    cursor: "pointer" as any,
-  },
-  dropdownList: {
-    maxHeight: 340,
-  },
-  emptyState: {
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  notifItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  notifUnread: {
-    backgroundColor: "#F8FAFC",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 0,
-    marginTop: 6,
-  },
-  notifTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#1E293B",
-    marginBottom: 2,
-  },
-  notifBody: {
-    fontSize: 12,
-    color: "#64748B",
-    lineHeight: 16,
-    marginBottom: 4,
-  },
-  notifTime: {
-    fontSize: 10,
-    color: "#94A3B8",
   },
 });

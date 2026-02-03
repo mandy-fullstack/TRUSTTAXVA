@@ -13,6 +13,7 @@
 **Síntoma**: `import.meta.env.VITE_API_URL` es `undefined`
 
 **Solución**:
+
 ```bash
 # 1. Verificar que el archivo .env existe
 cat apps/web-client/.env
@@ -34,6 +35,7 @@ cd apps/web-client && npm run dev
 **Síntoma**: Error "Unable to connect to server"
 
 **Solución**:
+
 ```bash
 # Verificar que el backend está corriendo
 lsof -i :4000
@@ -52,13 +54,14 @@ cd apps/api && npm run start:dev
 
 **Síntoma**: Cambiaste `.env` pero no se aplica
 
-**Solución**: 
+**Solución**:
+
 - Vite solo carga variables al iniciar
 - **SIEMPRE reinicia el servidor** después de cambiar `.env`
 
 ## 🔍 Debugging
 
-### Verificar en la consola del navegador:
+### Verificar en la consola del navegador
 
 Abre la consola (F12) y busca estos logs:
 
@@ -69,15 +72,17 @@ Abre la consola (F12) y busca estos logs:
 ```
 
 Si ves:
+
 ```
 ⚠️ [API Config] VITE_API_URL no está definido
 ```
 
 Significa que Vite no está cargando las variables. **Reinicia el servidor**.
 
-### Verificar que las variables se cargan:
+### Verificar que las variables se cargan
 
 En la consola del navegador, ejecuta:
+
 ```javascript
 console.log(import.meta.env.VITE_API_URL);
 ```
@@ -99,17 +104,20 @@ Si muestra `undefined`, el problema es que Vite no está cargando el `.env`.
 ## 🚀 Pasos para Solucionar
 
 1. **Verificar archivos .env**:
+
 ```bash
 cat apps/web-client/.env | grep VITE_API_URL
 cat apps/web-admin/.env | grep VITE_API_URL
 ```
 
-2. **Verificar que el backend está corriendo**:
+1. **Verificar que el backend está corriendo**:
+
 ```bash
 curl http://localhost:4000
 ```
 
-3. **Reiniciar servidores de desarrollo**:
+1. **Reiniciar servidores de desarrollo**:
+
 ```bash
 # Detener todos (Ctrl+C)
 # Luego reiniciar:
@@ -118,7 +126,7 @@ cd apps/web-client && npm run dev
 cd apps/web-admin && npm run dev
 ```
 
-4. **Verificar en la consola del navegador**:
+1. **Verificar en la consola del navegador**:
    - Abre DevTools (F12)
    - Ve a la pestaña Console
    - Busca los logs de `[API Config]`

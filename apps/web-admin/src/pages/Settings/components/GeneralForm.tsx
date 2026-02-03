@@ -1,6 +1,7 @@
 import { View, StyleSheet, TextInput } from "react-native";
 import { H4, Text } from "@trusttax/ui";
 import { Building } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface GeneralFormProps {
   data: any;
@@ -8,11 +9,13 @@ interface GeneralFormProps {
 }
 
 export const GeneralForm = ({ data, onChange }: GeneralFormProps) => {
+  const { t } = useTranslation();
+  
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <Building size={18} color="#64748B" />
-        <H4>General Information</H4>
+        <H4>{t("settings.general")}</H4>
       </View>
 
       <View style={styles.group}>
@@ -40,6 +43,20 @@ export const GeneralForm = ({ data, onChange }: GeneralFormProps) => {
           value={data.description}
           onChangeText={(t) => onChange("description", t)}
           multiline
+        />
+      </View>
+
+      <View style={styles.group}>
+        <Text style={styles.label}>{t("settings.notification_sender_name")}</Text>
+        <Text style={styles.helperText}>
+          {t("settings.notification_sender_name_helper")}
+        </Text>
+        <TextInput
+          style={styles.input}
+          value={data.notificationSenderName || ""}
+          onChangeText={(value) => onChange("notificationSenderName", value)}
+          placeholder={t("settings.notification_sender_name_placeholder")}
+          placeholderTextColor="#94A3B8"
         />
       </View>
     </View>
@@ -75,4 +92,10 @@ const styles = StyleSheet.create({
     color: "#0F172A",
   },
   textArea: { minHeight: 120, textAlignVertical: "top", fontSize: 16 },
+  helperText: {
+    fontSize: 12,
+    color: "#64748B",
+    marginBottom: 6,
+    lineHeight: 16,
+  },
 });

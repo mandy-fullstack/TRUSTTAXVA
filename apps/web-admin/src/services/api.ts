@@ -227,6 +227,13 @@ export const api = {
   // Chat
   getConversations: () => request<any[]>("/chat/conversations"),
   getConversation: (id: string) => request<any>(`/chat/conversations/${id}`),
+  getUnreadMessageCount: () => request<{ count: number }>("/chat/unread-count"),
+  markAllMessagesAsRead: () => request<{ success: boolean }>("/chat/mark-all-read", { method: "POST" }),
+  assignPreparer: (conversationId: string, preparerId: string | null) =>
+    request<any>(`/chat/conversations/${conversationId}/assign`, {
+      method: "PATCH",
+      body: JSON.stringify({ preparerId }),
+    }),
   createConversation: (subject?: string) =>
     request<any>("/chat/conversations", {
       method: "POST",

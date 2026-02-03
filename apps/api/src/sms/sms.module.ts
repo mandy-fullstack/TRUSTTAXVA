@@ -4,9 +4,9 @@ import { SMSController } from './sms.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule],
-  controllers: [SMSController],
-  providers: [SMSService],
-  exports: [SMSService],
+    imports: [PrismaModule],
+    controllers: [SMSController],
+    providers: [SMSService],
+    exports: [SMSService],
 })
-export class SMSModule {}
+export class SMSModule { }

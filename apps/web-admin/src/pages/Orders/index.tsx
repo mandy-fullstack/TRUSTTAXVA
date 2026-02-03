@@ -12,6 +12,8 @@ import { FileText, User, Calendar, DollarSign } from "lucide-react";
 import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
+import { useTranslation } from "react-i18next";
+import { useSocketContext } from "../../context/SocketContext";
 
 interface Order {
   id: string;
@@ -30,24 +32,28 @@ const STATUS_COLORS: Record<string, string> = {
   SUBMITTED: "#8B5CF6",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "Pending",
-  IN_PROGRESS: "In Progress",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
-  SUBMITTED: "Submitted",
-};
+const getStatusLabels = (t: (key: string) => string): Record<string, string> => ({
+  PENDING: t("orders.pending"),
+  IN_PROGRESS: t("orders.in_progress"),
+  COMPLETED: t("orders.completed"),
+  CANCELLED: t("orders.cancelled"),
+  SUBMITTED: t("orders.submitted"),
+  ALL: t("orders.all_orders"),
+});
 
 const MOBILE_BREAKPOINT = 768;
 
 export function OrdersPage() {
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
+  const { socket, isConnected } = useSocketContext();
   const isMobile = width < MOBILE_BREAKPOINT;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
   const navigate = useNavigate();
+  const STATUS_LABELS = getStatusLabels(t);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,7 +63,7 @@ export function OrdersPage() {
         const data = await api.getOrders();
         if (!cancelled) setOrders(Array.isArray(data) ? data : []);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load orders");
+        if (!cancelled) setError(e?.message || t("orders.load_error", "Failed to load orders"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -66,6 +72,48 @@ export function OrdersPage() {
       cancelled = true;
     };
   }, []);
+
+  // Real-time updates for orders
+  useEffect(() => {
+    if (!isConnected || !socket) return;
+
+    const handleOrderUpdate = (data: any) => {
+      console.log("📋 Orders: Order update received", data);
+      // Update the specific order in the list
+      setOrders((prev) =>
+        prev.map((order) =>
+          order.id === data.orderId
+            ? { ...order, status: data.status, ...data.updates }
+            : order
+        )
+      );
+    };
+
+    const handleNewOrder = (data: any) => {
+      console.log("📋 Orders: New order received", data);
+      // Add new order to the list
+      if (data.order) {
+        setOrders((prev) => [data.order, ...prev]);
+      } else {
+        // Refresh the list if order data is not provided
+        api.getOrders()
+          .then((newOrders) => {
+            setOrders(Array.isArray(newOrders) ? newOrders : []);
+          })
+          .catch((e) => {
+            console.error("Failed to refresh orders:", e);
+          });
+      }
+    };
+
+    socket.on("orderUpdate", handleOrderUpdate);
+    socket.on("newOrder", handleNewOrder);
+
+    return () => {
+      socket.off("orderUpdate", handleOrderUpdate);
+      socket.off("newOrder", handleNewOrder);
+    };
+  }, [isConnected, socket]);
 
   const filtered =
     filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
@@ -113,9 +161,11 @@ export function OrdersPage() {
         <View style={styles.header}>
           <View>
             <H1 style={isMobile ? styles.titleMobile : undefined}>
-              Orders & Cases
+              {t("orders.title")}
             </H1>
-            <Text style={styles.subtitle}>{orders.length} total orders</Text>
+            <Text style={styles.subtitle}>
+              {t("orders.total_orders", { count: orders.length }, `${orders.length} total orders`)}
+            </Text>
           </View>
         </View>
 
@@ -133,7 +183,7 @@ export function OrdersPage() {
                   filter === s && styles.filterTabTextActive,
                 ]}
               >
-                {s === "ALL" ? "All" : statusLabel(s)}
+                {s === "ALL" ? t("orders.all_orders") : statusLabel(s)}
               </Text>
               {s !== "ALL" && (
                 <View

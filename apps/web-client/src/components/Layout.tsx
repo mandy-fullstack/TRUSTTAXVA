@@ -28,10 +28,16 @@ import { useNotification } from "../context/NotificationContext";
 import { Text } from "@trusttax/ui";
 import { TrustTaxLogo } from "./TrustTaxLogo";
 import { useTranslation } from "react-i18next";
-import { getDashboardNav, MOBILE_BREAKPOINT } from "../config/navigation";
+import {
+  getDashboardNav,
+  MOBILE_BREAKPOINT,
+  TABLET_BREAKPOINT,
+  SMALL_MOBILE_BREAKPOINT,
+} from "../config/navigation";
 import { LanguageSelector } from "./LanguageSelector";
 import { UserMenuPopover } from "./UserMenuPopover";
 import { ChatWidget } from "./Chat/ChatWidget";
+import { NotificationsPanel } from "./NotificationsPanel";
 
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -59,13 +65,15 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const { logout, isAuthenticated, user } = useAuth();
-  const { notifications, unreadCount, markAsRead } = useNotification();
+  const { notifications, unreadCount } = useNotification();
   const menuButtonRef = useRef<any>(null);
   const mobileMenuRef = useRef<any>(null);
   const userMenuButtonRef = useRef<any>(null);
   const userMenuPopoverRef = useRef<any>(null);
 
+  const isSmallMobile = width < SMALL_MOBILE_BREAKPOINT;
   const isMobile = width < MOBILE_BREAKPOINT;
+  const isTablet = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT;
 
   const handleLogout = () => {
     logout();
@@ -242,19 +250,34 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                     display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
-                    padding: "8px 14px",
-                    gap: 8,
+                    padding: isTablet ? "6px 10px" : "8px 14px",
+                    gap: isTablet ? 6 : 8,
                     borderRadius: 0,
                     backgroundColor: active ? "#EFF6FF" : "transparent",
                     textDecoration: "none",
                     outline: "none",
                   }
-                : ([styles.navItem, active && styles.navItemActive] as any)
+                : ([
+                    styles.navItem,
+                    isTablet && styles.navItemTablet,
+                    active && styles.navItemActive,
+                  ] as any)
             }
             aria-current={active ? "page" : undefined}
           >
-            {Icon && <Icon size={18} color={active ? "#2563EB" : "#64748B"} />}
-            <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+            {Icon && (
+              <Icon
+                size={isTablet ? 16 : 18}
+                color={active ? "#2563EB" : "#64748B"}
+              />
+            )}
+            <Text
+              style={[
+                styles.navLabel,
+                isTablet && styles.navLabelTablet,
+                active && styles.navLabelActive,
+              ]}
+            >
               {label}
             </Text>
           </Link>
@@ -266,7 +289,10 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
           <View style={styles.userMenuContainer}>
             <TouchableOpacity
               ref={userMenuButtonRef}
-              style={styles.userBox}
+              style={[
+                styles.userBox,
+                isTablet && styles.userBoxTablet,
+              ]}
               onPress={() => setIsUserMenuOpen(!isUserMenuOpen)}
               activeOpacity={0.7}
               {...(Platform.OS === "web"
@@ -281,14 +307,28 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                   }
                 : {})}
             >
-              <View style={styles.avatar}>
-                <User size={14} color="#64748B" />
+              <View
+                style={[
+                  styles.avatar,
+                  isTablet && styles.avatarTablet,
+                ]}
+              >
+                <User
+                  size={isTablet ? 12 : 14}
+                  color="#64748B"
+                />
               </View>
-              <Text style={styles.userNameText} numberOfLines={1}>
+              <Text
+                style={[
+                  styles.userNameText,
+                  isTablet && styles.userNameTextTablet,
+                ]}
+                numberOfLines={1}
+              >
                 {user?.name || t("header.user", "User")}
               </Text>
               <ChevronDown
-                size={14}
+                size={isTablet ? 12 : 14}
                 color="#64748B"
                 style={isUserMenuOpen ? styles.chevronOpen : styles.chevron}
               />
@@ -335,27 +375,66 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
       )}
       <View style={styles.container}>
         <View style={styles.navBar}>
-          <View style={styles.navInner}>
+          <View
+            style={[
+              styles.navInner,
+              isSmallMobile && styles.navInnerSmallMobile,
+              isMobile && !isSmallMobile && styles.navInnerMobile,
+              isTablet && styles.navInnerTablet,
+            ]}
+          >
             <Link
               to={isAuthenticated ? "/dashboard" : "/"}
               onClick={handleMenuClose}
               className={Platform.OS === "web" ? "logo-link" : undefined}
               style={Platform.OS === "web" ? undefined : styles.brand}
             >
-              <TrustTaxLogo size={32} bgColor="#0F172A" color="#FFFFFF" />
-              <Text style={styles.logo}>TrustTax</Text>
+              <TrustTaxLogo
+                size={
+                  isSmallMobile ? 24 : isMobile ? 28 : isTablet ? 30 : 32
+                }
+                bgColor="#0F172A"
+                color="#FFFFFF"
+              />
+              <Text
+                style={[
+                  styles.logo,
+                  isSmallMobile && styles.logoSmallMobile,
+                  isMobile && !isSmallMobile && styles.logoMobile,
+                  isTablet && styles.logoTablet,
+                ]}
+              >
+                TrustTax
+              </Text>
             </Link>
             {isMobile ? (
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+                style={[
+                  styles.mobileRightSection,
+                  isSmallMobile && styles.mobileRightSectionSmallMobile,
+                ]}
               >
                 {isAuthenticated && (
-                  <View style={{ position: "relative", zIndex: 9999 }}>
+                  <View
+                    style={{
+                      position: "relative",
+                      zIndex: 9999,
+                      ...(Platform.OS === "web"
+                        ? { overflow: "visible" as any }
+                        : {}),
+                    }}
+                  >
                     <TouchableOpacity
-                      style={styles.iconBox}
+                      style={[
+                        styles.iconBox,
+                        isSmallMobile && styles.iconBoxSmallMobile,
+                      ]}
                       onPress={() => setShowNotifications(!showNotifications)}
                     >
-                      <Bell size={20} color="#0F172A" />
+                      <Bell
+                        size={isSmallMobile ? 18 : isMobile ? 20 : 20}
+                        color="#0F172A"
+                      />
                       {unreadCount > 0 && (
                         <View style={styles.badge}>
                           <Text style={styles.badgeText}>
@@ -365,79 +444,10 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                       )}
                     </TouchableOpacity>
 
-                    {showNotifications && (
-                      <View
-                        style={[
-                          styles.notificationDropdown,
-                          { right: -50, width: width - 40, maxWidth: 360 },
-                        ]}
-                      >
-                        <View style={styles.dropdownHeader}>
-                          <Text style={styles.dropdownTitle}>
-                            Notifications
-                          </Text>
-                          {unreadCount > 0 && (
-                            <Text
-                              style={styles.markAll}
-                              onPress={() =>
-                                notifications.forEach((n) => markAsRead(n.id))
-                              }
-                            >
-                              Mark all read
-                            </Text>
-                          )}
-                        </View>
-                        <ScrollView style={styles.dropdownList}>
-                          {notifications.filter((n) => !n.read).length === 0 ? (
-                            <View style={styles.emptyState}>
-                              <Text style={styles.emptyText}>
-                                No new notifications
-                              </Text>
-                            </View>
-                          ) : (
-                            notifications
-                              .filter((n) => !n.read)
-                              .map((n) => (
-                                <TouchableOpacity
-                                  key={n.id}
-                                  style={[styles.notifItem, styles.notifUnread]}
-                                  onPress={() => {
-                                    markAsRead(n.id);
-                                    setShowNotifications(false);
-                                    navigate(n.link);
-                                  }}
-                                >
-                                  <View
-                                    style={[
-                                      styles.dot,
-                                      {
-                                        backgroundColor:
-                                          n.type === "message"
-                                            ? "#3B82F6"
-                                            : "#10B981",
-                                      },
-                                    ]}
-                                  />
-                                  <View style={{ flex: 1 }}>
-                                    <Text style={styles.notifTitle}>
-                                      {n.title}
-                                    </Text>
-                                    <Text
-                                      style={styles.notifBody}
-                                      numberOfLines={2}
-                                    >
-                                      {n.body}
-                                    </Text>
-                                    <Text style={styles.notifTime}>
-                                      {new Date(n.date).toLocaleTimeString()}
-                                    </Text>
-                                  </View>
-                                </TouchableOpacity>
-                              ))
-                          )}
-                        </ScrollView>
-                      </View>
-                    )}
+                    <NotificationsPanel
+                      isOpen={showNotifications}
+                      onClose={() => setShowNotifications(false)}
+                    />
                   </View>
                 )}
                 <LanguageSelector variant="mobile" showChevron={false} />
@@ -454,16 +464,30 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                   aria-controls="dashboard-mobile-menu"
                 >
                   {isMobileMenuOpen ? (
-                    <X size={24} color="#0F172A" />
+                    <X
+                      size={isSmallMobile ? 20 : isMobile ? 22 : 24}
+                      color="#0F172A"
+                    />
                   ) : (
-                    <Menu size={24} color="#0F172A" />
+                    <Menu
+                      size={isSmallMobile ? 20 : isMobile ? 22 : 24}
+                      color="#0F172A"
+                    />
                   )}
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={styles.desktopNavWrapper}>
+              <View
+                style={[
+                  styles.desktopNavWrapper,
+                  isTablet && styles.desktopNavWrapperTablet,
+                ]}
+              >
                 <View
-                  style={styles.desktopNav}
+                  style={[
+                    styles.desktopNav,
+                    isTablet && styles.desktopNavTablet,
+                  ]}
                   {...(Platform.OS === "web"
                     ? {
                         role: "navigation",
@@ -473,7 +497,12 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                 >
                   {navContent}
                 </View>
-                <View style={styles.rightSection}>
+                <View
+                  style={[
+                    styles.rightSection,
+                    isTablet && styles.rightSectionTablet,
+                  ]}
+                >
                   {isAuthenticated && (
                     <View style={{ position: "relative", zIndex: 9999 }}>
                       <TouchableOpacity
@@ -490,78 +519,10 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                         )}
                       </TouchableOpacity>
 
-                      {showNotifications && (
-                        <View style={styles.notificationDropdown}>
-                          <View style={styles.dropdownHeader}>
-                            <Text style={styles.dropdownTitle}>
-                              Notifications
-                            </Text>
-                            {unreadCount > 0 && (
-                              <Text
-                                style={styles.markAll}
-                                onPress={() =>
-                                  notifications.forEach((n) => markAsRead(n.id))
-                                }
-                              >
-                                Mark all read
-                              </Text>
-                            )}
-                          </View>
-                          <ScrollView style={styles.dropdownList}>
-                            {notifications.filter((n) => !n.read).length ===
-                            0 ? (
-                              <View style={styles.emptyState}>
-                                <Text style={styles.emptyText}>
-                                  No new notifications
-                                </Text>
-                              </View>
-                            ) : (
-                              notifications
-                                .filter((n) => !n.read)
-                                .map((n) => (
-                                  <TouchableOpacity
-                                    key={n.id}
-                                    style={[
-                                      styles.notifItem,
-                                      styles.notifUnread,
-                                    ]}
-                                    onPress={() => {
-                                      markAsRead(n.id);
-                                      setShowNotifications(false);
-                                      navigate(n.link);
-                                    }}
-                                  >
-                                    <View
-                                      style={[
-                                        styles.dot,
-                                        {
-                                          backgroundColor:
-                                            n.type === "message"
-                                              ? "#3B82F6"
-                                              : "#10B981",
-                                        },
-                                      ]}
-                                    />
-                                    <View style={{ flex: 1 }}>
-                                      <Text style={styles.notifTitle}>
-                                        {n.title}
-                                      </Text>
-                                      <Text
-                                        style={styles.notifBody}
-                                        numberOfLines={2}
-                                      >
-                                        {n.body}
-                                      </Text>
-                                      <Text style={styles.notifTime}>
-                                        {new Date(n.date).toLocaleTimeString()}
-                                      </Text>
-                                    </View>
-                                  </TouchableOpacity>
-                                ))
-                            )}
-                          </ScrollView>
-                        </View>
-                      )}
+                      <NotificationsPanel
+                        isOpen={showNotifications}
+                        onClose={() => setShowNotifications(false)}
+                      />
                     </View>
                   )}
                   <LanguageSelector variant="desktop" />
@@ -773,7 +734,10 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E2E8F0",
     zIndex: 50,
     ...(Platform.OS === "web"
-      ? { boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }
+      ? {
+          boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+          overflow: "visible",
+        }
       : {
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 1 },
@@ -791,6 +755,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    ...(Platform.OS === "web"
+      ? {
+          overflow: "visible",
+        }
+      : {}),
+  } as any,
+  navInnerSmallMobile: {
+    paddingHorizontal: 12,
+  },
+  navInnerMobile: {
+    paddingHorizontal: 16,
+  },
+  navInnerTablet: {
+    paddingHorizontal: 20,
   },
   brand: { flexDirection: "row", alignItems: "center", gap: 10 },
   logo: {
@@ -799,7 +777,28 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     letterSpacing: -0.5,
   },
+  logoSmallMobile: {
+    fontSize: 14,
+    letterSpacing: -0.3,
+  },
+  logoMobile: {
+    fontSize: 16,
+    letterSpacing: -0.4,
+  },
+  logoTablet: {
+    fontSize: 17,
+    letterSpacing: -0.45,
+  },
   mobileMenuBtn: { padding: 8 },
+  mobileMenuBtnSmallMobile: { padding: 6 },
+  mobileRightSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  mobileRightSectionSmallMobile: {
+    gap: 8,
+  },
   desktopNavWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -807,7 +806,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
   },
+  desktopNavWrapperTablet: {
+    gap: 12,
+  },
   desktopNav: { flexDirection: "row", alignItems: "center", gap: 4 },
+  desktopNavTablet: { gap: 2 },
   rightSection: {
     flexDirection: "row",
     alignItems: "center",
@@ -815,6 +818,10 @@ const styles = StyleSheet.create({
     paddingLeft: 16,
     borderLeftWidth: 1,
     borderLeftColor: "#E2E8F0",
+  },
+  rightSectionTablet: {
+    gap: 10,
+    paddingLeft: 12,
   },
   mobileLangRow: {
     flexDirection: "row",
@@ -833,8 +840,14 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 0,
   },
+  navItemTablet: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+  },
   navItemActive: { backgroundColor: "#EFF6FF" },
   navLabel: { fontSize: 14, fontWeight: "500", color: "#64748B" },
+  navLabelTablet: { fontSize: 13 },
   navLabelActive: { color: "#2563EB" },
   logoutLabel: { fontSize: 14, fontWeight: "500", color: "#EF4444" },
   divider: {
@@ -865,6 +878,12 @@ const styles = StyleSheet.create({
         }
       : {}),
   } as any,
+  userBoxTablet: {
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 180,
+  },
   chevron: {
     marginLeft: "auto",
   },
@@ -886,7 +905,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
+  avatarTablet: {
+    width: 28,
+    height: 28,
+  },
   userNameText: { fontSize: 13, fontWeight: "600", color: "#0F172A", flex: 1 },
+  userNameTextTablet: { fontSize: 12 },
   mobileOverlay: {
     position: "absolute",
     top: 64,
@@ -936,7 +960,7 @@ const styles = StyleSheet.create({
     width: "100%",
     minWidth: "100%" as any,
     marginHorizontal: "auto",
-    padding: 24,
+    padding: 16,
   },
   mainContent: {},
   iconBox: {
@@ -946,6 +970,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer" as any,
+  },
+  iconBoxSmallMobile: {
+    width: 36,
+    height: 36,
   },
   badge: {
     position: "absolute",
@@ -965,87 +993,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "bold",
     paddingHorizontal: 2,
-  },
-  notificationDropdown: {
-    position: "absolute",
-    top: 50,
-    right: 0,
-    width: 320,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 0,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
-    zIndex: 9999,
-    maxHeight: 400,
-  },
-  dropdownHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  dropdownTitle: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#0F172A",
-  },
-  markAll: {
-    fontSize: 12,
-    color: "#3B82F6",
-    fontWeight: "500",
-    cursor: "pointer" as any,
-  },
-  dropdownList: {
-    maxHeight: 340,
-  },
-  emptyState: {
-    padding: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyText: {
-    color: "#94A3B8",
-    fontSize: 14,
-  },
-  notifItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-  },
-  notifUnread: {
-    backgroundColor: "#F8FAFC",
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 0,
-    marginTop: 6,
-  },
-  notifTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#1E293B",
-    marginBottom: 2,
-  },
-  notifBody: {
-    fontSize: 12,
-    color: "#64748B",
-    lineHeight: 16,
-    marginBottom: 4,
-  },
-  notifTime: {
-    fontSize: 10,
-    color: "#94A3B8",
   },
   contentRow: {
     flexDirection: "row",

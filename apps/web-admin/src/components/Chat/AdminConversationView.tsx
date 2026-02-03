@@ -9,6 +9,7 @@ import {
   Platform,
   Image,
   Modal,
+  Picker,
 } from "react-native";
 import { Text } from "@trusttax/ui";
 import {
@@ -105,6 +106,10 @@ interface AdminConversationViewProps {
   onTyping: (isTyping: boolean) => void;
   isOtherTyping: boolean;
   isMobile?: boolean;
+  conversation?: any;
+  staff?: any[];
+  onAssignPreparer?: (preparerId: string | null) => Promise<void>;
+  onMessagesRead?: () => void;
 }
 
 export const AdminConversationView = ({
@@ -114,6 +119,10 @@ export const AdminConversationView = ({
   onTyping,
   isOtherTyping,
   isMobile = false,
+  conversation,
+  staff = [],
+  onAssignPreparer,
+  onMessagesRead,
 }: AdminConversationViewProps) => {
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);
@@ -447,6 +456,41 @@ export const AdminConversationView = ({
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.sidebarContent}>
+              {/* Assign Preparer Section */}
+              {onAssignPreparer && conversation && (
+                <View style={styles.assignSection}>
+                  <Text style={styles.assignLabel}>Assign to:</Text>
+                  {Platform.OS === "web" ? (
+                    <select
+                      value={conversation.preparerId || ""}
+                      onChange={(e) => {
+                        const preparerId = e.target.value || null;
+                        onAssignPreparer(preparerId);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                        border: "1px solid #E2E8F0",
+                        borderRadius: "0",
+                        fontSize: "14px",
+                        backgroundColor: "#FFF",
+                        marginTop: "8px",
+                      }}
+                    >
+                      <option value="">Unassigned</option>
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name || s.email}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <Text style={styles.assignValue}>
+                      {conversation.preparer?.name || "Unassigned"}
+                    </Text>
+                  )}
+                </View>
+              )}
               {sharedDocuments.length === 0 ? (
                 <View style={styles.emptySidebar}>
                   <FileText size={40} color="#E2E8F0" />
@@ -870,6 +914,25 @@ const styles = StyleSheet.create({
   },
   emptySidebarText: { fontSize: 12, color: "#94A3B8", textAlign: "center" },
   sidebarActiveBtn: { backgroundColor: "#E2E8F0" },
+  assignSection: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    backgroundColor: "#F8FAFC",
+  },
+  assignLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#475569",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  assignValue: {
+    fontSize: 14,
+    color: "#0F172A",
+    marginTop: 8,
+  },
   pendingAttachment: {
     padding: 12,
     backgroundColor: "#FFF",

@@ -68,7 +68,7 @@
 
 ## 📋 Variables de Entorno Requeridas
 
-### Críticas (la app falla sin ellas):
+### Críticas (la app falla sin ellas)
 
 ```env
 DATABASE_URL=postgresql://...
@@ -76,7 +76,7 @@ JWT_SECRET=tu-clave-secreta-minimo-32-caracteres
 ENCRYPTION_KEY=tu-clave-encriptacion-minimo-32-caracteres
 ```
 
-### Recomendadas (funcionalidades limitadas sin ellas):
+### Recomendadas (funcionalidades limitadas sin ellas)
 
 ```env
 REDIS_URL=redis://... (para rate limiting y WebSockets)
@@ -87,7 +87,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 ```
 
-### Producción:
+### Producción
 
 ```env
 NODE_ENV=production

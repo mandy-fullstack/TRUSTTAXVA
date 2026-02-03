@@ -99,19 +99,27 @@ const styles = StyleSheet.create({
     width: "100%",
     marginHorizontal: "auto",
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
+    marginBottom: 16,
   },
   wrapperSmallMobile: {
     paddingHorizontal: 12,
-    paddingBottom: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    marginBottom: 16,
   },
   wrapperMobile: {
     paddingHorizontal: 14,
-    paddingBottom: 18,
+    paddingTop: 14,
+    paddingBottom: 14,
+    marginBottom: 16,
   },
   wrapperTablet: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    marginBottom: 16,
   },
   headerContent: {
     flexDirection: "row",
@@ -125,8 +133,8 @@ const styles = StyleSheet.create({
   greetingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 4,
   },
   greeting: {
     fontSize: 14,
@@ -146,7 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   title: {
-    marginBottom: 8,
+    marginBottom: 4,
     fontSize: 32,
     fontWeight: "800",
     letterSpacing: -1,
@@ -156,13 +164,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.4,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   titleMobile: {
     fontSize: 26,
     lineHeight: 32,
     letterSpacing: -0.7,
-    marginBottom: 7,
+    marginBottom: 4,
   },
   titleTablet: {
     fontSize: 30,

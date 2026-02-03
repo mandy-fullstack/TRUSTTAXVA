@@ -381,22 +381,23 @@ model ServiceReview {
 }
 
 model CompanyProfile {
-  id             String   @id @default(uuid())
-  companyName    String
-  dba            String?
-  description    String?
-  email          String
-  phone          String
-  address        String
-  website        String?
-  businessHours  Json?
-  socialLinks    Json?
-  primaryColor   String?  @default("#0F172A")
-  secondaryColor String?  @default("#2563EB")
-  updatedAt      DateTime @updatedAt
-  faviconUrl     String?
-  logoUrl        String?
-  themeOptions   Json?
+  id                     String   @id @default(uuid())
+  companyName            String
+  dba                    String?
+  description            String?
+  email                  String
+  phone                  String
+  address                String
+  website                String?
+  businessHours          Json?
+  socialLinks            Json?
+  primaryColor           String?  @default("#0F172A")
+  secondaryColor         String?  @default("#2563EB")
+  updatedAt              DateTime @updatedAt
+  faviconUrl             String?
+  logoUrl                String?
+  themeOptions           Json?
+  notificationSenderName String?
 }
 
 model FAQ {

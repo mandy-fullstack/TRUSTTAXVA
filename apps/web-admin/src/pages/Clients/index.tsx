@@ -12,6 +12,8 @@ import { Users, Mail, Calendar } from "lucide-react";
 import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
+import { useTranslation } from "react-i18next";
+import { useSocketContext } from "../../context/SocketContext";
 
 interface Client {
   id: string;
@@ -45,6 +47,8 @@ const MOBILE_BREAKPOINT = 768;
 
 export function ClientsPage() {
   const { width } = useWindowDimensions();
+  const { t } = useTranslation();
+  const { socket, isConnected } = useSocketContext();
   const isMobile = width < MOBILE_BREAKPOINT;
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +72,43 @@ export function ClientsPage() {
       cancelled = true;
     };
   }, []);
+
+  // Real-time updates for clients
+  useEffect(() => {
+    if (!isConnected || !socket) return;
+
+    const handleClientUpdate = (data: any) => {
+      console.log("👥 Clients: Client update received", data);
+      // Update the specific client in the list
+      setClients((prev) =>
+        prev.map((client) =>
+          client.id === data.clientId
+            ? { ...client, ...data.updates }
+            : client
+        )
+      );
+    };
+
+    const handleNewClient = (data: any) => {
+      console.log("👥 Clients: New client received", data);
+      // Refresh the list when new client registers
+      api.getClients()
+        .then((newClients) => {
+          setClients(Array.isArray(newClients) ? newClients : []);
+        })
+        .catch((e) => {
+          console.error("Failed to refresh clients:", e);
+        });
+    };
+
+    socket.on("clientUpdate", handleClientUpdate);
+    socket.on("newClient", handleNewClient);
+
+    return () => {
+      socket.off("clientUpdate", handleClientUpdate);
+      socket.off("newClient", handleNewClient);
+    };
+  }, [isConnected, socket]);
 
   if (loading) {
     return (
@@ -109,9 +150,9 @@ export function ClientsPage() {
         {clients.length === 0 ? (
           <View style={styles.emptyState}>
             <Users size={48} color="#E2E8F0" />
-            <H4 style={styles.emptyTitle}>No Clients Yet</H4>
+            <H4 style={styles.emptyTitle}>{t("clients.no_clients_yet")}</H4>
             <Text style={styles.emptyText}>
-              Clients will appear here once they register.
+              {t("clients.no_clients_message")}
             </Text>
           </View>
         ) : isMobile ? (
