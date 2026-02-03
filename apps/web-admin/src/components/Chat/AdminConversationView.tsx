@@ -9,7 +9,6 @@ import {
   Platform,
   Image,
   Modal,
-  Picker,
 } from "react-native";
 import { Text } from "@trusttax/ui";
 import {
@@ -122,7 +121,6 @@ export const AdminConversationView = ({
   conversation,
   staff = [],
   onAssignPreparer,
-  onMessagesRead,
 }: AdminConversationViewProps) => {
   const [inputText, setInputText] = useState("");
   const [sending, setSending] = useState(false);

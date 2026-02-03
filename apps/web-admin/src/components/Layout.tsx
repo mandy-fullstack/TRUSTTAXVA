@@ -100,7 +100,7 @@ export function Layout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { notifications, unreadCount } = useNotification();
+  const { unreadCount } = useNotification();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const { socket, isConnected } = useSocketContext();
 

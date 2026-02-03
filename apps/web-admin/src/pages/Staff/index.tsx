@@ -12,6 +12,7 @@ import { Users, Mail, Calendar, ShieldCheck } from "lucide-react";
 import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
+import { useTranslation } from "react-i18next";
 
 interface StaffMember {
   id: string;

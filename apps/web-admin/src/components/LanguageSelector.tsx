@@ -1,4 +1,3 @@
-import React from "react";
 import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Text } from "@trusttax/ui";
 import { ChevronDown } from "lucide-react";
@@ -44,7 +43,7 @@ export const LanguageSelector = ({
   variant = "desktop",
   showChevron = true,
 }: LanguageSelectorProps) => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const isMobile = variant === "mobile";
 
   const toggleLanguage = () => {

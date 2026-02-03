@@ -5,8 +5,6 @@ import {
   ScrollView,
   useWindowDimensions,
   ActivityIndicator,
-  TouchableOpacity,
-  Platform,
 } from "react-native";
 import { H1, H4, Text, StatsCard, spacing, Spacer } from "@trusttax/ui";
 import { LayoutDashboard } from "lucide-react";
@@ -15,7 +13,6 @@ import { useNotification } from "../context/NotificationContext";
 import { useSocketContext } from "../context/SocketContext";
 import { api } from "../services/api";
 import { Layout } from "../components/Layout";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 const MOBILE_BREAKPOINT = 768;
@@ -43,7 +40,6 @@ export function DashboardPage() {
     requestPermission,
   } = useNotification();
   const { socket, isConnected } = useSocketContext();
-  const navigate = useNavigate();
 
   // Load initial metrics
   useEffect(() => {
@@ -100,9 +96,9 @@ export function DashboardPage() {
     };
 
     // Listen for order-related events
-    socket.on("orderUpdate", handleOrderUpdate);
-    socket.on("newOrder", handleNewOrder);
-    socket.on("metricsUpdate", handleMetricsUpdate);
+    (socket as any).on("orderUpdate", handleOrderUpdate);
+    (socket as any).on("newOrder", handleNewOrder);
+    (socket as any).on("metricsUpdate", handleMetricsUpdate);
 
     // Also listen to notifications that might indicate changes
     socket.on("notification", (payload: any) => {
@@ -119,9 +115,9 @@ export function DashboardPage() {
     });
 
     return () => {
-      socket.off("orderUpdate", handleOrderUpdate);
-      socket.off("newOrder", handleNewOrder);
-      socket.off("metricsUpdate", handleMetricsUpdate);
+      (socket as any).off("orderUpdate", handleOrderUpdate);
+      (socket as any).off("newOrder", handleNewOrder);
+      (socket as any).off("metricsUpdate", handleMetricsUpdate);
       socket.off("notification");
     };
   }, [isConnected, socket]);

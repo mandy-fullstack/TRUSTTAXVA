@@ -101,12 +101,12 @@ export function ClientsPage() {
         });
     };
 
-    socket.on("clientUpdate", handleClientUpdate);
-    socket.on("newClient", handleNewClient);
+    (socket as any).on("clientUpdate", handleClientUpdate);
+    (socket as any).on("newClient", handleNewClient);
 
     return () => {
-      socket.off("clientUpdate", handleClientUpdate);
-      socket.off("newClient", handleNewClient);
+      (socket as any).off("clientUpdate", handleClientUpdate);
+      (socket as any).off("newClient", handleNewClient);
     };
   }, [isConnected, socket]);
 

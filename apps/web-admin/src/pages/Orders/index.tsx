@@ -106,12 +106,12 @@ export function OrdersPage() {
       }
     };
 
-    socket.on("orderUpdate", handleOrderUpdate);
-    socket.on("newOrder", handleNewOrder);
+    (socket as any).on("orderUpdate", handleOrderUpdate);
+    (socket as any).on("newOrder", handleNewOrder);
 
     return () => {
-      socket.off("orderUpdate", handleOrderUpdate);
-      socket.off("newOrder", handleNewOrder);
+      (socket as any).off("orderUpdate", handleOrderUpdate);
+      (socket as any).off("newOrder", handleNewOrder);
     };
   }, [isConnected, socket]);
 
@@ -164,7 +164,10 @@ export function OrdersPage() {
               {t("orders.title")}
             </H1>
             <Text style={styles.subtitle}>
-              {t("orders.total_orders", { count: orders.length }, `${orders.length} total orders`)}
+              {t("orders.total_orders", {
+                count: orders.length,
+                defaultValue: `${orders.length} total orders`,
+              })}
             </Text>
           </View>
         </View>
