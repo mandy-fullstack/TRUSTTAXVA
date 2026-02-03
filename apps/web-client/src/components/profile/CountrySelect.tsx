@@ -10,7 +10,7 @@ import {
 import { Text } from "@trusttax/ui";
 import { ChevronDown, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Country } from "country-state-city";
+import { getCountries } from "../../utils/geo";
 
 interface CountrySelectProps {
   value: string; // ISO code
@@ -21,8 +21,6 @@ interface CountrySelectProps {
   hasError?: boolean; // Indica si hay un error de validación
 }
 
-const countries = Country.getAllCountries();
-
 export const CountrySelect = ({
   value,
   onChange,
@@ -31,9 +29,10 @@ export const CountrySelect = ({
   required,
   hasError = false,
 }: CountrySelectProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const countries = useMemo(() => getCountries(i18n.language), [i18n.language]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return countries.slice(0, 100);
@@ -45,7 +44,7 @@ export const CountrySelect = ({
           c.isoCode.toLowerCase().includes(q),
       )
       .slice(0, 100);
-  }, [query]);
+  }, [query, countries]);
 
   const selected = countries.find((c) => c.isoCode === value);
 

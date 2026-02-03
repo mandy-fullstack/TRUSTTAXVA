@@ -9,15 +9,13 @@ import {
 } from "react-native";
 import { Text } from "@trusttax/ui";
 import { ChevronDown, Check } from "lucide-react";
-import { Country } from "country-state-city";
+import { getCountries } from "../../../utils/geo";
 
 interface WizardCountrySelectProps {
   value: string; // ISO code
   onChange: (isoCode: string) => void;
   placeholder?: string;
 }
-
-const countries = Country.getAllCountries();
 
 export const WizardCountrySelect: React.FC<WizardCountrySelectProps> = ({
   value,
@@ -27,6 +25,7 @@ export const WizardCountrySelect: React.FC<WizardCountrySelectProps> = ({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const countries = useMemo(() => getCountries(), []);
 
   const selected = useMemo(
     () => countries.find((c) => c.isoCode === value),

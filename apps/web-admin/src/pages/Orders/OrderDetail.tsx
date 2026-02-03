@@ -24,8 +24,6 @@ import {
     Search,
     Filter,
 } from "lucide-react";
-import { pdf } from "@react-pdf/renderer";
-import { TaxReportPDF } from "../../components/TaxReportPDF";
 import { DocumentCard } from "../../components/DocumentCard";
 import { DocumentPreviewModal } from "../../components/DocumentPreviewModal";
 import { useDocumentViewer } from "../../hooks/useDocumentViewer";
@@ -210,6 +208,12 @@ export const OrderDetailPage = () => {
 
     const handleDownloadPDF = async () => {
         try {
+            // Lazy-load PDF renderer only when needed (large dependency)
+            const [{ pdf }, { TaxReportPDF }] = await Promise.all([
+                import("@react-pdf/renderer"),
+                import("../../components/TaxReportPDF"),
+            ]);
+
             const blob = await pdf(<TaxReportPDF order={order} />).toBlob();
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");

@@ -14,7 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { State } from "country-state-city";
+import { US_STATES } from "../../utils/geo";
 import { ExpirationDatePicker } from "./ExpirationDatePicker";
 import { MaskedInput } from "./MaskedInput";
 import { getExpirationInfo } from "../../utils/expiration";
@@ -35,8 +35,6 @@ interface ProfileDriverLicenseProps {
     expirationDate: string;
   } | null>; // Función async que carga los datos descifrados completos
 }
-
-const US_STATES = State.getStatesOfCountry("US") ?? [];
 
 export const ProfileDriverLicense = ({
   number,

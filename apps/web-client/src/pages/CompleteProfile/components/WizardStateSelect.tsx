@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Text } from "@trusttax/ui";
 import { ChevronDown, Check } from "lucide-react";
-import { State } from "country-state-city";
+import { US_STATES } from "../../../utils/geo";
 
 interface WizardStateSelectProps {
   value: string; // State Code (e.g. NY)
@@ -17,7 +17,7 @@ interface WizardStateSelectProps {
   placeholder?: string;
 }
 
-const usStates = State.getStatesOfCountry("US");
+const usStates = US_STATES;
 
 export const WizardStateSelect: React.FC<WizardStateSelectProps> = ({
   value,

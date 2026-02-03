@@ -20,4 +20,21 @@ export default defineConfig({
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react-native-web")) return "rnweb";
+            if (id.includes("socket.io-client")) return "socket";
+            if (id.includes("/firebase/") || id.includes("firebase"))
+              return "firebase";
+          }
+          if (id.includes("/packages/ui/")) return "tt-ui";
+          if (id.includes("/packages/core/")) return "tt-core";
+          return undefined;
+        },
+      },
+    },
+  },
 });
