@@ -15,20 +15,36 @@ import { H4, Text } from "@trusttax/ui";
 import { MessageCircle, Search, ArrowLeft, Trash2 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
+import { useTranslation } from "react-i18next";
 import {
   getCategoryColor,
   getCategoryLabel,
 } from "../../utils/conversationColors";
 import { useAdminChat } from "../../hooks/useAdminChat";
 import { AdminConversationView } from "../../components/Chat/AdminConversationView";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { AlertDialog } from "../../components/AlertDialog";
 
 export const AdminChatPage = () => {
+  const { t } = useTranslation();
   const { id: paramId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { width } = useWindowDimensions();
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    conversationId: string | null;
+    title: string;
+  }>({ isOpen: false, conversationId: null, title: "" });
+  const [deleting, setDeleting] = useState(false);
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "success" | "error" | "info" | "warning";
+  }>({ isOpen: false, title: "", message: "", variant: "info" });
 
   const isMobile = width < 768;
 
@@ -73,16 +89,44 @@ export const AdminChatPage = () => {
     }
   };
 
-  const handleDeleteConversation = async (id: string, e: any) => {
+  const openDeleteConfirm = (id: string, e: any, conv: any) => {
     e.stopPropagation();
-    if (window.confirm("Are you sure you want to delete this conversation?")) {
-      try {
-        await api.deleteConversation(id);
-        setConversations(conversations.filter((c) => c.id !== id));
-        if (paramId === id) navigate("/chat");
-      } catch (error) {
-        console.error("Failed to delete conversation:", error);
-      }
+    const title = conv?.client?.name || conv?.client?.email || conv?.subject || id;
+    setDeleteConfirm({ isOpen: true, conversationId: id, title });
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!deleteConfirm.conversationId) return;
+    try {
+      setDeleting(true);
+      await api.deleteConversation(deleteConfirm.conversationId);
+      setConversations((prev) =>
+        prev.filter((c) => c.id !== deleteConfirm.conversationId),
+      );
+      if (paramId === deleteConfirm.conversationId) navigate("/chat");
+      setDeleteConfirm({ isOpen: false, conversationId: null, title: "" });
+      setAlertDialog({
+        isOpen: true,
+        title: t("chat.delete_success_title", "Chat eliminado"),
+        message: t("chat.delete_success_message", {
+          defaultValue: "La conversación fue eliminada correctamente.",
+        }),
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.error("Failed to delete conversation:", error);
+      setAlertDialog({
+        isOpen: true,
+        title: t("chat.delete_error_title", "Error al eliminar"),
+        message:
+          error?.message ||
+          t("chat.delete_error_message", {
+            defaultValue: "No se pudo eliminar el chat. Intenta nuevamente.",
+          }),
+        variant: "error",
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -95,14 +139,14 @@ export const AdminChatPage = () => {
         {(!isMobile || !paramId) && (
           <View style={styles.sidebar}>
             <View style={styles.sidebarHeader}>
-              <H4>Inbox</H4>
+              <H4>{t("chat.inbox", "Inbox")}</H4>
             </View>
 
             <View style={styles.searchContainer}>
               <Search size={16} color="#94A3B8" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search clients..."
+                placeholder={t("chat.search_placeholder", "Search clients...")}
                 placeholderTextColor="#94A3B8"
               />
             </View>
@@ -163,7 +207,8 @@ export const AdminChatPage = () => {
                           </Text>
                         </View>
                         <TouchableOpacity
-                          onPress={(e) => handleDeleteConversation(conv.id, e)}
+                          onPress={(e) => openDeleteConfirm(conv.id, e, conv)}
+                          disabled={deleting}
                         >
                           <Trash2 size={14} color="#94A3B8" />
                         </TouchableOpacity>
@@ -175,7 +220,9 @@ export const AdminChatPage = () => {
               {!loading && conversations.length === 0 && (
                 <View style={styles.emptyState}>
                   <MessageCircle size={40} color="#CBD5E1" />
-                  <Text style={styles.emptyText}>No conversations found.</Text>
+                  <Text style={styles.emptyText}>
+                    {t("chat.empty", "No conversations found.")}
+                  </Text>
                 </View>
               )}
             </ScrollView>
@@ -231,13 +278,52 @@ export const AdminChatPage = () => {
               <View style={styles.noChatSelected}>
                 <MessageCircle size={64} color="#E2E8F0" />
                 <Text style={styles.selectChatText}>
-                  Select a conversation to start chatting
+                  {t(
+                    "chat.select_conversation",
+                    "Select a conversation to start chatting",
+                  )}
                 </Text>
               </View>
             )}
           </View>
         )}
       </View>
+
+      {/* Confirm Delete Chat */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() =>
+          setDeleteConfirm({ isOpen: false, conversationId: null, title: "" })
+        }
+        onConfirm={confirmDeleteConversation}
+        isLoading={deleting}
+        autoCloseOnConfirm={false}
+        title={t("chat.delete_confirm_title", "Eliminar chat")}
+        message={t("chat.delete_confirm_message", {
+          defaultValue:
+            "¿Estás seguro de que deseas eliminar este chat? Esta acción no se puede deshacer.",
+          title: deleteConfirm.title,
+        })}
+        confirmText={t("chat.delete_confirm_button", "Eliminar")}
+        cancelText={t("chat.delete_cancel_button", "Cancelar")}
+        variant="danger"
+      />
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() =>
+          setAlertDialog({
+            isOpen: false,
+            title: "",
+            message: "",
+            variant: "info",
+          })
+        }
+        title={alertDialog.title}
+        message={alertDialog.message}
+        variant={alertDialog.variant}
+      />
     </Layout>
   );
 };

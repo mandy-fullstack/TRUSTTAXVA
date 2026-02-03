@@ -78,6 +78,20 @@
     "new_message_received": "You have a new message",
     "new_message_from_unassigned": "New message in unassigned chat"
   },
+  "chat": {
+    "inbox": "Inbox",
+    "search_placeholder": "Search clients...",
+    "empty": "No conversations found.",
+    "select_conversation": "Select a conversation to start chatting",
+    "delete_confirm_title": "Delete chat",
+    "delete_confirm_message": "Are you sure you want to delete the chat \"{{title}}\"?\\n\\nThis will delete all messages in this conversation and cannot be undone.",
+    "delete_confirm_button": "Delete",
+    "delete_cancel_button": "Cancel",
+    "delete_success_title": "Chat deleted",
+    "delete_success_message": "The conversation was deleted successfully.",
+    "delete_error_title": "Delete error",
+    "delete_error_message": "Failed to delete the chat. Please try again."
+  },
   "clients": {
     "title": "Clients",
     "add_client": "Add Client",
@@ -89,7 +103,20 @@
     "client_details": "Client Details",
     "orders_count": "Orders ({{count}})",
     "no_orders": "No orders yet.",
-    "load_error": "Failed to load clients"
+    "load_error": "Failed to load clients",
+    "total_clients": "{{count}} total clients",
+    "delete_client": "Delete Client",
+    "delete_confirm_title": "Delete Client",
+    "delete_confirm_message": "Are you sure you want to permanently delete the client \"{{name}}\"?\n\nThis action will delete ALL related data:\n• Orders\n• Documents\n• Conversations and messages\n• Invoices\n• Tax returns\n• Immigration cases\n• Appointments\n• Audit logs\n\nThis action CANNOT be undone.",
+    "delete_confirm_button": "Delete Permanently",
+    "delete_cancel_button": "Cancel",
+    "delete_success_title": "Client Deleted",
+    "delete_success_message": "The client \"{{name}}\" and all related data (orders, documents, conversations, etc.) have been permanently deleted.",
+    "delete_error_title": "Delete Error",
+    "delete_error_message": "Failed to delete the client. Please try again.",
+    "actions": "Actions",
+    "profile_complete": "Profile complete",
+    "joined": "Joined"
   },
   "staff": {
     "title": "Staff & Team",

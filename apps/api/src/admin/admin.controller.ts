@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   Controller,
   Get,
@@ -12,6 +16,8 @@ import {
   UseInterceptors,
   UploadedFile,
   Query,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AdminService } from './admin.service';
@@ -27,7 +33,7 @@ export class AdminController {
   constructor(
     private adminService: AdminService,
     private documentsService: DocumentsService,
-  ) {}
+  ) { }
 
   @Get('clients')
   async getAllClients() {
@@ -209,5 +215,21 @@ export class AdminController {
     @Param('docId') docId: string,
   ) {
     return this.documentsService.deleteDocument(userId, docId);
+  }
+
+  @Delete('clients/:id')
+  async deleteClient(@Param('id') id: string) {
+    try {
+      return await this.adminService.deleteClient(id);
+    } catch (error: any) {
+      // Ensure frontend receives a useful message instead of a generic 500
+      throw new HttpException(
+        {
+          message:
+            error?.message || 'Error al eliminar el cliente. Revisa los logs.',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

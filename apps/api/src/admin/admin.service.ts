@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
-
+import { StorageService } from '../common/services/storage.service';
 import { ChatGateway } from '../chat/chat.gateway';
 import { FirebaseService } from '../common/services/firebase.service';
 
@@ -10,6 +15,7 @@ export class AdminService {
     constructor(
         private prisma: PrismaService,
         private encryptionService: EncryptionService,
+        private storageService: StorageService,
         private chatGateway: ChatGateway,
         private firebaseService: FirebaseService,
     ) { }
@@ -88,16 +94,15 @@ export class AdminService {
             throw new Error('Client not found');
         }
 
-        const {
-            password,
-            ssnEncrypted,
-            driverLicenseEncrypted,
-            passportDataEncrypted,
-            ...rest
-        } = client;
+        // Remove sensitive fields before returning
+        const safeClient: any = { ...client };
+        delete safeClient.password;
+        delete safeClient.ssnEncrypted;
+        delete safeClient.driverLicenseEncrypted;
+        delete safeClient.passportDataEncrypted;
 
         return {
-            ...rest,
+            ...safeClient,
             fcmToken: client.fcmToken,
         };
     }
@@ -330,7 +335,7 @@ export class AdminService {
         });
 
         // Trigger Push Notification
-        this.triggerOrderPushNotification(
+        void this.triggerOrderPushNotification(
             order.userId,
             'Actualización de Estado',
             `Tu orden ha cambiado a estado: ${status}`,
@@ -341,7 +346,7 @@ export class AdminService {
         return { ...order, total };
     }
 
-    async addOrderTimelineEntry(
+    addOrderTimelineEntry(
         orderId: string,
         title: string,
         description: string,
@@ -398,7 +403,7 @@ export class AdminService {
             });
 
             // Trigger Push Notification
-            this.triggerOrderPushNotification(
+            void this.triggerOrderPushNotification(
                 order.userId,
                 'Acción Requerida',
                 `Se requiere tu aprobación: ${title}`,
@@ -732,7 +737,7 @@ export class AdminService {
         });
     }
 
-    async updateServiceStep(
+    updateServiceStep(
         stepId: string,
         data: {
             title?: string;
@@ -756,7 +761,7 @@ export class AdminService {
         });
     }
 
-    async deleteServiceStep(stepId: string) {
+    deleteServiceStep(stepId: string) {
         return (this.prisma.client as any).serviceStep.delete({
             where: { id: stepId },
         });
@@ -795,5 +800,211 @@ export class AdminService {
         );
 
         return { success: true };
+    }
+
+    async deleteClient(clientId: string) {
+        // Verify client exists and is a CLIENT
+        const client = await (this.prisma.user as any).findUnique({
+            where: { id: clientId },
+            select: { id: true, role: true, email: true, fcmToken: true },
+        });
+
+        if (!client) {
+            throw new NotFoundException('Client not found');
+        }
+
+        if (client.role !== 'CLIENT') {
+            throw new Error('Can only delete CLIENT users');
+        }
+
+        console.log(`[AdminService] Starting cascade deletion for client ${clientId} (${client.email})`);
+
+        try {
+            // Firebase cleanup (FCM): there's nothing to delete inside Firebase itself for tokens,
+            // but we MUST stop sending pushes to this user immediately.
+            if (client.fcmToken) {
+                try {
+                    await (this.prisma.user as any).update({
+                        where: { id: clientId },
+                        data: { fcmToken: null },
+                    });
+                    console.log(`[AdminService] Cleared FCM token for user ${clientId}`);
+                } catch (e: any) {
+                    console.warn(
+                        `[AdminService] Failed to clear FCM token for user ${clientId}: ${e?.message}`,
+                    );
+                }
+            }
+
+            // First, delete S3 files outside transaction (to avoid transaction rollback if S3 fails)
+            const documents = await this.prisma.document.findMany({
+                where: { userId: clientId },
+                select: { id: true, s3Key: true },
+            });
+
+            const s3DeletionErrors: string[] = [];
+            for (const doc of documents) {
+                if (doc.s3Key) {
+                    try {
+                        await this.storageService.deleteFile(doc.s3Key);
+                        console.log(`[AdminService] Deleted S3 file: ${doc.s3Key}`);
+                    } catch (error: any) {
+                        const errorMsg = `Failed to delete S3 file ${doc.s3Key}: ${error.message}`;
+                        console.warn(`[AdminService] ${errorMsg}`);
+                        s3DeletionErrors.push(errorMsg);
+                        // Continue even if S3 deletion fails - we'll still delete from DB
+                    }
+                }
+            }
+
+            // Prisma Accelerate limits INTERACTIVE transactions (callback form) to max 15000ms.
+            // Use a NON-interactive/batch transaction instead: $transaction([op1, op2, ...]).
+            const prismaAny = this.prisma.client as any;
+
+            const conversationIds: string[] = (
+                await prismaAny.conversation.findMany({
+                    where: { clientId },
+                    select: { id: true },
+                })
+            ).map((c: any) => c.id);
+
+            const orderIds: string[] = (
+                await prismaAny.order.findMany({
+                    where: { userId: clientId },
+                    select: { id: true },
+                })
+            ).map((o: any) => o.id);
+
+            const invoiceIds: string[] = (
+                await prismaAny.invoice.findMany({
+                    where: { clientId },
+                    select: { id: true },
+                })
+            ).map((i: any) => i.id);
+
+            const taxReturnIds: string[] = (
+                await prismaAny.taxReturn.findMany({
+                    where: { clientId },
+                    select: { id: true },
+                })
+            ).map((tr: any) => tr.id);
+
+            const immigrationCaseIds: string[] = (
+                await prismaAny.immigrationCase.findMany({
+                    where: { userId: clientId },
+                    select: { id: true },
+                })
+            ).map((ic: any) => ic.id);
+
+            const [
+                messagesByConversation,
+                messagesBySender,
+                documentsDeleted,
+                conversationsDeleted,
+                orderTimelineDeleted,
+                orderApprovalDeleted,
+                orderStepProgressDeleted,
+                ordersDeleted,
+                paymentsDeleted,
+                invoicesDeleted,
+                deductionsDeleted,
+                taxFormsDeleted,
+                taxReturnsDeleted,
+                caseTimelineDeleted,
+                immigrationCasesDeleted,
+                appointmentsDeleted,
+                auditLogsDeleted,
+                userDeleted,
+            ] = await prismaAny.$transaction([
+                prismaAny.message.deleteMany({
+                    where: { conversationId: { in: conversationIds } },
+                }),
+                prismaAny.message.deleteMany({ where: { senderId: clientId } }),
+
+                // Must be after messages due to Message.documentId FK
+                prismaAny.document.deleteMany({ where: { userId: clientId } }),
+                prismaAny.conversation.deleteMany({ where: { clientId } }),
+
+                prismaAny.orderTimeline.deleteMany({ where: { orderId: { in: orderIds } } }),
+                prismaAny.orderApproval.deleteMany({ where: { orderId: { in: orderIds } } }),
+                prismaAny.orderStepProgress.deleteMany({ where: { orderId: { in: orderIds } } }),
+                prismaAny.order.deleteMany({ where: { userId: clientId } }),
+
+                prismaAny.payment.deleteMany({ where: { invoiceId: { in: invoiceIds } } }),
+                prismaAny.invoice.deleteMany({ where: { clientId } }),
+
+                prismaAny.deduction.deleteMany({ where: { taxReturnId: { in: taxReturnIds } } }),
+                prismaAny.taxForm.deleteMany({ where: { taxReturnId: { in: taxReturnIds } } }),
+                prismaAny.taxReturn.deleteMany({ where: { clientId } }),
+
+                prismaAny.caseTimeline.deleteMany({
+                    where: { immigrationCaseId: { in: immigrationCaseIds } },
+                }),
+                prismaAny.immigrationCase.deleteMany({ where: { userId: clientId } }),
+
+                prismaAny.appointment.deleteMany({ where: { clientId } }),
+                prismaAny.auditLog.deleteMany({ where: { userId: clientId } }),
+
+                // Final delete (RESTRICT dependencies must be removed above)
+                prismaAny.user.delete({ where: { id: clientId } }),
+            ]);
+
+            const totalMessagesCount =
+                (messagesByConversation?.count ?? 0) + (messagesBySender?.count ?? 0);
+
+            console.log(`[AdminService] Deleted ${totalMessagesCount} messages`);
+            console.log(`[AdminService] Deleted ${documentsDeleted?.count ?? 0} documents`);
+            console.log(`[AdminService] Deleted ${conversationsDeleted?.count ?? 0} conversations`);
+            console.log(`[AdminService] Deleted ${ordersDeleted?.count ?? 0} orders`);
+            console.log(`[AdminService] Deleted ${invoicesDeleted?.count ?? 0} invoices`);
+            console.log(`[AdminService] Deleted ${taxReturnsDeleted?.count ?? 0} tax returns`);
+            console.log(`[AdminService] Deleted ${immigrationCasesDeleted?.count ?? 0} immigration cases`);
+            console.log(`[AdminService] Deleted ${appointmentsDeleted?.count ?? 0} appointments`);
+            console.log(`[AdminService] Deleted ${auditLogsDeleted?.count ?? 0} audit logs`);
+            console.log(`[AdminService] Deleted user ${userDeleted?.id ?? clientId}`);
+
+            return {
+                success: true,
+                message: 'Client and all related data deleted successfully',
+                deleted: {
+                    messages: totalMessagesCount,
+                    documents: documentsDeleted?.count ?? 0,
+                    conversations: conversationsDeleted?.count ?? 0,
+                    orders: ordersDeleted?.count ?? 0,
+                    invoices: invoicesDeleted?.count ?? 0,
+                    taxReturns: taxReturnsDeleted?.count ?? 0,
+                    immigrationCases: immigrationCasesDeleted?.count ?? 0,
+                    appointments: appointmentsDeleted?.count ?? 0,
+                    auditLogs: auditLogsDeleted?.count ?? 0,
+                    orderTimeline: orderTimelineDeleted?.count ?? 0,
+                    orderApprovals: orderApprovalDeleted?.count ?? 0,
+                    orderStepProgress: orderStepProgressDeleted?.count ?? 0,
+                    payments: paymentsDeleted?.count ?? 0,
+                    deductions: deductionsDeleted?.count ?? 0,
+                    taxForms: taxFormsDeleted?.count ?? 0,
+                    caseTimeline: caseTimelineDeleted?.count ?? 0,
+                },
+                warnings: s3DeletionErrors.length > 0 ? s3DeletionErrors : undefined,
+                firebase: {
+                    fcmTokenCleared: !!client.fcmToken,
+                    note: 'Firebase is used only for FCM push in this backend; no Firestore/Auth user is stored here.',
+                },
+            };
+        } catch (error: any) {
+            console.error(`[AdminService] Error deleting client ${clientId}:`, {
+                message: error.message,
+                code: error.code,
+                meta: error.meta,
+                name: error.name,
+                stack: error.stack,
+            });
+
+            // Re-throw with more context
+            throw new Error(
+                `Failed to delete client: ${error.message || 'Unknown error'}. ` +
+                `Code: ${error.code || 'N/A'}. ` +
+                `Check server logs for details.`
+            );
+        }
     }
 }

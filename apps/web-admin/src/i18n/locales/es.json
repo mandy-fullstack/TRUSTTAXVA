@@ -78,6 +78,20 @@
         "new_message_received": "Tienes un nuevo mensaje",
         "new_message_from_unassigned": "Nuevo mensaje en chat sin asignar"
     },
+    "chat": {
+        "inbox": "Bandeja de entrada",
+        "search_placeholder": "Buscar clientes...",
+        "empty": "No se encontraron conversaciones.",
+        "select_conversation": "Selecciona una conversación para comenzar a chatear",
+        "delete_confirm_title": "Eliminar chat",
+        "delete_confirm_message": "¿Estás seguro de que deseas eliminar el chat \"{{title}}\"?\\n\\nEsta acción eliminará todos los mensajes de esta conversación y no se puede deshacer.",
+        "delete_confirm_button": "Eliminar",
+        "delete_cancel_button": "Cancelar",
+        "delete_success_title": "Chat eliminado",
+        "delete_success_message": "La conversación fue eliminada correctamente.",
+        "delete_error_title": "Error al eliminar",
+        "delete_error_message": "No se pudo eliminar el chat. Intenta nuevamente."
+    },
     "clients": {
         "title": "Clientes",
         "add_client": "Agregar Cliente",
@@ -89,7 +103,20 @@
         "client_details": "Detalles del Cliente",
         "orders_count": "Órdenes ({{count}})",
         "no_orders": "Aún no hay órdenes.",
-        "load_error": "Error al cargar los clientes"
+        "load_error": "Error al cargar los clientes",
+        "total_clients": "{{count}} clientes en total",
+        "delete_client": "Eliminar Cliente",
+        "delete_confirm_title": "Eliminar Cliente",
+        "delete_confirm_message": "¿Estás seguro de que deseas eliminar permanentemente al cliente \"{{name}}\"?\n\nEsta acción eliminará TODOS los datos relacionados:\n• Órdenes\n• Documentos\n• Conversaciones y mensajes\n• Facturas\n• Declaraciones de impuestos\n• Casos de inmigración\n• Citas\n• Registros de auditoría\n\nEsta acción NO se puede deshacer.",
+        "delete_confirm_button": "Eliminar Permanentemente",
+        "delete_cancel_button": "Cancelar",
+        "delete_success_title": "Cliente eliminado",
+        "delete_success_message": "El cliente \"{{name}}\" y todos sus datos relacionados (órdenes, documentos, conversaciones, etc.) han sido eliminados permanentemente.",
+        "delete_error_title": "Error al eliminar",
+        "delete_error_message": "No se pudo eliminar el cliente. Por favor, intenta nuevamente.",
+        "actions": "Acciones",
+        "profile_complete": "Perfil completo",
+        "joined": "Registrado"
     },
     "staff": {
         "title": "Personal y Equipo",

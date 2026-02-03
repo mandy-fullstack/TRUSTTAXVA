@@ -8,12 +8,14 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { H1, H4, Text, Badge } from "@trusttax/ui";
-import { Users, Mail, Calendar } from "lucide-react";
+import { Users, Mail, Calendar, Trash2 } from "lucide-react";
 import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
 import { useTranslation } from "react-i18next";
 import { useSocketContext } from "../../context/SocketContext";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { AlertDialog } from "../../components/AlertDialog";
 
 interface Client {
   id: string;
@@ -53,6 +55,18 @@ export function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    clientId: string | null;
+    clientName: string;
+  }>({ isOpen: false, clientId: null, clientName: "" });
+  const [deleting, setDeleting] = useState(false);
+  const [alertDialog, setAlertDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "success" | "error" | "info" | "warning";
+  }>({ isOpen: false, title: "", message: "", variant: "info" });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -110,6 +124,50 @@ export function ClientsPage() {
     };
   }, [isConnected, socket]);
 
+  const handleDeleteClick = (e: any, client: Client) => {
+    e.stopPropagation(); // Prevent navigation
+    setDeleteConfirm({
+      isOpen: true,
+      clientId: client.id,
+      clientName: fullName(client),
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.clientId) return;
+
+    try {
+      setDeleting(true);
+      await api.deleteClient(deleteConfirm.clientId);
+      
+      // Show success message
+      setAlertDialog({
+        isOpen: true,
+        title: t("clients.delete_success_title"),
+        message: t("clients.delete_success_message", {
+          name: deleteConfirm.clientName,
+        }),
+        variant: "success",
+      });
+
+      // Refresh clients list
+      const data = await api.getClients();
+      setClients(Array.isArray(data) ? data : []);
+      
+      setDeleteConfirm({ isOpen: false, clientId: null, clientName: "" });
+    } catch (e: any) {
+      console.error("Failed to delete client:", e);
+      setAlertDialog({
+        isOpen: true,
+        title: t("clients.delete_error_title"),
+        message: e?.message || t("clients.delete_error_message"),
+        variant: "error",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -142,8 +200,12 @@ export function ClientsPage() {
       >
         <View style={styles.header}>
           <View>
-            <H1 style={isMobile ? styles.titleMobile : undefined}>Clients</H1>
-            <Text style={styles.subtitle}>{clients.length} total clients</Text>
+            <H1 style={isMobile ? styles.titleMobile : undefined}>
+              {t("clients.title")}
+            </H1>
+            <Text style={styles.subtitle}>
+              {t("clients.total_clients", { count: clients.length })}
+            </Text>
           </View>
         </View>
 
@@ -173,7 +235,7 @@ export function ClientsPage() {
                     {c.profileCompleted && (
                       <View style={styles.profileBadge}>
                         <Text style={styles.profileBadgeText}>
-                          Profile complete
+                          {t("clients.profile_complete")}
                         </Text>
                       </View>
                     )}
@@ -188,11 +250,24 @@ export function ClientsPage() {
                       </Text>
                     </View>
                     <Badge
-                      label={`${c._count?.orders ?? 0} orders`}
+                      label={t("clients.orders_count", {
+                        count: c._count?.orders ?? 0,
+                      })}
                       variant={
                         (c._count?.orders ?? 0) > 0 ? "primary" : "secondary"
                       }
                     />
+                    <TouchableOpacity
+                      onPress={(e) => handleDeleteClick(e, c)}
+                      style={styles.deleteButton}
+                      disabled={deleting}
+                    >
+                      {deleting && deleteConfirm.clientId === c.id ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                      ) : (
+                        <Trash2 size={16} color="#EF4444" />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -201,10 +276,21 @@ export function ClientsPage() {
         ) : (
           <View style={styles.tableContainer}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.th, styles.colName]}>Client</Text>
-              <Text style={[styles.th, styles.colEmail]}>Email</Text>
-              <Text style={[styles.th, styles.colOrders]}>Orders</Text>
-              <Text style={[styles.th, styles.colDate]}>Joined</Text>
+              <Text style={[styles.th, styles.colName]}>
+                {t("clients.title")}
+              </Text>
+              <Text style={[styles.th, styles.colEmail]}>
+                {t("common.email")}
+              </Text>
+              <Text style={[styles.th, styles.colOrders]}>
+                {t("orders.title")}
+              </Text>
+              <Text style={[styles.th, styles.colDate]}>
+                {t("common.date")}
+              </Text>
+              <Text style={[styles.th, styles.colActions]}>
+                {t("clients.actions")}
+              </Text>
             </View>
             {clients.map((c) => (
               <TouchableOpacity
@@ -221,7 +307,9 @@ export function ClientsPage() {
                     <Text style={styles.clientName}>{fullName(c)}</Text>
                     {c.profileCompleted && (
                       <View style={styles.profileBadge}>
-                        <Text style={styles.profileBadgeText}>Complete</Text>
+                        <Text style={styles.profileBadgeText}>
+                          {t("clients.profile_complete")}
+                        </Text>
                       </View>
                     )}
                   </View>
@@ -232,7 +320,9 @@ export function ClientsPage() {
                 </View>
                 <View style={[styles.colOrders, styles.cell]}>
                   <Badge
-                    label={`${c._count?.orders ?? 0} orders`}
+                    label={t("clients.orders_count", {
+                      count: c._count?.orders ?? 0,
+                    })}
                     variant={
                       (c._count?.orders ?? 0) > 0 ? "primary" : "secondary"
                     }
@@ -244,11 +334,58 @@ export function ClientsPage() {
                     {new Date(c.createdAt).toLocaleDateString()}
                   </Text>
                 </View>
+                <View style={styles.colActions}>
+                  <TouchableOpacity
+                    onPress={(e) => handleDeleteClick(e, c)}
+                    style={styles.deleteButton}
+                    disabled={deleting}
+                  >
+                    {deleting && deleteConfirm.clientId === c.id ? (
+                      <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                      <Trash2 size={16} color="#EF4444" />
+                    )}
+                  </TouchableOpacity>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
         )}
       </ScrollView>
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() =>
+          setDeleteConfirm({ isOpen: false, clientId: null, clientName: "" })
+        }
+        onConfirm={handleConfirmDelete}
+        isLoading={deleting}
+        autoCloseOnConfirm={false}
+        title={t("clients.delete_confirm_title")}
+        message={t("clients.delete_confirm_message", {
+          name: deleteConfirm.clientName,
+        })}
+        confirmText={t("clients.delete_confirm_button")}
+        cancelText={t("clients.delete_cancel_button")}
+        variant="danger"
+      />
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() =>
+          setAlertDialog({
+            isOpen: false,
+            title: "",
+            message: "",
+            variant: "info",
+          })
+        }
+        title={alertDialog.title}
+        message={alertDialog.message}
+        variant={alertDialog.variant}
+      />
     </Layout>
   );
 }
@@ -308,6 +445,7 @@ const styles = StyleSheet.create({
   colEmail: { flex: 3 },
   colOrders: { flex: 2 },
   colDate: { flex: 2 },
+  colActions: { flex: 1, alignItems: "center" },
 
   avatar: {
     width: 36,
@@ -349,4 +487,11 @@ const styles = StyleSheet.create({
   emptyState: { padding: 48, alignItems: "center", gap: 12 },
   emptyTitle: { color: "#1E293B" },
   emptyText: { color: "#94A3B8", textAlign: "center" },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 4,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
 });

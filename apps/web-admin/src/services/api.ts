@@ -174,6 +174,11 @@ export const api = {
 
   getClients: () => request<any[]>("/admin/clients"),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
+  deleteClient: (id: string) =>
+    request<{ success: boolean; message: string; deleted: any }>(
+      `/admin/clients/${id}`,
+      { method: "DELETE" },
+    ),
   sendTestPush: (id: string) =>
     request<any>(`/admin/clients/${id}/test-push`, { method: "POST" }),
   getClientSensitive: (id: string) =>

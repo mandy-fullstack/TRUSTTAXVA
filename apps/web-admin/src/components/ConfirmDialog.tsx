@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Text } from "@trusttax/ui";
 import { AlertTriangle, X } from "lucide-react";
@@ -11,12 +12,14 @@ import { AlertTriangle, X } from "lucide-react";
 interface ConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
   variant?: "danger" | "warning" | "info";
+  isLoading?: boolean;
+  autoCloseOnConfirm?: boolean;
 }
 
 export const ConfirmDialog = ({
@@ -28,10 +31,17 @@ export const ConfirmDialog = ({
   confirmText = "Confirm",
   cancelText = "Cancel",
   variant = "warning",
+  isLoading = false,
+  autoCloseOnConfirm = true,
 }: ConfirmDialogProps) => {
-  const handleConfirm = () => {
-    onConfirm();
-    onClose();
+  const handleConfirm = async () => {
+    if (isLoading) return;
+    try {
+      await Promise.resolve(onConfirm());
+      if (autoCloseOnConfirm) onClose();
+    } catch (e) {
+      console.error("[ConfirmDialog] onConfirm failed:", e);
+    }
   };
 
   const variantColors = {
@@ -65,7 +75,7 @@ export const ConfirmDialog = ({
       visible={isOpen}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={isLoading ? undefined : onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.dialog}>
@@ -86,7 +96,11 @@ export const ConfirmDialog = ({
                 <Text style={styles.title}>{title}</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={isLoading ? undefined : onClose}
+              style={styles.closeButton}
+              disabled={isLoading}
+            >
               <X size={20} color="#64748B" />
             </TouchableOpacity>
           </View>
@@ -99,9 +113,10 @@ export const ConfirmDialog = ({
           {/* Actions */}
           <View style={styles.actions}>
             <TouchableOpacity
-              onPress={onClose}
+              onPress={isLoading ? undefined : onClose}
               style={styles.cancelButton}
               activeOpacity={0.7}
+              disabled={isLoading}
             >
               <Text style={styles.cancelButtonText}>{cancelText}</Text>
             </TouchableOpacity>
@@ -110,14 +125,33 @@ export const ConfirmDialog = ({
               style={[
                 styles.confirmButton,
                 { backgroundColor: colors.buttonBg },
+                isLoading && styles.confirmButtonDisabled,
               ]}
               activeOpacity={0.8}
+              disabled={isLoading}
             >
-              <Text
-                style={[styles.confirmButtonText, { color: colors.buttonText }]}
-              >
-                {confirmText}
-              </Text>
+              {isLoading ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator size="small" color={colors.buttonText} />
+                  <Text
+                    style={[
+                      styles.confirmButtonText,
+                      { color: colors.buttonText },
+                    ]}
+                  >
+                    {confirmText}
+                  </Text>
+                </View>
+              ) : (
+                <Text
+                  style={[
+                    styles.confirmButtonText,
+                    { color: colors.buttonText },
+                  ]}
+                >
+                  {confirmText}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -240,10 +274,18 @@ const styles = StyleSheet.create({
         }
       : {}),
   } as any,
+  confirmButtonDisabled: {
+    opacity: 0.85,
+  },
   confirmButtonText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#FFFFFF",
     letterSpacing: 0.5,
+  },
+  loadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
 });
