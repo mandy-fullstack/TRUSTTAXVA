@@ -343,22 +343,25 @@ export class AuthService {
       .filter(([_, exists]) => !exists)
       .map(([key]) => key);
 
-    if (missing.length > 0) {
-      console.log(
-        `[Profile Completion] User ${user.id} is missing critical fields:`,
-        missing.join(', '),
-      );
-      // Also log non-critical but useful fields for debugging
-      if (!user.dateOfBirth)
+    // Avoid noisy logs in production; the UI can decide what to show the user.
+    if (process.env.NODE_ENV !== 'production') {
+      if (missing.length > 0) {
         console.log(
-          `[Profile Completion] Note: User ${user.id} missing DOB (non-critical)`,
+          `[Profile Completion] User ${user.id} is missing critical fields:`,
+          missing.join(', '),
         );
-      if (!user.countryOfBirth)
-        console.log(
-          `[Profile Completion] Note: User ${user.id} missing Country (non-critical)`,
-        );
-    } else {
-      console.log(`[Profile Completion] User ${user.id} profile is COMPLETE.`);
+        // Also log non-critical but useful fields for debugging
+        if (!user.dateOfBirth)
+          console.log(
+            `[Profile Completion] Note: User ${user.id} missing DOB (non-critical)`,
+          );
+        if (!user.countryOfBirth)
+          console.log(
+            `[Profile Completion] Note: User ${user.id} missing Country (non-critical)`,
+          );
+      } else {
+        console.log(`[Profile Completion] User ${user.id} profile is COMPLETE.`);
+      }
     }
 
     return missing.length === 0;

@@ -42,6 +42,7 @@ export const ChatPage = () => {
     handleTyping,
     isOtherTyping,
     isConnected: socketConnected,
+    notFound,
   } = useChat(paramId);
 
   // Initial load and auto-handle order context
@@ -50,7 +51,7 @@ export const ChatPage = () => {
       try {
         setLoading(true);
         const data = await api.getConversations();
-        setConversations(data);
+        setConversations(Array.isArray(data) ? data : []);
 
         // Auto-handle if coming from Order Detail
         const state = location.state as {
@@ -84,6 +85,22 @@ export const ChatPage = () => {
 
     initialize();
   }, [location.state, paramId, navigate]);
+
+  // If the URL contains a conversation id that doesn't exist anymore (stale cache / deleted),
+  // gracefully recover by returning to the list and refreshing.
+  useEffect(() => {
+    if (!paramId || !notFound) return;
+    (async () => {
+      try {
+        const data = await api.getConversations();
+        setConversations(Array.isArray(data) ? data : []);
+      } catch (e) {
+        // ignore
+      } finally {
+        navigate("/dashboard/chat", { replace: true });
+      }
+    })();
+  }, [paramId, notFound, navigate]);
 
   const handleCreateConversation = async () => {
     const subject = window.prompt("Asunto de la nueva consulta:");

@@ -89,10 +89,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() room: string,
   ) {
+    // Validate conversation rooms to avoid joining non-existent / unauthorized rooms
+    if (typeof room === 'string' && room.startsWith('conversation_')) {
+      const conversationId = room.replace('conversation_', '');
+      const user = client.data.user;
+      const userId = user?.sub;
+      const role = user?.role;
+      if (!userId || !role) return;
+
+      const canAccess = await this.chatService.canAccessConversation(
+        conversationId,
+        userId,
+        role,
+      );
+
+      if (!canAccess) {
+        // Don't join; notify client (optional)
+        client.emit('joinRoomDenied' as any, {
+          room,
+          reason: 'not_found_or_forbidden',
+        });
+        return;
+      }
+    }
+
     client.join(room);
     console.log(`Client ${client.id} joined room ${room}`);
   }

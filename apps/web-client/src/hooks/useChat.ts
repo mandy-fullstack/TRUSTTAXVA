@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSocket } from "./useSocket";
 import { api } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import { NotFoundError } from "../services/api";
 
 export const useChat = (conversationId: string | null | undefined) => {
   const { user } = useAuth();
@@ -10,6 +11,7 @@ export const useChat = (conversationId: string | null | undefined) => {
   );
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<any>(null);
@@ -17,9 +19,15 @@ export const useChat = (conversationId: string | null | undefined) => {
   const fetchMessages = useCallback(async (id: string) => {
     try {
       setLoading(true);
+      setNotFound(false);
       const data = await api.getConversation(id);
       setMessages(data.messages || []);
     } catch (error) {
+      if (error instanceof NotFoundError) {
+        setNotFound(true);
+        setMessages([]);
+        return;
+      }
       console.error("Failed to fetch messages", error);
     } finally {
       setLoading(false);
@@ -199,5 +207,6 @@ export const useChat = (conversationId: string | null | undefined) => {
     handleTyping,
     markAsRead,
     isConnected,
+    notFound,
   };
 };

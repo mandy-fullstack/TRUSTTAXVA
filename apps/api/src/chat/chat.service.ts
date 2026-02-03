@@ -112,6 +112,10 @@ export class ChatService {
     });
 
     if (!conversationInfo) {
+      // Self-heal stale caches: conversation may have been deleted but still cached.
+      await this.redisService.del(`active_messages:${id}`);
+      await this.redisService.del(`conversations:${userId}`);
+      await this.redisService.del(`conversations:admin`);
       throw new NotFoundException('Conversation not found');
     }
 
@@ -198,6 +202,24 @@ export class ChatService {
     }
 
     return result;
+  }
+
+  /**
+   * Lightweight access check (used by websocket join validation).
+   */
+  async canAccessConversation(
+    conversationId: string,
+    userId: string,
+    role: string,
+  ): Promise<boolean> {
+    const info = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { clientId: true },
+    });
+    if (!info) return false;
+    if (role === 'CLIENT') return info.clientId === userId;
+    // ADMIN / PREPARER can access (current behavior in getConversations)
+    return true;
   }
 
   async sendMessage(

@@ -24,32 +24,48 @@ export class PrismaExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest();
 
-    // Log full error details for internal debugging (never shown to user)
-    this.logger.error(
-      `[${request.method}] ${request.url}`,
-      exception?.stack || exception,
-    );
-    
-    // Also log to console with more details for Render.com debugging
-    console.error('[PrismaExceptionFilter] Full error details:', {
-      method: request.method,
-      url: request.url,
-      errorName: exception?.name,
-      errorMessage: exception?.message,
-      errorStack: exception?.stack,
-      originalError: exception?.originalError || exception?.cause,
-      errorKeys: exception ? Object.keys(exception) : [],
-    });
-
     // Check if this is a NestJS HTTP Exception FIRST
     // This allows standard NestJS exceptions (like NotFound, Forbidden, InternalServerError) to pass through
     // with their original messages, unless they wrap a Prisma error
     if (exception?.getStatus && typeof exception.getStatus === 'function') {
+      const status = exception.getStatus();
+      // Don't spam logs for expected 4xx (e.g. not found, forbidden)
+      if (status >= 500) {
+        this.logger.error(
+          `[${request.method}] ${request.url}`,
+          exception?.stack || exception,
+        );
+        console.error('[PrismaExceptionFilter] HTTP 5xx:', {
+          method: request.method,
+          url: request.url,
+          status,
+          errorName: exception?.name,
+          errorMessage: exception?.message,
+        });
+      } else {
+        this.logger.warn(
+          `[${request.method}] ${request.url} -> ${status} ${exception?.message}`,
+        );
+      }
       return this.handleHttpException(exception, response, request);
     }
 
     // Check if this is a Prisma error
     if (this.isPrismaError(exception)) {
+      // Log full error details for internal debugging (never shown to user)
+      this.logger.error(
+        `[${request.method}] ${request.url}`,
+        exception?.stack || exception,
+      );
+      console.error('[PrismaExceptionFilter] Prisma error details:', {
+        method: request.method,
+        url: request.url,
+        errorName: exception?.name,
+        errorMessage: exception?.message,
+        errorStack: exception?.stack,
+        originalError: exception?.originalError || exception?.cause,
+        errorKeys: exception ? Object.keys(exception) : [],
+      });
       return this.handlePrismaError(exception, response, request);
     }
 
@@ -71,6 +87,12 @@ export class PrismaExceptionFilter implements ExceptionFilter {
         error: 'Database Schema Error',
       });
     }
+
+    // Only log unknown errors at error level
+    this.logger.error(
+      `[${request.method}] ${request.url}`,
+      exception?.stack || exception,
+    );
 
     // Generic server error (don't expose internal details)
     return this.sendSafeResponse(response, request, {
