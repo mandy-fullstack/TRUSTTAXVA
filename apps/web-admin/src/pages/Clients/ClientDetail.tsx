@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   useWindowDimensions,
+  TextInput,
 } from "react-native";
 import { H2, H4, Text } from "@trusttax/ui";
 import {
@@ -31,6 +32,8 @@ import {
   Upload,
   X,
   History,
+  PlusCircle,
+  Tag,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
@@ -38,7 +41,6 @@ import { Layout } from "../../components/Layout";
 import { FileIcon } from "../../components/FileIcon";
 import { RenameModal } from "../../components/RenameModal";
 import { API_BASE_URL } from "../../config/api";
-import { useTranslation } from "react-i18next";
 // import { ConfirmDialog } from '../../components/ConfirmDialog'; // Removed unused
 
 const MOBILE_BREAKPOINT = 768;
@@ -79,7 +81,6 @@ function fullName(
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
   const [client, setClient] = useState<any>(null);
@@ -116,6 +117,13 @@ export function ClientDetailPage() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadType, setUploadType] = useState("OTHER");
   const [isUploading, setIsUploading] = useState(false);
+  // CRM & Timeline
+  const [activeTab, setActiveTab] = useState<"profile" | "documents" | "orders" | "crm">("profile");
+  const [noteModalOpen, setNoteModalOpen] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [noteCategory, setNoteCategory] = useState("GENERAL");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
 
   useEffect(() => {
     setSensitiveData(null);
@@ -141,6 +149,7 @@ export function ClientDetailPage() {
         if (!cancelled) {
           setClient(clientData);
           setDocuments(docsData);
+          setNotes(clientData.clientNotes || []);
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || "Failed to load client");
@@ -341,6 +350,37 @@ export function ClientDetailPage() {
     }
   };
 
+  const handleSaveNote = async () => {
+    if (!id || !noteContent.trim() || isSavingNote) return;
+    try {
+      setIsSavingNote(true);
+      const newNote = await api.createClientNote(id, noteContent, noteCategory);
+      setNotes((prev) => [newNote, ...prev]);
+      setNoteModalOpen(false);
+      setNoteContent("");
+      setNoteCategory("GENERAL");
+    } catch (e: any) {
+      alert(e.message || "Failed to save note");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!window.confirm("Are you sure you want to delete this note?")) return;
+    try {
+      await api.deleteClientNote(noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch (e: any) {
+      alert(e.message || "Failed to delete note");
+    }
+  };
+
+  // Integrated Timeline: Merge audit logs and notes
+  const timelineItems = [...(client?.auditLogs || []), ...notes].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
   const handleTestPush = async () => {
     if (!id || pushLoading) return;
     setPushLoading(true);
@@ -442,530 +482,557 @@ export function ClientDetailPage() {
           </View>
         </View>
 
-        <View style={[styles.grid, isMobile && styles.gridMobile]}>
-          {/* Account */}
-          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
-            <View style={styles.sectionTitleRow}>
-              <Mail size={18} color="#334155" />
-              <H4 style={styles.sectionTitle}>Account</H4>
-            </View>
-            <View style={styles.card}>
-              <Row label="Email" value={client.email} />
-              <Row label="Display name" value={orDash(client.name)} />
-              <Row label="Created" value={formatDateTime(client.createdAt)} />
-              <Row label="Updated" value={formatDateTime(client.updatedAt)} />
-            </View>
-          </View>
-
-          {/* Personal */}
-          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
-            <View style={styles.sectionTitleRow}>
-              <User size={18} color="#334155" />
-              <H4 style={styles.sectionTitle}>Personal information</H4>
-            </View>
-            <View style={styles.card}>
-              <Row label="First name" value={orDash(client.firstName)} />
-              <Row label="Middle name" value={orDash(client.middleName)} />
-              <Row label="Last name" value={orDash(client.lastName)} />
-              <Row
-                label="Date of birth"
-                value={formatDate(client.dateOfBirth)}
-              />
-              <Row
-                label="Country of birth"
-                value={orDash(client.countryOfBirth)}
-              />
-              <Row
-                label="Primary language"
-                value={orDash(client.primaryLanguage)}
-              />
-            </View>
-          </View>
-
-          {/* Tax ID & sensitive: masked by default; full data on "Load" with 30s auto-hide */}
-          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
-            <View style={styles.sectionTitleRow}>
-              <CreditCard size={18} color="#334155" />
-              <H4 style={styles.sectionTitle}>Tax ID & identification</H4>
-            </View>
-            <View style={styles.card}>
-              <Row label="Tax ID type" value={orDash(client.taxIdType)} />
-              {sensitiveData ? (
-                <>
-                  <Row
-                    label="SSN/ITIN (full)"
-                    value={sensitiveData.ssn || "—"}
-                  />
-                  <Row
-                    label="Driver license"
-                    value={
-                      sensitiveData.driverLicense
-                        ? `${sensitiveData.driverLicense.number} • ${sensitiveData.driverLicense.stateCode} ${sensitiveData.driverLicense.stateName} • Exp ${sensitiveData.driverLicense.expirationDate}`
-                        : "—"
-                    }
-                  />
-                  <Row
-                    label="Passport"
-                    value={
-                      sensitiveData.passport
-                        ? `${sensitiveData.passport.number} • ${sensitiveData.passport.countryOfIssue} • Exp ${sensitiveData.passport.expirationDate}`
-                        : "—"
-                    }
-                  />
-
-                  {/* Documents Folder View */}
-                  <View style={styles.docsSection}>
-                    <H4 style={styles.docsTitle}>Documents Repository</H4>
-                    <View style={styles.folder}>
-                      <View style={styles.folderHeader}>
-                        <Folder size={16} color="#64748B" />
-                        <Text style={styles.folderName}>Client Documents</Text>
-                      </View>
-
-                      {/* Driver License Folder */}
-                      {sensitiveData.driverLicense &&
-                        (sensitiveData.driverLicense as any).photoKey && (
-                          <View style={styles.subFolder}>
-                            <View style={styles.folderHeader}>
-                              <Folder size={14} color="#64748B" />
-                              <Text style={styles.subFolderName}>
-                                Driver License
-                              </Text>
-                            </View>
-                            <View style={styles.fileItem}>
-                              <FileText size={14} color="#0F172A" />
-                              <Text style={styles.fileName}>
-                                {(
-                                  (sensitiveData.driverLicense as any)
-                                    .photoKey || ""
-                                )
-                                  .split("/")
-                                  .pop()}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-
-                      {/* Passport Folder */}
-                      {sensitiveData.passport &&
-                        (sensitiveData.passport as any).photoKey && (
-                          <View style={styles.subFolder}>
-                            <View style={styles.folderHeader}>
-                              <Folder size={14} color="#64748B" />
-                              <Text style={styles.subFolderName}>Passport</Text>
-                            </View>
-                            <View style={styles.fileItem}>
-                              <FileText size={14} color="#0F172A" />
-                              <Text style={styles.fileName}>
-                                {(
-                                  (sensitiveData.passport as any).photoKey || ""
-                                )
-                                  .split("/")
-                                  .pop()}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-
-                      {!(sensitiveData.driverLicense as any)?.photoKey &&
-                        !(sensitiveData.passport as any)?.photoKey && (
-                          <Text style={styles.noDocs}>
-                            No digital documents found.
-                          </Text>
-                        )}
-                    </View>
-                  </View>
-
-                  <View style={styles.sensitiveActions}>
-                    {secondsLeft > 0 && (
-                      <View style={styles.countdown}>
-                        <Clock size={16} color="#F59E0B" />
-                        <Text style={styles.countdownText}>
-                          Hiding in {secondsLeft}s
-                        </Text>
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      style={styles.hideNowButton}
-                      onPress={hideSensitive}
-                      activeOpacity={0.7}
-                    >
-                      <EyeOff size={16} color="#64748B" />
-                      <Text style={styles.hideNowText}>Hide now</Text>
-                    </TouchableOpacity>
-                  </View>
-                </>
-              ) : (
-                <>
-                  <Row
-                    label="SSN/ITIN last 4"
-                    value={client.ssnLast4 ? `****${client.ssnLast4}` : "—"}
-                  />
-                  <Row
-                    label="Driver license last 4"
-                    value={orDash(client.driverLicenseLast4)}
-                  />
-                  <Row
-                    label="Passport last 4"
-                    value={orDash(client.passportLast4)}
-                  />
-                  {sensitiveError ? (
-                    <Text style={styles.sensitiveError}>{sensitiveError}</Text>
-                  ) : null}
-                  <TouchableOpacity
-                    style={[
-                      styles.revealButton,
-                      sensitiveLoading && styles.revealButtonDisabled,
-                    ]}
-                    onPress={loadSensitive}
-                    disabled={sensitiveLoading}
-                    activeOpacity={0.7}
-                  >
-                    {sensitiveLoading ? (
-                      <ActivityIndicator size="small" color="#FFF" />
-                    ) : (
-                      <>
-                        <Eye size={18} color="#FFF" />
-                        <Text style={styles.revealButtonText}>
-                          Load full data (30s)
-                        </Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-
-          {/* Terms */}
-          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
-            <View style={styles.sectionTitleRow}>
-              <Shield size={18} color="#334155" />
-              <H4 style={styles.sectionTitle}>Terms & profile</H4>
-            </View>
-            <View style={styles.card}>
-              <Row
-                label="Terms accepted"
-                value={
-                  client.termsAcceptedAt
-                    ? formatDateTime(client.termsAcceptedAt)
-                    : "—"
-                }
-              />
-              <Row label="Terms version" value={orDash(client.termsVersion)} />
-              <Row
-                label="Profile completed"
-                value={client.isProfileComplete ? "Yes" : "No"}
-              />
-              <Row
-                label="Completed at"
-                value={formatDateTime(client.profileCompletedAt)}
-              />
-            </View>
-          </View>
-
-          {/* Notifications */}
-          <View style={[styles.section, !isMobile && styles.sectionHalf]}>
-            <View style={styles.sectionTitleRow}>
-              <Bell size={18} color="#334155" />
-              <H4 style={styles.sectionTitle}>Push Notifications</H4>
-            </View>
-            <View style={styles.card}>
-              <View style={styles.statusRow}>
-                <Text style={styles.rowLabel}>Push Registration Status</Text>
-                <View
-                  style={[
-                    styles.statusBadge,
-                    {
-                      backgroundColor: client.fcmToken ? "#ECFDF5" : "#FEF2F2",
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.statusDot,
-                      {
-                        backgroundColor: client.fcmToken
-                          ? "#10B981"
-                          : "#EF4444",
-                      },
-                    ]}
-                  />
-                  <Text
-                    style={[
-                      styles.statusBadgeText,
-                      { color: client.fcmToken ? "#065F46" : "#991B1B" },
-                    ]}
-                  >
-                    {client.fcmToken ? "Registered" : "Not Registered"}
-                  </Text>
-                </View>
-              </View>
-
-              <Text style={styles.notifHint}>
-                {client.fcmToken
-                  ? "The user has enabled notifications and can receive push alerts on their device."
-                  : "This user has not granted permission or registered a device yet."}
-              </Text>
-
+        {/* Tab Navigation */}
+        <View style={styles.tabsContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
+            {[
+              { id: "profile", label: "Profile", icon: User },
+              { id: "documents", label: "Documents", icon: Folder },
+              { id: "orders", label: "Orders", icon: Briefcase },
+              { id: "crm", label: "CRM & Timeline", icon: History },
+            ].map((tab) => (
               <TouchableOpacity
-                style={[
-                  styles.testPushButton,
-                  !client.fcmToken && styles.testPushButtonDisabled,
-                  pushStatus === "success" && styles.testPushButtonSuccess,
-                ]}
-                onPress={handleTestPush}
-                disabled={!client.fcmToken || pushLoading}
-                activeOpacity={0.7}
+                key={tab.id}
+                style={[styles.tabItem, activeTab === tab.id && styles.tabItemActive]}
+                onPress={() => setActiveTab(tab.id as any)}
               >
-                {pushLoading ? (
-                  <ActivityIndicator size="small" color="#FFF" />
-                ) : pushStatus === "success" ? (
+                <tab.icon size={16} color={activeTab === tab.id ? "#2563EB" : "#64748B"} />
+                <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {activeTab === "profile" && (
+          <View style={[styles.grid, isMobile && styles.gridMobile]}>
+            {/* Account */}
+            <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+              <View style={styles.sectionTitleRow}>
+                <Mail size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Account</H4>
+              </View>
+              <View style={styles.card}>
+                <Row label="Email" value={client.email} />
+                <Row label="Display name" value={orDash(client.name)} />
+                <Row label="Created" value={formatDateTime(client.createdAt)} />
+                <Row label="Updated" value={formatDateTime(client.updatedAt)} />
+              </View>
+            </View>
+
+            {/* Personal */}
+            <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+              <View style={styles.sectionTitleRow}>
+                <User size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Personal information</H4>
+              </View>
+              <View style={styles.card}>
+                <Row label="First name" value={orDash(client.firstName)} />
+                <Row label="Middle name" value={orDash(client.middleName)} />
+                <Row label="Last name" value={orDash(client.lastName)} />
+                <Row
+                  label="Date of birth"
+                  value={formatDate(client.dateOfBirth)}
+                />
+                <Row
+                  label="Country of birth"
+                  value={orDash(client.countryOfBirth)}
+                />
+                <Row
+                  label="Primary language"
+                  value={orDash(client.primaryLanguage)}
+                />
+              </View>
+            </View>
+
+            {/* Tax ID & sensitive: masked by default; full data on "Load" with 30s auto-hide */}
+            <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+              <View style={styles.sectionTitleRow}>
+                <CreditCard size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Tax ID & identification</H4>
+              </View>
+              <View style={styles.card}>
+                <Row label="Tax ID type" value={orDash(client.taxIdType)} />
+                {sensitiveData ? (
                   <>
-                    <CheckCircle size={18} color="#FFF" />
-                    <Text style={styles.testPushButtonText}>
-                      Notification Sent!
-                    </Text>
+                    <Row
+                      label="SSN/ITIN (full)"
+                      value={sensitiveData.ssn || "—"}
+                    />
+                    <Row
+                      label="Driver license"
+                      value={
+                        sensitiveData.driverLicense
+                          ? `${sensitiveData.driverLicense.number} • ${sensitiveData.driverLicense.stateCode} ${sensitiveData.driverLicense.stateName} • Exp ${sensitiveData.driverLicense.expirationDate}`
+                          : "—"
+                      }
+                    />
+                    <Row
+                      label="Passport"
+                      value={
+                        sensitiveData.passport
+                          ? `${sensitiveData.passport.number} • ${sensitiveData.passport.countryOfIssue} • Exp ${sensitiveData.passport.expirationDate}`
+                          : "—"
+                      }
+                    />
+
+                    {/* Documents Folder View */}
+                    <View style={styles.docsSection}>
+                      <H4 style={styles.docsTitle}>Documents Repository</H4>
+                      <View style={styles.folder}>
+                        <View style={styles.folderHeader}>
+                          <Folder size={16} color="#64748B" />
+                          <Text style={styles.folderName}>Client Documents</Text>
+                        </View>
+
+                        {/* Driver License Folder */}
+                        {sensitiveData.driverLicense &&
+                          (sensitiveData.driverLicense as any).photoKey && (
+                            <View style={styles.subFolder}>
+                              <View style={styles.folderHeader}>
+                                <Folder size={14} color="#64748B" />
+                                <Text style={styles.subFolderName}>
+                                  Driver License
+                                </Text>
+                              </View>
+                              <View style={styles.fileItem}>
+                                <FileText size={14} color="#0F172A" />
+                                <Text style={styles.fileName}>
+                                  {(
+                                    (sensitiveData.driverLicense as any)
+                                      .photoKey || ""
+                                  )
+                                    .split("/")
+                                    .pop()}
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+
+                        {/* Passport Folder */}
+                        {sensitiveData.passport &&
+                          (sensitiveData.passport as any).photoKey && (
+                            <View style={styles.subFolder}>
+                              <View style={styles.folderHeader}>
+                                <Folder size={14} color="#64748B" />
+                                <Text style={styles.subFolderName}>Passport</Text>
+                              </View>
+                              <View style={styles.fileItem}>
+                                <FileText size={14} color="#0F172A" />
+                                <Text style={styles.fileName}>
+                                  {(
+                                    (sensitiveData.passport as any).photoKey || ""
+                                  )
+                                    .split("/")
+                                    .pop()}
+                                </Text>
+                              </View>
+                            </View>
+                          )}
+
+                        {!(sensitiveData.driverLicense as any)?.photoKey &&
+                          !(sensitiveData.passport as any)?.photoKey && (
+                            <Text style={styles.noDocs}>
+                              No digital documents found.
+                            </Text>
+                          )}
+                      </View>
+                    </View>
+
+                    <View style={styles.sensitiveActions}>
+                      {secondsLeft > 0 && (
+                        <View style={styles.countdown}>
+                          <Clock size={16} color="#F59E0B" />
+                          <Text style={styles.countdownText}>
+                            Hiding in {secondsLeft}s
+                          </Text>
+                        </View>
+                      )}
+                      <TouchableOpacity
+                        style={styles.hideNowButton}
+                        onPress={hideSensitive}
+                        activeOpacity={0.7}
+                      >
+                        <EyeOff size={16} color="#64748B" />
+                        <Text style={styles.hideNowText}>Hide now</Text>
+                      </TouchableOpacity>
+                    </View>
                   </>
                 ) : (
                   <>
-                    <Bell
-                      size={18}
-                      color={client.fcmToken ? "#FFF" : "#94A3B8"}
+                    <Row
+                      label="SSN/ITIN last 4"
+                      value={client.ssnLast4 ? `****${client.ssnLast4}` : "—"}
+                    />
+                    <Row
+                      label="Driver license last 4"
+                      value={orDash(client.driverLicenseLast4)}
+                    />
+                    <Row
+                      label="Passport last 4"
+                      value={orDash(client.passportLast4)}
+                    />
+                    {sensitiveError ? (
+                      <Text style={styles.sensitiveError}>{sensitiveError}</Text>
+                    ) : null}
+                    <TouchableOpacity
+                      style={[
+                        styles.revealButton,
+                        sensitiveLoading && styles.revealButtonDisabled,
+                      ]}
+                      onPress={loadSensitive}
+                      disabled={sensitiveLoading}
+                      activeOpacity={0.7}
+                    >
+                      {sensitiveLoading ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <>
+                          <Eye size={18} color="#FFF" />
+                          <Text style={styles.revealButtonText}>
+                            Load full data (30s)
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </View>
+
+            {/* Terms */}
+            <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+              <View style={styles.sectionTitleRow}>
+                <Shield size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Terms & profile</H4>
+              </View>
+              <View style={styles.card}>
+                <Row
+                  label="Terms accepted"
+                  value={
+                    client.termsAcceptedAt
+                      ? formatDateTime(client.termsAcceptedAt)
+                      : "—"
+                  }
+                />
+                <Row label="Terms version" value={orDash(client.termsVersion)} />
+                <Row
+                  label="Profile completed"
+                  value={client.isProfileComplete ? "Yes" : "No"}
+                />
+                <Row
+                  label="Completed at"
+                  value={formatDateTime(client.profileCompletedAt)}
+                />
+              </View>
+            </View>
+
+            {/* Notifications */}
+            <View style={[styles.section, !isMobile && styles.sectionHalf]}>
+              <View style={styles.sectionTitleRow}>
+                <Bell size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Push Notifications</H4>
+              </View>
+              <View style={styles.card}>
+                <View style={styles.statusRow}>
+                  <Text style={styles.rowLabel}>Push Registration Status</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      {
+                        backgroundColor: client.fcmToken ? "#ECFDF5" : "#FEF2F2",
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.statusDot,
+                        {
+                          backgroundColor: client.fcmToken
+                            ? "#10B981"
+                            : "#EF4444",
+                        },
+                      ]}
                     />
                     <Text
                       style={[
-                        styles.testPushButtonText,
-                        !client.fcmToken && { color: "#94A3B8" },
+                        styles.statusBadgeText,
+                        { color: client.fcmToken ? "#065F46" : "#991B1B" },
                       ]}
                     >
-                      Send Test Notification
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              {pushStatus === "error" && (
-                <Text style={styles.pushError}>{pushError}</Text>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Orders */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Briefcase size={18} color="#334155" />
-            <H4 style={styles.sectionTitle}>
-              Orders ({client.orders?.length ?? 0})
-            </H4>
-          </View>
-          {client.orders?.length ? (
-            <View style={styles.tableWrap}>
-              <View
-                style={[
-                  styles.tableHeader,
-                  isMobile && styles.tableHeaderMobile,
-                ]}
-              >
-                {!isMobile && (
-                  <Text style={[styles.th, styles.colService]}>Service</Text>
-                )}
-                <Text style={[styles.th, styles.colStatus]}>Status</Text>
-                <Text style={[styles.th, styles.colDate]}>Date</Text>
-                {!isMobile && (
-                  <Text style={[styles.th, styles.colAction]}>Action</Text>
-                )}
-              </View>
-              {(client.orders as any[]).map((o: any) => (
-                <TouchableOpacity
-                  key={o.id}
-                  style={[styles.tableRow, isMobile && styles.tableRowMobile]}
-                  onPress={() => navigate(`/orders/${o.id}`)}
-                  activeOpacity={0.7}
-                >
-                  {!isMobile && (
-                    <View style={styles.colService}>
-                      <Text style={styles.serviceName}>
-                        {o.service?.name ?? "—"}
-                      </Text>
-                      <Text style={styles.serviceCat}>
-                        {o.service?.category}
-                      </Text>
-                    </View>
-                  )}
-                  <View style={styles.colStatus}>
-                    <Text
-                      style={[
-                        styles.badge,
-                        { backgroundColor: "#E2E8F0", color: "#475569" },
-                      ]}
-                    >
-                      {o.status}
+                      {client.fcmToken ? "Registered" : "Not Registered"}
                     </Text>
                   </View>
-                  <Text style={styles.colDate}>{formatDate(o.createdAt)}</Text>
-                  {!isMobile && (
-                    <TouchableOpacity
-                      onPress={() => navigate(`/orders/${o.id}`)}
-                      style={styles.link}
-                    >
-                      <FileText size={14} color="#2563EB" />
-                      <Text style={styles.linkText}>View</Text>
-                    </TouchableOpacity>
+                </View>
+
+                <Text style={styles.notifHint}>
+                  {client.fcmToken
+                    ? "The user has enabled notifications and can receive push alerts on their device."
+                    : "This user has not granted permission or registered a device yet."}
+                </Text>
+
+                <TouchableOpacity
+                  style={[
+                    styles.testPushButton,
+                    !client.fcmToken && styles.testPushButtonDisabled,
+                    pushStatus === "success" && styles.testPushButtonSuccess,
+                  ]}
+                  onPress={handleTestPush}
+                  disabled={!client.fcmToken || pushLoading}
+                  activeOpacity={0.7}
+                >
+                  {pushLoading ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : pushStatus === "success" ? (
+                    <>
+                      <CheckCircle size={18} color="#FFF" />
+                      <Text style={styles.testPushButtonText}>
+                        Notification Sent!
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Bell
+                        size={18}
+                        color={client.fcmToken ? "#FFF" : "#94A3B8"}
+                      />
+                      <Text
+                        style={[
+                          styles.testPushButtonText,
+                          !client.fcmToken && { color: "#94A3B8" },
+                        ]}
+                      >
+                        Send Test Notification
+                      </Text>
+                    </>
                   )}
                 </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>No orders yet.</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Documents Manager */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Folder size={18} color="#334155" />
-            <View
-              style={{
-                flex: 1,
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <H4 style={styles.sectionTitle}>
-                Documents & Files ({documents.length})
-              </H4>
-              <TouchableOpacity
-                style={styles.uploadBtn}
-                onPress={handleUploadClick}
-              >
-                <Upload size={14} color="#FFF" />
-                <Text style={styles.uploadBtnText}>Upload</Text>
-              </TouchableOpacity>
+                {pushStatus === "error" && (
+                  <Text style={styles.pushError}>{pushError}</Text>
+                )}
+              </View>
             </View>
           </View>
-          <View style={styles.card}>
-            {documents.length === 0 ? (
-              <Text style={styles.emptyText}>No documents uploaded yet.</Text>
-            ) : (
-              <View style={styles.docsGrid}>
-                {["IDENTITY", "TAX", "LEGAL", "OTHER"].map((groupKey) => {
-                  const groupDocs = documents.filter((d) => {
-                    const t = (d.type || "OTHER").toUpperCase();
-                    if (groupKey === "IDENTITY")
-                      return (
-                        t.includes("LICENSE") ||
-                        t.includes("PASSPORT") ||
-                        t === "SSN"
-                      );
-                    if (groupKey === "TAX") return t.includes("TAX");
-                    if (groupKey === "LEGAL")
-                      return t.includes("AGREEMENT") || t.includes("FORM");
-                    return (
-                      !t.includes("LICENSE") &&
-                      !t.includes("PASSPORT") &&
-                      t !== "SSN" &&
-                      !t.includes("TAX") &&
-                      !t.includes("AGREEMENT") &&
-                      !t.includes("FORM")
-                    );
-                  });
+        )}
 
-                  if (groupDocs.length === 0) return null;
-
-                  const groupTitle =
-                    groupKey === "IDENTITY"
-                      ? "Identity Documents"
-                      : groupKey === "TAX"
-                        ? "Tax Returns & Filings"
-                        : groupKey === "LEGAL"
-                          ? "Legal & Agreements"
-                          : "General & Uploads";
-
-                  return (
-                    <View key={groupKey} style={styles.docGroup}>
-                      <View style={styles.docGroupHeader}>
-                        <Folder size={16} color="#475569" />
-                        <Text style={styles.docGroupTitle}>{groupTitle}</Text>
-                        <View style={styles.docCountBadge}>
-                          <Text style={styles.docCountText}>
-                            {groupDocs.length}
-                          </Text>
-                        </View>
+        {/* Orders */}
+        {activeTab === "orders" && (
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Briefcase size={18} color="#334155" />
+              <H4 style={styles.sectionTitle}>
+                Orders ({client.orders?.length ?? 0})
+              </H4>
+            </View>
+            {client.orders?.length ? (
+              <View style={styles.tableWrap}>
+                <View
+                  style={[
+                    styles.tableHeader,
+                    isMobile && styles.tableHeaderMobile,
+                  ]}
+                >
+                  {!isMobile && (
+                    <Text style={[styles.th, styles.colService]}>Service</Text>
+                  )}
+                  <Text style={[styles.th, styles.colStatus]}>Status</Text>
+                  <Text style={[styles.th, styles.colDate]}>Date</Text>
+                  {!isMobile && (
+                    <Text style={[styles.th, styles.colAction]}>Action</Text>
+                  )}
+                </View>
+                {(client.orders as any[]).map((o: any) => (
+                  <TouchableOpacity
+                    key={o.id}
+                    style={[styles.tableRow, isMobile && styles.tableRowMobile]}
+                    onPress={() => navigate(`/orders/${o.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    {!isMobile && (
+                      <View style={styles.colService}>
+                        <Text style={styles.serviceName}>
+                          {o.service?.name ?? "—"}
+                        </Text>
+                        <Text style={styles.serviceCat}>
+                          {o.service?.category}
+                        </Text>
                       </View>
-                      <View style={styles.docGrid}>
-                        {groupDocs.map((doc) => (
-                          <View key={doc.id} style={styles.fileCard}>
-                            <View style={styles.fileCardHeader}>
-                              <FileIcon
-                                fileName={doc.title}
-                                mimeType={doc.mimeType || ""}
-                                size={20}
-                              />
-                              <View style={styles.fileActions}>
-                                <TouchableOpacity
-                                  style={styles.actionIcon}
-                                  onPress={() => handlePreview(doc)}
-                                  disabled={!!processingId}
-                                >
-                                  <Eye size={16} color="#64748B" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.actionIcon}
-                                  onPress={() => handleDownload(doc)}
-                                  disabled={!!processingId}
-                                >
-                                  <Download size={16} color="#64748B" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.actionIcon}
-                                  onPress={() => handleRenameClick(doc)}
-                                  disabled={!!processingId}
-                                >
-                                  <Edit2 size={16} color="#64748B" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={[
-                                    styles.actionIcon,
-                                    styles.deleteAction,
-                                  ]}
-                                  onPress={() => handleDeleteDocument(doc)}
-                                  disabled={!!processingId}
-                                >
-                                  <Trash2 size={16} color="#EF4444" />
-                                </TouchableOpacity>
-                              </View>
-                            </View>
-
-                            <View style={styles.fileMain}>
-                              <Text
-                                style={styles.fileCardName}
-                                numberOfLines={2}
-                              >
-                                {doc.title ||
-                                  doc.s3Key?.split("/").pop() ||
-                                  "Untitled"}
-                              </Text>
-                              <Text style={styles.fileMetaText}>
-                                {formatDate(doc.uploadedAt)} •{" "}
-                                {(doc.size / 1024).toFixed(0)} KB
-                              </Text>
-                            </View>
-                          </View>
-                        ))}
-                      </View>
+                    )}
+                    <View style={styles.colStatus}>
+                      <Text
+                        style={[
+                          styles.badge,
+                          { backgroundColor: "#E2E8F0", color: "#475569" },
+                        ]}
+                      >
+                        {o.status}
+                      </Text>
                     </View>
-                  );
-                })}
+                    <Text style={styles.colDate}>{formatDate(o.createdAt)}</Text>
+                    {!isMobile && (
+                      <TouchableOpacity
+                        onPress={() => navigate(`/orders/${o.id}`)}
+                        style={styles.link}
+                      >
+                        <FileText size={14} color="#2563EB" />
+                        <Text style={styles.linkText}>View</Text>
+                      </TouchableOpacity>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>No orders yet.</Text>
               </View>
             )}
           </View>
-        </View>
+        )}
 
-        {/* Upload Modal */}
+        {/* Documents Manager */}
+        {(activeTab as string) === "documents" && (
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Folder size={18} color="#334155" />
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <H4 style={styles.sectionTitle}>
+                  Documents & Files ({documents.length})
+                </H4>
+                <TouchableOpacity
+                  style={styles.uploadBtn}
+                  onPress={handleUploadClick}
+                >
+                  <Upload size={14} color="#FFF" />
+                  <Text style={styles.uploadBtnText}>Upload</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.card}>
+              {documents.length === 0 ? (
+                <Text style={styles.emptyText}>No documents uploaded yet.</Text>
+              ) : (
+                <View style={styles.docsGrid}>
+                  {["IDENTITY", "TAX", "LEGAL", "OTHER"].map((groupKey) => {
+                    const groupDocs = documents.filter((d) => {
+                      const t = (d.type || "OTHER").toUpperCase();
+                      if (groupKey === "IDENTITY")
+                        return (
+                          t.includes("LICENSE") ||
+                          t.includes("PASSPORT") ||
+                          t === "SSN"
+                        );
+                      if (groupKey === "TAX") return t.includes("TAX");
+                      if (groupKey === "LEGAL")
+                        return t.includes("AGREEMENT") || t.includes("FORM");
+                      return (
+                        !t.includes("LICENSE") &&
+                        !t.includes("PASSPORT") &&
+                        t !== "SSN" &&
+                        !t.includes("TAX") &&
+                        !t.includes("AGREEMENT") &&
+                        !t.includes("FORM")
+                      );
+                    });
+
+                    if (groupDocs.length === 0) return null;
+
+                    const groupTitle =
+                      groupKey === "IDENTITY"
+                        ? "Identity Documents"
+                        : groupKey === "TAX"
+                          ? "Tax Returns & Filings"
+                          : groupKey === "LEGAL"
+                            ? "Legal & Agreements"
+                            : "General & Uploads";
+
+                    return (
+                      <View key={groupKey} style={styles.docGroup}>
+                        <View style={styles.docGroupHeader}>
+                          <Folder size={16} color="#475569" />
+                          <Text style={styles.docGroupTitle}>{groupTitle}</Text>
+                          <View style={styles.docCountBadge}>
+                            <Text style={styles.docCountText}>
+                              {groupDocs.length}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.docGrid}>
+                          {groupDocs.map((doc) => (
+                            <View key={doc.id} style={styles.fileCard}>
+                              <View style={styles.fileCardHeader}>
+                                <FileIcon
+                                  fileName={doc.title}
+                                  mimeType={doc.mimeType || ""}
+                                  size={20}
+                                />
+                                <View style={styles.fileActions}>
+                                  <TouchableOpacity
+                                    style={styles.actionIcon}
+                                    onPress={() => handlePreview(doc)}
+                                    disabled={!!processingId}
+                                  >
+                                    <Eye size={16} color="#64748B" />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.actionIcon}
+                                    onPress={() => handleDownload(doc)}
+                                    disabled={!!processingId}
+                                  >
+                                    <Download size={16} color="#64748B" />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.actionIcon}
+                                    onPress={() => handleRenameClick(doc)}
+                                    disabled={!!processingId}
+                                  >
+                                    <Edit2 size={16} color="#64748B" />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={[
+                                      styles.actionIcon,
+                                      styles.deleteAction,
+                                    ]}
+                                    onPress={() => handleDeleteDocument(doc)}
+                                    disabled={!!processingId}
+                                  >
+                                    <Trash2 size={16} color="#EF4444" />
+                                  </TouchableOpacity>
+                                </View>
+                              </View>
+
+                              <View style={styles.fileMain}>
+                                <Text
+                                  style={styles.fileCardName}
+                                  numberOfLines={2}
+                                >
+                                  {doc.title ||
+                                    doc.s3Key?.split("/").pop() ||
+                                    "Untitled"}
+                                </Text>
+                                <Text style={styles.fileMetaText}>
+                                  {formatDate(doc.uploadedAt)} •{" "}
+                                  {(doc.size / 1024).toFixed(0)} KB
+                                </Text>
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
         {uploadModalOpen && (
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -1034,115 +1101,198 @@ export function ClientDetailPage() {
           title="Rename Document"
         />
 
-        {/* Activity History */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <History size={18} color="#334155" />
-            <H4 style={styles.sectionTitle}>
-              {t("clients.activity_history", "Historial de Actividad")}
-            </H4>
-          </View>
-          <View style={styles.card}>
-            {!client.auditLogs || client.auditLogs.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyText}>{t("clients.no_activity", "No hay actividad reciente.")}</Text>
+        {/* CRM & Timeline Tab */}
+        {(activeTab as string) === "crm" && (
+          <View style={styles.section}>
+            <View style={[styles.sectionTitleRow, { marginBottom: 20 }]}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <History size={18} color="#334155" />
+                <H4 style={styles.sectionTitle}>Client History & Notes</H4>
               </View>
-            ) : (
-              <View style={styles.timeline}>
-                {client.auditLogs.map((log: any, index: number) => (
-                  <View key={log.id} style={styles.timelineItem}>
-                    <View style={styles.timelineLine}>
-                      <View style={styles.timelineDot} />
-                      {index < client.auditLogs.length - 1 && <View style={styles.timelineConnector} />}
-                    </View>
-                    <View style={styles.timelineContent}>
-                      <View style={styles.timelineHeader}>
-                        <Text style={styles.timelineAction}>
-                          {formatAuditAction(log.action)}
-                        </Text>
-                        <Text style={styles.timelineDate}>
-                          {formatDateTime(log.createdAt)}
-                        </Text>
+              <TouchableOpacity
+                style={styles.addNoteBtn}
+                onPress={() => setNoteModalOpen(true)}
+              >
+                <PlusCircle size={14} color="#FFF" />
+                <Text style={styles.addNoteBtnText}>Add Note</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.timelineContainer}>
+              {timelineItems.length === 0 ? (
+                <View style={styles.empty}>
+                  <Text style={styles.emptyText}>No history or notes found for this client.</Text>
+                </View>
+              ) : (
+                timelineItems.map((item, idx) => {
+                  const isNote = !!item.content;
+                  return (
+                    <View key={item.id} style={styles.timelineItem}>
+                      <View style={styles.timelineLine}>
+                        <View style={[styles.timelineDot, isNote && styles.timelineDotNote]} />
+                        {idx < timelineItems.length - 1 && <View style={styles.timelineConnector} />}
                       </View>
-                      <Text style={styles.timelineDetails}>
-                        {log.user?.name || log.user?.email || "System"} • {log.entity}
-                      </Text>
-                      {log.details && Object.keys(log.details).length > 0 && (
-                        <View style={styles.timelineMeta}>
-                          {log.action === "DECRYPT_SENSITIVE_DATA" && (
-                            <Text style={styles.metaText}>
-                              Field: {log.details.field} • {log.details.reason}
+                      <View style={styles.timelineContent}>
+                        <View style={styles.timelineHeader}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                            <Text style={styles.timelineTitle}>
+                              {isNote ? `Note: ${item.category}` : formatAuditAction(item.action)}
                             </Text>
-                          )}
-                          {log.action === "INVITE_NEW_CLIENT" && (
-                            <Text style={styles.metaText}>
-                              {t("clients.email_sent", "Email enviado")}: {log.details.emailSent ? "✅" : "❌"}
-                            </Text>
-                          )}
-                          {log.action === "REINVITE_CLIENT" && (
-                            <Text style={styles.metaText}>
-                              {t("clients.email_sent", "Email enviado")}: {log.details.emailSent ? "✅" : "❌"}
-                            </Text>
-                          )}
+                            {isNote && (
+                              <View style={[styles.categoryBadge, { backgroundColor: item.category === "IMPORTANT" ? "#FEF2F2" : "#F1F5F9" }]}>
+                                <Tag size={10} color={item.category === "IMPORTANT" ? "#EF4444" : "#64748B"} />
+                                <Text style={[styles.categoryText, { color: item.category === "IMPORTANT" ? "#991B1B" : "#475569" }]}>
+                                  {item.category}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={styles.timelineDate}>{formatDateTime(item.createdAt)}</Text>
                         </View>
-                      )}
+
+                        {isNote ? (
+                          <View style={styles.noteCard}>
+                            <Text style={styles.noteText}>{item.content}</Text>
+                            <View style={styles.noteFooter}>
+                              <Text style={styles.authorText}>By {item.author?.name || "System"}</Text>
+                              <TouchableOpacity onPress={() => handleDeleteNote(item.id)}>
+                                <Trash2 size={14} color="#94A3B8" />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ) : (
+                          <View style={styles.auditCard}>
+                            <Text style={styles.auditText}>
+                              Action performed by {item.user?.name || "System"}
+                            </Text>
+                            {item.details && (
+                              <View style={styles.timelineMeta}>
+                                {item.action === "DECRYPT_SENSITIVE_DATA" && (
+                                  <Text style={styles.metaText}>
+                                    Field: {item.details.field} • {item.details.reason}
+                                  </Text>
+                                )}
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
                     </View>
+                  );
+                })
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Invoices */}
+        {(activeTab as string) === "profile" && client.invoices?.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Receipt size={18} color="#334155" />
+              <H4 style={styles.sectionTitle}>
+                Invoices ({client.invoices?.length ?? 0})
+              </H4>
+            </View>
+            {client.invoices?.length ? (
+              <View style={styles.tableWrap}>
+                <View
+                  style={[
+                    styles.tableHeader,
+                    isMobile && styles.tableHeaderMobile,
+                  ]}
+                >
+                  <Text style={[styles.th, styles.colAmount]}>Amount</Text>
+                  <Text style={[styles.th, styles.colStatus]}>Status</Text>
+                  <Text style={[styles.th, styles.colDate]}>Due</Text>
+                  <Text style={[styles.th, styles.colDate]}>Paid</Text>
+                </View>
+                {(client.invoices as any[]).map((inv: any) => (
+                  <View
+                    key={inv.id}
+                    style={[styles.tableRow, isMobile && styles.tableRowMobile]}
+                  >
+                    <Text style={styles.amount}>
+                      ${Number(inv.amount || 0).toFixed(2)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.badge,
+                        { backgroundColor: "#E2E8F0", color: "#475569" },
+                      ]}
+                    >
+                      {inv.status}
+                    </Text>
+                    <Text style={styles.colDate}>{formatDate(inv.dueDate)}</Text>
+                    <Text style={styles.colDate}>{formatDate(inv.paidAt)}</Text>
                   </View>
                 ))}
               </View>
+            ) : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>No invoices yet.</Text>
+              </View>
             )}
           </View>
-        </View>
-
-        {/* Invoices */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Receipt size={18} color="#334155" />
-            <H4 style={styles.sectionTitle}>
-              Invoices ({client.invoices?.length ?? 0})
-            </H4>
-          </View>
-          {client.invoices?.length ? (
-            <View style={styles.tableWrap}>
-              <View
-                style={[
-                  styles.tableHeader,
-                  isMobile && styles.tableHeaderMobile,
-                ]}
-              >
-                <Text style={[styles.th, styles.colAmount]}>Amount</Text>
-                <Text style={[styles.th, styles.colStatus]}>Status</Text>
-                <Text style={[styles.th, styles.colDate]}>Due</Text>
-                <Text style={[styles.th, styles.colDate]}>Paid</Text>
-              </View>
-              {(client.invoices as any[]).map((inv: any) => (
-                <View
-                  key={inv.id}
-                  style={[styles.tableRow, isMobile && styles.tableRowMobile]}
-                >
-                  <Text style={styles.amount}>
-                    ${Number(inv.amount || 0).toFixed(2)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.badge,
-                      { backgroundColor: "#E2E8F0", color: "#475569" },
-                    ]}
-                  >
-                    {inv.status}
-                  </Text>
-                  <Text style={styles.colDate}>{formatDate(inv.dueDate)}</Text>
-                  <Text style={styles.colDate}>{formatDate(inv.paidAt)}</Text>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>No invoices yet.</Text>
-            </View>
-          )}
-        </View>
+        )}
       </ScrollView>
+
+      {/* New Note Modal (CRM) */}
+      {noteModalOpen && (
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Client Note</Text>
+              <TouchableOpacity onPress={() => setNoteModalOpen(false)}>
+                <X size={24} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Category</Text>
+                <select
+                  value={noteCategory}
+                  onChange={(e: any) => setNoteCategory(e.target.value)}
+                  style={styles.selectInput}
+                >
+                  <option value="GENERAL">General</option>
+                  <option value="TAX">Tax Related</option>
+                  <option value="BILLING">Billing / Payment</option>
+                  <option value="IMPORTANT">Important Alert</option>
+                </select>
+              </View>
+
+              <View style={styles.formGroup}>
+                <Text style={styles.label}>Note Content</Text>
+                <TextInput
+                  value={noteContent}
+                  onChangeText={setNoteContent}
+                  placeholder="Type your note here..."
+                  style={[styles.textareaInput, { height: 100, textAlignVertical: 'top' }]}
+                  multiline
+                  numberOfLines={4}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  (!noteContent.trim() || isSavingNote) && styles.disabledButton,
+                ]}
+                onPress={handleSaveNote}
+                disabled={!noteContent.trim() || isSavingNote}
+              >
+                {isSavingNote ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.primaryButtonText}>Save Note</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </Layout>
   );
 }
@@ -1233,66 +1383,6 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   refreshText: { fontSize: 13, color: "#64748B", fontWeight: "500" },
-  timeline: {
-    paddingVertical: 8,
-  },
-  timelineItem: {
-    flexDirection: "row",
-    minHeight: 60,
-  },
-  timelineLine: {
-    width: 24,
-    alignItems: "center",
-  },
-  timelineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#3B82F6",
-    marginTop: 6,
-    zIndex: 2,
-  },
-  timelineConnector: {
-    flex: 1,
-    width: 2,
-    backgroundColor: "#E2E8F0",
-    marginVertical: -2,
-  },
-  timelineContent: {
-    flex: 1,
-    paddingBottom: 20,
-    paddingLeft: 8,
-  },
-  timelineHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  timelineAction: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  timelineDate: {
-    fontSize: 12,
-    color: "#94A3B8",
-  },
-  timelineDetails: {
-    fontSize: 13,
-    color: "#64748B",
-    marginBottom: 4,
-  },
-  timelineMeta: {
-    backgroundColor: "#F8FAFC",
-    padding: 6,
-    borderRadius: 4,
-  },
-  metaText: {
-    fontSize: 12,
-    color: "#475569",
-    fontStyle: "italic",
-  },
   avatar: {
     width: 64,
     height: 64,
@@ -1681,5 +1771,108 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
+  },
+  // CRM Styles
+  addNoteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#0F172A",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 0,
+  },
+  addNoteBtnText: { color: "#FFF", fontSize: 13, fontWeight: "600" },
+  timelineContainer: { marginTop: 12 },
+  timelineItem: { flexDirection: "row", gap: 16, marginBottom: 24 },
+  timelineLine: { alignItems: "center", width: 12 },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#E2E8F0",
+    borderWidth: 2,
+    borderColor: "#94A3B8",
+    zIndex: 1,
+  },
+  timelineDotNote: { backgroundColor: "#2563EB", borderColor: "#1E40AF" },
+  timelineConnector: {
+    width: 2,
+    flex: 1,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 4,
+  },
+  timelineContent: { flex: 1 },
+  timelineHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  timelineTitle: { fontSize: 14, fontWeight: "700", color: "#1E293B" },
+  timelineDate: { fontSize: 12, color: "#94A3B8" },
+  timelineMeta: {
+    backgroundColor: "#F8FAFC",
+    padding: 6,
+    borderRadius: 4,
+    marginTop: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#475569",
+    fontStyle: "italic",
+  },
+  noteCard: {
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 0,
+  },
+  noteText: { fontSize: 14, color: "#334155", lineHeight: 20 },
+  noteFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+  },
+  authorText: { fontSize: 12, color: "#64748B", fontWeight: "600" },
+  auditCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+    borderRadius: 0,
+  },
+  auditText: { fontSize: 13, color: "#64748B" },
+  auditDetails: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontFamily: "monospace",
+    marginTop: 8,
+    backgroundColor: "#F8FAFC",
+    padding: 8,
+  },
+  categoryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  categoryText: { fontSize: 10, fontWeight: "700", textTransform: "uppercase" },
+  textareaInput: {
+    width: "100%",
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    borderRadius: 0,
+    fontSize: 14,
+    fontFamily: "inherit",
+    marginTop: 8,
   },
 });

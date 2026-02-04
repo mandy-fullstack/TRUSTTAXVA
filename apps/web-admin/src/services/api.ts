@@ -211,6 +211,16 @@ export const api = {
         expirationDate: string;
       } | null;
     }>(`/admin/clients/${id}/sensitive`),
+  getClientNotes: (id: string) => request<any[]>(`/admin/clients/${id}/notes`),
+  createClientNote: (id: string, content: string, category: string = "GENERAL") =>
+    request<any>(`/admin/clients/${id}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ content, category }),
+    }),
+  deleteClientNote: (noteId: string) =>
+    request<{ success: boolean }>(`/admin/clients/notes/${noteId}`, {
+      method: "DELETE",
+    }),
   getUserDocuments: (userId: string) =>
     request<any[]>(`/documents/admin/user/${userId}`),
   adminDeleteDocument: (id: string) =>

@@ -61,6 +61,22 @@ model User {
   clientTaxReturns       TaxReturn[]       @relation("ClientReturns")
   preparedTaxReturns     TaxReturn[]       @relation("PreparerReturns")
   portalAccessTokens     PortalAccessToken[]
+  clientNotes            ClientNote[]      @relation("ClientNotes")
+  authoredNotes          ClientNote[]      @relation("AuthorNotes")
+}
+
+model ClientNote {
+  id        String   @id @default(uuid())
+  content   String
+  category  String   @default("GENERAL") // GENERAL, TAX, BILLING, IMPORTANT
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clientId  String
+  authorId  String
+  client    User     @relation("ClientNotes", fields: [clientId], references: [id], onDelete: Cascade)
+  author    User     @relation("AuthorNotes", fields: [authorId], references: [id])
+
+  @@index([clientId, createdAt(sort: Desc)])
 }
 
 model SmsOtpSession {

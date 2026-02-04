@@ -265,9 +265,21 @@ export class AdminService {
                 },
                 auditLogs: {
                     orderBy: { createdAt: 'desc' as const },
-                    take: 50,
+                    take: 100,
                     include: {
                         user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                            }
+                        }
+                    }
+                },
+                clientNotes: {
+                    orderBy: { createdAt: 'desc' as const },
+                    include: {
+                        author: {
                             select: {
                                 id: true,
                                 name: true,
@@ -1513,6 +1525,7 @@ export class AdminService {
                 immigrationCasesDeleted,
                 appointmentsDeleted,
                 auditLogsDeleted,
+                portalAccessTokensDeleted,
                 userDeleted,
             ] = await prismaAny.$transaction([
                 prismaAny.message.deleteMany({
@@ -1543,6 +1556,7 @@ export class AdminService {
 
                 prismaAny.appointment.deleteMany({ where: { clientId } }),
                 prismaAny.auditLog.deleteMany({ where: { userId: clientId } }),
+                prismaAny.portalAccessToken.deleteMany({ where: { userId: clientId } }),
 
                 // Final delete (RESTRICT dependencies must be removed above)
                 prismaAny.user.delete({ where: { id: clientId } }),
@@ -1560,6 +1574,7 @@ export class AdminService {
             console.log(`[AdminService] Deleted ${immigrationCasesDeleted?.count ?? 0} immigration cases`);
             console.log(`[AdminService] Deleted ${appointmentsDeleted?.count ?? 0} appointments`);
             console.log(`[AdminService] Deleted ${auditLogsDeleted?.count ?? 0} audit logs`);
+            console.log(`[AdminService] Deleted ${portalAccessTokensDeleted?.count ?? 0} portal access tokens`);
             console.log(`[AdminService] Deleted user ${userDeleted?.id ?? clientId}`);
 
             return {
@@ -1582,6 +1597,7 @@ export class AdminService {
                     deductions: deductionsDeleted?.count ?? 0,
                     taxForms: taxFormsDeleted?.count ?? 0,
                     caseTimeline: caseTimelineDeleted?.count ?? 0,
+                    portalAccessTokens: portalAccessTokensDeleted?.count ?? 0,
                 },
                 warnings: s3DeletionErrors.length > 0 ? s3DeletionErrors : undefined,
                 firebase: {
@@ -1606,4 +1622,98 @@ export class AdminService {
             );
         }
     }
+
+    // Client Notes (CRM)
+    // Client Notes (CRM)
+    async getClientNotes(clientId: string) {
+        return (this.prisma as any).clientNote.findMany({
+            where: { clientId },
+            include: {
+                author: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async createClientNote(clientId: string, authorId: string, content: string, category: string = 'GENERAL') {
+        if (!content || !content.trim()) {
+            throw new BadRequestException('Note content is required');
+        }
+
+        try {
+            const note = await (this.prisma as any).clientNote.create({
+                data: {
+                    content,
+                    category,
+                    clientId,
+                    authorId,
+                },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                        },
+                    },
+                },
+            });
+
+            // Log the note creation in audit logs as well
+            await this.auditService.log({
+                userId: authorId,
+                action: 'CREATE_CLIENT_NOTE',
+                entity: 'ClientNote',
+                entityId: note.id,
+                details: {
+                    clientId,
+                    category,
+                    contentPreview: content.substring(0, 50),
+                },
+            });
+
+            return note;
+        } catch (error: any) {
+            console.error('[AdminService] Create note error:', error);
+            throw new Error(`Failed to create note: ${error.message}`);
+        }
+    }
+
+    async deleteClientNote(noteId: string, adminUserId: string) {
+        try {
+            const note = await (this.prisma as any).clientNote.findUnique({
+                where: { id: noteId },
+            });
+
+            if (!note) throw new NotFoundException('Note not found');
+
+            await (this.prisma as any).clientNote.delete({
+                where: { id: noteId },
+            });
+
+            await this.auditService.log({
+                userId: adminUserId,
+                action: 'DELETE_CLIENT_NOTE',
+                entity: 'ClientNote',
+                entityId: noteId,
+                details: {
+                    clientId: note.clientId,
+                    contentPreview: note.content.substring(0, 50),
+                },
+            });
+
+            return { success: true };
+        } catch (error: any) {
+            console.error('[AdminService] Delete note error:', error);
+            if (error instanceof NotFoundException) throw error;
+            throw new Error(`Failed to delete note: ${error.message}`);
+        }
+    }
 }
+// Trigger reload

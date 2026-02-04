@@ -298,4 +298,29 @@ export class AdminController {
   ) {
     return this.adminService.rejectAndReRequestDocument(orderId, approvalId, body.reason);
   }
+
+  // Client Notes (CRM)
+  @Get('clients/:id/notes')
+  async getClientNotes(@Param('id') id: string) {
+    return this.adminService.getClientNotes(id);
+  }
+
+  @Post('clients/:id/notes')
+  async createClientNote(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: { content: string; category?: string },
+  ) {
+    const authorId = req.user.userId;
+    return this.adminService.createClientNote(id, authorId, body.content, body.category);
+  }
+
+  @Delete('clients/notes/:noteId')
+  async deleteClientNote(
+    @Param('noteId') noteId: string,
+    @Request() req: any,
+  ) {
+    const adminUserId = req.user.userId;
+    return this.adminService.deleteClientNote(noteId, adminUserId);
+  }
 }
