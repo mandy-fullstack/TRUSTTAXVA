@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Text, H3 } from "@trusttax/ui";
 import { Lock, CheckCircle, Eye, EyeOff } from "lucide-react";
 import { api } from "../../services/api";
@@ -16,6 +16,8 @@ import { useAuth } from "../../context/AuthContext";
 export function ResetPasswordPage() {
   const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const isInvitation = searchParams.get("type") === "invitation";
   const { t } = useTranslation();
   const { showAlert } = useAuth();
   const [password, setPassword] = useState("");
@@ -147,7 +149,9 @@ export function ResetPasswordPage() {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <H3 style={styles.title}>{t("auth.reset_password")}</H3>
+        <H3 style={styles.title}>
+          {isInvitation ? "Create Password" : t("auth.reset_password")}
+        </H3>
         <Text style={styles.subtitle}>{email}</Text>
 
         <View style={styles.inputContainer}>
@@ -202,7 +206,9 @@ export function ResetPasswordPage() {
           {loading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.buttonText}>{t("auth.reset_password")}</Text>
+            <Text style={styles.buttonText}>
+              {isInvitation ? "Create Password" : t("auth.reset_password")}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -256,7 +262,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
-    fontSize: 15,
+    fontSize: 16, // Prevent zoom on iOS
     color: "#0F172A",
     outlineStyle: "none",
   } as any,

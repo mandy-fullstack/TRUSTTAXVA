@@ -349,7 +349,7 @@ export class EmailService {
       process.env.CLIENT_URL ||
       process.env.ADMIN_URL ||
       'http://localhost:5175';
-    const setupUrl = `${baseUrl}/reset-password/${setupToken}`;
+    const setupUrl = `${baseUrl}/reset-password/${setupToken}?type=invitation`;
 
     try {
       const htmlContent = this.loadTemplate('client-invitation', {
