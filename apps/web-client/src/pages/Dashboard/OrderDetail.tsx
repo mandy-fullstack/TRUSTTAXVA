@@ -6,6 +6,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
     TextInput,
+    Platform,
 } from "react-native";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../../services/api";
@@ -136,6 +137,9 @@ export const OrderDetailPage = () => {
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [respondingId, setRespondingId] = useState<string | null>(null);
+    const [uploadingRequestId, setUploadingRequestId] = useState<string | null>(
+        null,
+    );
 
     // Document Viewer State
     const { previewUrl, previewMimeType, closePreview } = useDocumentViewer();
@@ -184,6 +188,61 @@ export const OrderDetailPage = () => {
             });
         } finally {
             setRespondingId(null);
+        }
+    };
+
+    const parseRequestDescription = (desc: any): { message?: string; docType?: string } => {
+        if (!desc || typeof desc !== "string") return {};
+        try {
+            const parsed = JSON.parse(desc);
+            if (parsed && typeof parsed === "object") return parsed;
+            return {};
+        } catch {
+            return { message: String(desc) };
+        }
+    };
+
+    const handleUploadRequestedDocument = async (
+        approval: any,
+        file: File,
+    ) => {
+        if (!order?.id) return;
+        try {
+            setUploadingRequestId(approval.id);
+            const meta = parseRequestDescription(approval.description);
+            const docType = meta.docType || "OTHER";
+
+            const uploaded = await api.uploadDocument(
+                file,
+                approval.title || file.name,
+                docType,
+                { orderId: order.id },
+            );
+
+            await api.completeDocumentRequest(approval.id, uploaded.id);
+            await fetchOrder();
+            showAlert({
+                title: t("common.success", "Éxito"),
+                message: t(
+                    "order.doc_request_uploaded",
+                    "Documento subido correctamente. Gracias.",
+                ),
+                variant: "success",
+            });
+        } catch (error: any) {
+            console.error("Failed to upload requested document:", error);
+            showAlert({
+                title: t("order.error_title", "Error de proceso"),
+                message:
+                    error?.message ||
+                    t(
+                        "order.doc_request_upload_error",
+                        "No se pudo subir el documento. Intenta nuevamente.",
+                    ),
+                variant: "error",
+            });
+        } finally {
+            setUploadingRequestId(null);
         }
     };
 
@@ -247,49 +306,156 @@ export const OrderDetailPage = () => {
 
                 <View style={styles.grid}>
                     <View style={styles.mainColumn}>
-                        {/* Approvals Section */}
-                        {order.approvals?.length > 0 &&
-                            order.approvals.some((a: any) => a.status === "PENDING") && (
-                                <Card style={styles.approvalCard}>
-                                    <View style={styles.cardHeader}>
-                                        <AlertCircle size={20} color="#E11D48" />
-                                        <Text style={[styles.label, { color: "#E11D48" }]}>
-                                            Acción Requerida: Aprobaciones Pendientes
-                                        </Text>
-                                    </View>
-                                    {order.approvals
-                                        .filter((a: any) => a.status === "PENDING")
-                                        .map((approval: any) => (
-                                            <View key={approval.id} style={styles.approvalItem}>
-                                                <Text style={styles.approvalTitle}>
-                                                    {approval.title}
+                        {/* Approvals + Document Requests */}
+                        {(() => {
+                            const pending = (order.approvals || []).filter(
+                                (a: any) => a.status === "PENDING",
+                            );
+                            const docRequests = pending.filter(
+                                (a: any) => a.type === "DOCUMENT_REQUEST",
+                            );
+                            const approvals = pending.filter(
+                                (a: any) => a.type !== "DOCUMENT_REQUEST",
+                            );
+
+                            return (
+                                <>
+                                    {docRequests.length > 0 && (
+                                        <Card style={styles.approvalCard}>
+                                            <View style={styles.cardHeader}>
+                                                <AlertCircle size={20} color="#E11D48" />
+                                                <Text style={[styles.label, { color: "#E11D48" }]}>
+                                                    {t(
+                                                        "order.doc_requests_title",
+                                                        "Documento(s) requerido(s)",
+                                                    )}
                                                 </Text>
-                                                <Text style={styles.approvalDesc}>
-                                                    {approval.description}
-                                                </Text>
-                                                <View style={styles.approvalActions}>
-                                                    <Button
-                                                        title="Aprobar"
-                                                        onPress={() =>
-                                                            handleApproval(approval.id, "APPROVED")
-                                                        }
-                                                        loading={respondingId === approval.id}
-                                                        style={styles.actionBtn}
-                                                    />
-                                                    <Button
-                                                        title="Rechazar"
-                                                        variant="outline"
-                                                        onPress={() =>
-                                                            handleApproval(approval.id, "REJECTED")
-                                                        }
-                                                        loading={respondingId === approval.id}
-                                                        style={styles.actionBtn}
-                                                    />
-                                                </View>
                                             </View>
-                                        ))}
-                                </Card>
-                            )}
+
+                                            {docRequests.map((req: any) => {
+                                                const meta = parseRequestDescription(req.description);
+                                                const message = meta.message || "";
+                                                const docType = meta.docType || "OTHER";
+                                                const inputId = `reqdoc-${req.id}`;
+
+                                                return (
+                                                    <View key={req.id} style={styles.approvalItem}>
+                                                        <Text style={styles.approvalTitle}>
+                                                            {req.title}
+                                                        </Text>
+                                                        {message ? (
+                                                            <Text style={styles.approvalDesc}>
+                                                                {message}
+                                                            </Text>
+                                                        ) : null}
+                                                        <Text style={styles.approvalMeta}>
+                                                            {t("order.doc_type", "Tipo")}: {docType}
+                                                        </Text>
+
+                                                        {Platform.OS === "web" ? (
+                                                            <>
+                                                                {/* Hidden input for web upload */}
+                                                                <input
+                                                                    id={inputId}
+                                                                    type="file"
+                                                                    style={{ display: "none" }}
+                                                                    accept="image/*,.pdf"
+                                                                    onChange={(e: any) => {
+                                                                        const file: File | undefined =
+                                                                            e?.target?.files?.[0];
+                                                                        if (!file) return;
+                                                                        void handleUploadRequestedDocument(
+                                                                            req,
+                                                                            file,
+                                                                        );
+                                                                        // reset so same file can be re-selected
+                                                                        e.target.value = "";
+                                                                    }}
+                                                                />
+                                                                <Button
+                                                                    title={
+                                                                        uploadingRequestId === req.id
+                                                                            ? t(
+                                                                                  "common.uploading",
+                                                                                  "Subiendo...",
+                                                                              )
+                                                                            : t(
+                                                                                  "order.upload_document",
+                                                                                  "Subir documento",
+                                                                              )
+                                                                    }
+                                                                    onPress={() => {
+                                                                        const el = document.getElementById(
+                                                                            inputId,
+                                                                        ) as HTMLInputElement | null;
+                                                                        el?.click();
+                                                                    }}
+                                                                    loading={uploadingRequestId === req.id}
+                                                                    style={styles.actionBtn}
+                                                                />
+                                                            </>
+                                                        ) : (
+                                                            <Text style={styles.noData}>
+                                                                {t(
+                                                                    "order.upload_web_only",
+                                                                    "Subida de archivos disponible en web.",
+                                                                )}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                );
+                                            })}
+                                        </Card>
+                                    )}
+
+                                    {approvals.length > 0 && (
+                                        <Card style={styles.approvalCard}>
+                                            <View style={styles.cardHeader}>
+                                                <AlertCircle size={20} color="#E11D48" />
+                                                <Text style={[styles.label, { color: "#E11D48" }]}>
+                                                    Acción Requerida: Aprobaciones Pendientes
+                                                </Text>
+                                            </View>
+                                            {approvals.map((approval: any) => (
+                                                <View key={approval.id} style={styles.approvalItem}>
+                                                    <Text style={styles.approvalTitle}>
+                                                        {approval.title}
+                                                    </Text>
+                                                    <Text style={styles.approvalDesc}>
+                                                        {approval.description}
+                                                    </Text>
+                                                    <View style={styles.approvalActions}>
+                                                        <Button
+                                                            title="Aprobar"
+                                                            onPress={() =>
+                                                                handleApproval(
+                                                                    approval.id,
+                                                                    "APPROVED",
+                                                                )
+                                                            }
+                                                            loading={respondingId === approval.id}
+                                                            style={styles.actionBtn}
+                                                        />
+                                                        <Button
+                                                            title="Rechazar"
+                                                            variant="outline"
+                                                            onPress={() =>
+                                                                handleApproval(
+                                                                    approval.id,
+                                                                    "REJECTED",
+                                                                )
+                                                            }
+                                                            loading={respondingId === approval.id}
+                                                            style={styles.actionBtn}
+                                                        />
+                                                    </View>
+                                                </View>
+                                            ))}
+                                        </Card>
+                                    )}
+                                </>
+                            );
+                        })()}
 
                         <Card style={styles.card}>
                             <View style={styles.cardHeader}>
@@ -1775,6 +1941,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     approvalDesc: { fontSize: 14, color: "#475569", marginBottom: 16 },
+    approvalMeta: { fontSize: 12, color: "#64748B", marginTop: 8, marginBottom: 12 },
     approvalActions: { flexDirection: "row", gap: 12 },
     actionBtn: { flex: 1 },
 

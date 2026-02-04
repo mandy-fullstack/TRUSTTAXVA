@@ -133,6 +133,14 @@ export const OrderDetailPage = () => {
     });
     const [postingApproval, setPostingApproval] = useState(false);
 
+    // New: Document Request State (sends email to client)
+    const [docRequest, setDocRequest] = useState({
+        documentName: "",
+        message: "",
+        docType: "OTHER",
+    });
+    const [requestingDoc, setRequestingDoc] = useState(false);
+
     // Document Viewer State
     const { previewUrl, previewMimeType, closePreview } = useDocumentViewer();
     const [previewDocumentTitle] = useState<string>("");
@@ -203,6 +211,26 @@ export const OrderDetailPage = () => {
             console.error("Failed to create approval:", error);
         } finally {
             setPostingApproval(false);
+        }
+    };
+
+    const handleRequestDocument = async () => {
+        if (!id || !docRequest.documentName.trim()) return;
+        try {
+            setRequestingDoc(true);
+            await api.requestOrderDocument(id, {
+                documentName: docRequest.documentName.trim(),
+                message: docRequest.message.trim() || undefined,
+                docType: docRequest.docType || "OTHER",
+            });
+            setDocRequest({ documentName: "", message: "", docType: "OTHER" });
+            await fetchOrder();
+            Alert.alert("Éxito", "Solicitud de documento enviada al cliente (email + dashboard).");
+        } catch (error) {
+            console.error("Failed to request document:", error);
+            Alert.alert("Error", "No se pudo solicitar el documento. Intenta nuevamente.");
+        } finally {
+            setRequestingDoc(false);
         }
     };
 
@@ -378,6 +406,61 @@ export const OrderDetailPage = () => {
                                     title={postingApproval ? "Enviando..." : "Pedir Aprobación"}
                                     onPress={handleCreateApproval}
                                     loading={postingApproval}
+                                    style={{ marginTop: 8 }}
+                                />
+                            </View>
+
+                            <View style={styles.newUpdateForm}>
+                                <Text style={[styles.label, { marginTop: 24 }]}>
+                                    Solicitar Documento al Cliente (Email + Upload Cifrado)
+                                </Text>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder='Nombre del documento (ej: "1098-T", "ID del cónyuge", "License")'
+                                    value={docRequest.documentName}
+                                    onChangeText={(t) =>
+                                        setDocRequest({ ...docRequest, documentName: t })
+                                    }
+                                />
+                                <TextInput
+                                    style={[
+                                        styles.input,
+                                        { height: 70, textAlignVertical: "top" },
+                                    ]}
+                                    placeholder="Mensaje / instrucciones para el cliente (opcional)..."
+                                    multiline
+                                    value={docRequest.message}
+                                    onChangeText={(t) =>
+                                        setDocRequest({ ...docRequest, message: t })
+                                    }
+                                />
+                                <View style={styles.selectWrap}>
+                                    <select
+                                        value={docRequest.docType}
+                                        onChange={(e) =>
+                                            setDocRequest({
+                                                ...docRequest,
+                                                docType: e.target.value,
+                                            })
+                                        }
+                                        style={styles.select as any}
+                                    >
+                                        <option value="OTHER">OTHER</option>
+                                        <option value="DRIVER_LICENSE">DRIVER_LICENSE</option>
+                                        <option value="ID_CARD">ID_CARD</option>
+                                        <option value="PASSPORT">PASSPORT</option>
+                                        <option value="TAX_FORM">TAX_FORM</option>
+                                        <option value="PROOF_OF_INCOME">PROOF_OF_INCOME</option>
+                                        <option value="SSN_CARD">SSN_CARD</option>
+                                        <option value="W2_FORM">W2_FORM</option>
+                                        <option value="PAYSTUB">PAYSTUB</option>
+                                        <option value="LEGAL_DOCUMENT">LEGAL_DOCUMENT</option>
+                                    </select>
+                                </View>
+                                <Button
+                                    title={requestingDoc ? "Enviando..." : "Solicitar Documento"}
+                                    onPress={handleRequestDocument}
+                                    loading={requestingDoc}
                                     style={{ marginTop: 8 }}
                                 />
                             </View>
@@ -2082,6 +2165,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#0F172A",
     },
+    selectWrap: {
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        borderRadius: 0,
+        overflow: "hidden",
+        backgroundColor: "#F8FAFC",
+        marginBottom: 12,
+    },
+    select: {
+        width: "100%",
+        padding: 12,
+        borderWidth: 0,
+        outline: "none",
+        fontSize: 14,
+        color: "#0F172A",
+        backgroundColor: "transparent",
+    } as any,
 
     // Tax Data Styles
     taxDataSection: { marginTop: 16, marginBottom: 16 },

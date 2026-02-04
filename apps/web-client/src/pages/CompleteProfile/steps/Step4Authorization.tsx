@@ -111,18 +111,20 @@ const styles = StyleSheet.create({
   },
   legalTitle: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F172A",
     letterSpacing: 2,
     marginBottom: 16,
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   legalBody: {
     fontSize: 13,
     color: "#475569",
     lineHeight: 20,
-    fontWeight: "500",
-    fontFamily: "Inter",
+    fontWeight: "400",
+    letterSpacing: -0.1,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   checkRow: {
     flexDirection: "row",
@@ -144,11 +146,11 @@ const styles = StyleSheet.create({
   checkLabel: {
     flex: 1,
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F172A",
     letterSpacing: 1.2,
     lineHeight: 18,
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   footer: {
     gap: 16,
@@ -159,11 +161,12 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   btnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "400",
     letterSpacing: 1.5,
     color: "#FFFFFF",
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   back: {
     alignItems: "center",
@@ -171,9 +174,10 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#94A3B8",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });

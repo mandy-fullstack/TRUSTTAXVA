@@ -3,7 +3,6 @@ import {
     View,
     StyleSheet,
     TouchableOpacity,
-    TextInput,
     ActivityIndicator,
     Linking,
 } from "react-native";
@@ -12,6 +11,8 @@ import { MessageSquare, Check, AlertCircle, ExternalLink } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { api } from "../services/api";
+import { useCompany } from "../context/CompanyContext";
+import { PhoneNumberInput } from "./PhoneNumberInput";
 
 interface SMSOptInProps {
     onSuccess?: () => void;
@@ -26,12 +27,13 @@ export const SMSOptIn = ({
 }: SMSOptInProps) => {
     const { t } = useTranslation();
     const { user } = useAuth();
+    const { profile } = useCompany();
+    const companyName = profile?.companyName || "TrustTax";
     const [phone, setPhone] = useState(user?.phone || "");
     const [consented, setConsented] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-
     const handleOptIn = async () => {
         if (!consented) {
             setError(
@@ -49,7 +51,10 @@ export const SMSOptIn = ({
         setError(null);
 
         try {
-            await api.optInSMS(phone || user?.phone || "");
+            const targetPhone = phone || user?.phone || "";
+            // OTP temporarily disabled until RingCentral is ready.
+            // We still store the consent + phone in DB.
+            await api.optInSMS(targetPhone);
             setSuccess(true);
             onSuccess?.();
         } catch (err: any) {
@@ -67,6 +72,17 @@ export const SMSOptIn = ({
             console.error("Couldn't open consent page", err),
         );
     };
+
+    const openPrivacyPage = () => {
+        Linking.openURL("/legal/privacy").catch((err) =>
+            console.error("Couldn't open privacy page", err),
+        );
+    };
+
+    const disclosureText = t(
+        "sms.disclosure_text",
+        "Message frequency varies. Message and data rates may apply. Reply STOP to cancel, HELP for help.",
+    );
 
     if (variant === "compact") {
         return (
@@ -92,17 +108,18 @@ export const SMSOptIn = ({
                                 )}
                             </View>
                             <Text style={styles.compactLabel}>
-                                {t("sms.consent_label", "I consent to receive SMS messages")}
+                                {t(
+                                    "sms.consent_label",
+                                    `I agree to receive SMS messages from ${companyName}`,
+                                )}
                             </Text>
                         </TouchableOpacity>
+                        <Text style={styles.disclosure}>{disclosureText}</Text>
                         {showPhoneInput && (
-                            <TextInput
-                                style={styles.phoneInput}
+                            <PhoneNumberInput
                                 placeholder={t("sms.phone_placeholder", "Phone number")}
                                 value={phone}
                                 onChangeText={setPhone}
-                                keyboardType="phone-pad"
-                                autoComplete="tel"
                             />
                         )}
                         {error && (
@@ -133,6 +150,15 @@ export const SMSOptIn = ({
                             </Text>
                             <ExternalLink size={12} color="#2563EB" />
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={openPrivacyPage}
+                            style={styles.consentLink}
+                        >
+                            <Text style={styles.linkText}>
+                                {t("sms.read_privacy", "Read Privacy Policy")}
+                            </Text>
+                            <ExternalLink size={12} color="#2563EB" />
+                        </TouchableOpacity>
                     </>
                 )}
             </View>
@@ -150,7 +176,10 @@ export const SMSOptIn = ({
                         {consented && <Check size={12} color="#FFFFFF" strokeWidth={3} />}
                     </View>
                     <Text style={styles.inlineLabel}>
-                        {t("sms.consent_label", "I consent to receive SMS messages")}
+                        {t(
+                            "sms.consent_label",
+                            `I agree to receive SMS messages from ${companyName}`,
+                        )}
                     </Text>
                 </TouchableOpacity>
                 {consented && (
@@ -207,19 +236,14 @@ export const SMSOptIn = ({
                 <>
                     {showPhoneInput && (
                         <View style={styles.inputSection}>
-                            <Text style={styles.label}>
-                                {t("sms.phone_label", "Phone Number")}
-                            </Text>
-                            <TextInput
-                                style={styles.phoneInput}
+                            <PhoneNumberInput
+                                label={t("sms.phone_label", "Phone Number")}
                                 placeholder={t(
                                     "sms.phone_placeholder",
                                     "Enter your phone number",
                                 )}
                                 value={phone}
                                 onChangeText={setPhone}
-                                keyboardType="phone-pad"
-                                autoComplete="tel"
                             />
                         </View>
                     )}
@@ -240,13 +264,19 @@ export const SMSOptIn = ({
                                 <Text style={styles.checkboxLabel}>
                                     {t(
                                         "sms.consent_full",
-                                        "I consent to receive SMS messages from {companyName} and have read the SMS Consent Policy",
-                                        { companyName: "TrustTax" },
+                                        "I agree to receive recurring SMS messages from {companyName} at the number provided.",
+                                        { companyName },
                                     )}
                                 </Text>
+                                <Text style={styles.disclosure}>{disclosureText}</Text>
                                 <TouchableOpacity onPress={openConsentPage}>
                                     <Text style={styles.consentLinkText}>
                                         {t("sms.read_consent_policy", "Read SMS Consent Policy")}
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={openPrivacyPage}>
+                                    <Text style={styles.consentLinkText}>
+                                        {t("sms.read_privacy", "Read Privacy Policy")}
                                     </Text>
                                 </TouchableOpacity>
                             </View>
@@ -281,7 +311,7 @@ export const SMSOptIn = ({
                         <Text style={styles.infoText}>
                             {t(
                                 "sms.info",
-                                "Message and data rates may apply. You can opt-out at any time by replying STOP. Supported by major U.S. carriers.",
+                                "Message frequency varies. Message and data rates may apply. Reply STOP to cancel, HELP for help. Supported by major U.S. carriers.",
                             )}
                         </Text>
                     </View>
@@ -431,6 +461,14 @@ const styles = StyleSheet.create({
         color: "#64748B",
         lineHeight: 18,
         textAlign: "center",
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    },
+    disclosure: {
+        fontSize: 12,
+        color: "#64748B",
+        lineHeight: 18,
+        marginTop: 6,
+        marginBottom: 8,
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     },
     successContainer: {

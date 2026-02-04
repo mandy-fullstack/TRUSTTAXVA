@@ -196,6 +196,77 @@ export class EmailService {
   }
 
   /**
+   * Admin -> Client: Request a document upload for a specific order.
+   */
+  async sendOrderDocumentRequestEmail(
+    email: string,
+    data: {
+      userName: string;
+      orderId: string;
+      orderDisplayId: string;
+      documentName: string;
+      message?: string;
+      docType?: string;
+      origin?: string;
+    },
+  ) {
+    const baseUrl =
+      data.origin ||
+      process.env.CLIENT_URL ||
+      process.env.ADMIN_URL ||
+      'http://localhost:5175';
+
+    const orderUrl = `${baseUrl}/dashboard/orders/${data.orderId}`;
+    const messageBlock =
+      data.message && data.message.trim().length > 0
+        ? `<p style="margin: 12px 0 0 0; font-size: 14px; color: #334155; line-height: 20px;"><strong>Message:</strong> ${data.message}</p>`
+        : '';
+
+    try {
+      const htmlContent = this.loadTemplate('document-request', {
+        userName: data.userName || 'there',
+        orderUrl,
+        orderId: data.orderDisplayId || data.orderId,
+        documentName: data.documentName,
+        messageBlock,
+        docType: data.docType || 'OTHER',
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        subject: `Action Required: Upload Document for Order #${data.orderDisplayId || data.orderId.slice(0, 8)}`,
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] DOCUMENT REQUEST EMAIL (DEV MODE)');
+        console.log('═══════════════════════════════════════════');
+        console.log(`To: ${email}`);
+        console.log(`Order URL: ${orderUrl}`);
+        console.log(`Document: ${data.documentName}`);
+        console.log('═══════════════════════════════════════════\n');
+      } else {
+        console.log(`✅ [EmailService] Document request email sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
+      }
+
+      return info;
+    } catch (error: any) {
+      console.error(
+        `❌ [EmailService] Error sending document request email to ${email}:`,
+        error?.message || error,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Send account not found email (marketing opportunity)
    */
   async sendAccountNotFoundEmail(email: string) {

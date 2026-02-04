@@ -305,7 +305,7 @@ export const NotificationProvider = ({
               link: newItem.link,
             });
             if (!shouldSkipAsDuplicate(dedupeKey, 15_000)) {
-              newNotifications.push(newItem);
+          newNotifications.push(newItem);
             }
           }
 
@@ -507,7 +507,7 @@ export const NotificationProvider = ({
         if (notification) {
           const conversationId = payload.data?.conversationId;
           const link = payload.data?.link || "/";
-
+          
           // Global dedupe (socket vs FCM)
           const dedupeKey = makeDedupeKey({
             type: "message",
@@ -521,27 +521,27 @@ export const NotificationProvider = ({
           // Add notification (only if not a recent duplicate). This avoids incorrectly
           // skipping *new* updates just because they share conversationId with an
           // earlier notification.
-          const newNotif: NotificationItem = {
+            const newNotif: NotificationItem = {
             id: conversationId
               ? `msg-${conversationId}-${Date.now()}`
               : `fcm-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-            type: "message",
-            title: notification.title || "Notification",
-            body: notification.body || "",
-            date: new Date(),
-            read: false,
-            link: link,
-          };
-
+              type: "message",
+              title: notification.title || "Notification",
+              body: notification.body || "",
+              date: new Date(),
+              read: false,
+              link: link,
+            };
+            
           setNotifications((prev) => [newNotif, ...prev]);
 
           // Show toast only if it's a new notification (not duplicate)
-          showToast({
-            title: notification.title || "New Notification",
-            message: notification.body || "",
-            type: "info",
-            link: payload.data?.link,
-          });
+            showToast({
+              title: notification.title || "New Notification",
+              message: notification.body || "",
+              type: "info",
+              link: payload.data?.link,
+            });
         }
       }).then((unsub) => {
         if (unsub) unsubscribeFCM = unsub;

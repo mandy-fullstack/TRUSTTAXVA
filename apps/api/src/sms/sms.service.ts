@@ -1,6 +1,14 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+    BadRequestException,
+    HttpException,
+    HttpStatus,
+    Injectable,
+    Logger,
+    NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class SMSService {
@@ -20,6 +28,142 @@ export class SMSService {
     private tokenExpiry: Date | null = null;
 
     constructor(private prisma: PrismaService) { }
+
+    private readonly otpSecret =
+        process.env.SMS_OTP_SECRET ||
+        process.env.JWT_SECRET ||
+        'dev_sms_otp_secret_change_me';
+
+    private hashOtp(code: string): string {
+        return crypto
+            .createHash('sha256')
+            .update(`${code}:${this.otpSecret}`)
+            .digest('hex');
+    }
+
+    private generateOtpCode(): string {
+        // 6-digit numeric code
+        const n = crypto.randomInt(0, 1000000);
+        return n.toString().padStart(6, '0');
+    }
+
+    async startSmsOtp(phoneNumber: string, purpose: string = 'REGISTRATION') {
+        const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+
+        // Basic rate limit: max 3 OTPs per phone per 10 minutes
+        const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000);
+        const recentCount = await (this.prisma.client as any).smsOtpSession.count({
+            where: {
+                phone: normalizedPhone,
+                createdAt: { gt: tenMinAgo },
+            },
+        });
+        if (recentCount >= 3) {
+            throw new HttpException(
+                'Too many OTP requests. Please wait and try again.',
+                HttpStatus.TOO_MANY_REQUESTS,
+            );
+        }
+
+        const code = this.generateOtpCode();
+        const codeHash = this.hashOtp(code);
+        const sessionId = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+        await (this.prisma.client as any).smsOtpSession.create({
+            data: {
+                id: sessionId,
+                phone: normalizedPhone,
+                codeHash,
+                purpose,
+                attempts: 0,
+                expiresAt,
+            },
+        });
+
+        // Send OTP SMS (include HELP/STOP language + rates disclosure)
+        try {
+            const baseUrl = process.env.CLIENT_URL || 'http://localhost:5175';
+            const privacyUrl = `${baseUrl}/legal/privacy`;
+            const smsConsentUrl = `${baseUrl}/legal/sms-consent`;
+
+            await this.sendSMS(
+                normalizedPhone,
+                `TrustTax verification code: ${code}. Expires in 10 minutes. Msg frequency varies. Msg&data rates may apply. Reply STOP to opt-out, HELP for help. Privacy: ${privacyUrl} SMS Policy: ${smsConsentUrl}`,
+            );
+        } catch (e) {
+            // If SMS fails, delete the session to prevent dead sessions
+            await (this.prisma.client as any).smsOtpSession.delete({
+                where: { id: sessionId },
+            });
+            throw e;
+        }
+
+        return { sessionId, expiresAt };
+    }
+
+    async verifySmsOtp(sessionId: string, code: string) {
+        if (!sessionId || !code) {
+            throw new BadRequestException('sessionId and code are required');
+        }
+
+        const session = await (this.prisma.client as any).smsOtpSession.findUnique({
+            where: { id: sessionId },
+        });
+        if (!session) throw new NotFoundException('OTP session not found');
+
+        if (session.verifiedAt) {
+            return { verified: true };
+        }
+
+        if (new Date(session.expiresAt).getTime() < Date.now()) {
+            throw new BadRequestException('OTP code expired');
+        }
+
+        if (session.attempts >= 5) {
+            throw new HttpException('Too many attempts', HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        const ok = this.hashOtp(code) === session.codeHash;
+        if (!ok) {
+            await (this.prisma.client as any).smsOtpSession.update({
+                where: { id: sessionId },
+                data: { attempts: { increment: 1 } },
+            });
+            throw new BadRequestException('Invalid OTP code');
+        }
+
+        await (this.prisma.client as any).smsOtpSession.update({
+            where: { id: sessionId },
+            data: { verifiedAt: new Date() },
+        });
+
+        return { verified: true };
+    }
+
+    async consumeVerifiedOtp(sessionId: string, phoneNumber: string) {
+        const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+        const session = await (this.prisma.client as any).smsOtpSession.findUnique({
+            where: { id: sessionId },
+        });
+        if (!session) throw new NotFoundException('OTP session not found');
+
+        if (!session.verifiedAt) {
+            throw new BadRequestException('OTP session not verified');
+        }
+        if (new Date(session.expiresAt).getTime() < Date.now()) {
+            throw new BadRequestException('OTP session expired');
+        }
+        if (session.phone !== normalizedPhone) {
+            throw new BadRequestException('OTP session phone mismatch');
+        }
+
+        // One-time use
+        await (this.prisma.client as any).smsOtpSession.delete({
+            where: { id: sessionId },
+        });
+        return true;
+    }
 
     /**
      * Authenticate with RingCentral using JWT token
@@ -156,8 +300,17 @@ export class SMSService {
     /**
      * Opt-in user to SMS messages
      */
-    async optInSMS(userId: string, phoneNumber: string): Promise<void> {
+    async optInSMS(
+        userId: string,
+        phoneNumber: string,
+        otpSessionId?: string,
+    ): Promise<void> {
         const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+
+        // If OTP session is provided, enforce verification
+        if (otpSessionId) {
+            await this.consumeVerifiedOtp(otpSessionId, normalizedPhone);
+        }
 
         // Update user's SMS consent
         await this.prisma.client.user.update({
@@ -174,9 +327,11 @@ export class SMSService {
 
         // Send confirmation SMS
         try {
+            const baseUrl = process.env.CLIENT_URL || 'http://localhost:5175';
+            const privacyUrl = `${baseUrl}/legal/privacy`;
             await this.sendSMS(
                 normalizedPhone,
-                'You have successfully opted in to receive SMS messages from TrustTax. Reply STOP to opt-out. Message and data rates may apply.',
+                `TrustTax SMS: You are opted in. Msg frequency varies. Msg&data rates may apply. Reply STOP to opt-out, HELP for help. Privacy: ${privacyUrl}`,
                 userId,
             );
         } catch (error) {
@@ -236,8 +391,24 @@ export class SMSService {
 
     /**
      * Normalize phone number to E.164 format
+     * Accepts E.164 format (e.g., +15401234567) or various other formats
      */
     private normalizePhoneNumber(phone: string): string {
+        if (!phone || !phone.trim()) {
+            throw new Error('Phone number is required');
+        }
+
+        // If it already starts with +, it's likely E.164 format
+        // Clean it but preserve the + and country code
+        if (phone.startsWith('+')) {
+            // Remove spaces, dashes, parentheses but keep + and digits
+            const cleaned = phone.replace(/[\s\-()]/g, '');
+            // Validate it has at least country code + number (min 8 chars: +1234567)
+            if (cleaned.length >= 8 && /^\+[1-9]\d{6,14}$/.test(cleaned)) {
+                return cleaned;
+            }
+        }
+
         // Remove all non-digit characters
         let digits = phone.replace(/\D/g, '');
 
@@ -251,13 +422,18 @@ export class SMSService {
             return `+${digits}`;
         }
 
-        // If it already starts with +, return as is
-        if (phone.startsWith('+')) {
-            return phone.replace(/\D/g, '').replace(/^/, '+');
+        // If it's 11 digits but doesn't start with 1, assume it's a US number with leading 1
+        if (digits.length === 11) {
+            return `+${digits}`;
         }
 
-        // Default: assume US number
-        return `+1${digits.slice(-10)}`;
+        // Default: assume US number (take last 10 digits)
+        if (digits.length > 10) {
+            return `+1${digits.slice(-10)}`;
+        }
+
+        // If less than 10 digits, assume US and pad or return as is
+        return `+1${digits}`;
     }
 
     /**

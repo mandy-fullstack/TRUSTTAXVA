@@ -27,6 +27,7 @@ import {
     TaxAddressStep,
     TaxBankStep,
 } from "../../components/Wizard/Steps/Tax";
+import { TaxGovernmentIdStep } from "../../components/Wizard/Steps/Tax/TaxGovernmentIdStep";
 import { Button } from "@trusttax/ui";
 import { Shield } from "lucide-react";
 import { api } from "../../services/api";
@@ -143,6 +144,11 @@ function getTaxSteps(
             type: "TAX_MISSING_DOCS",
         },
         { id: "review", title: t("tax_wizard.review.title"), type: "TAX_REVIEW" },
+        {
+            id: "gov-id",
+            title: t("tax_wizard.gov_id.title"),
+            type: "TAX_GOV_ID",
+        },
     );
 
     return steps;
@@ -365,9 +371,29 @@ export const WizardPage = () => {
     }, [isTaxReview, draftOrderId]);
 
     const canProceed = useMemo(() => {
-        if (!isTaxReview) return true;
-        return taxTermsAccepted;
-    }, [isTaxReview, taxTermsAccepted]);
+        // Solo bloquear el SUBMIT (último paso) en el flujo de impuestos.
+        if (!useTaxFlow || !isLastStep) return true;
+
+        const tax = formData as TaxIntakeData;
+        const taxpayer = tax.taxpayerGovId;
+        const spouse = tax.spouseGovId;
+        const hasSpouse = tax.filingWithSpouse === "yes";
+
+        const taxpayerOk =
+            !!taxpayer?.idType &&
+            !!taxpayer?.idNumber?.trim() &&
+            !!taxpayer?.issuingState?.trim() &&
+            !!taxpayer?.expirationDate?.trim();
+
+        const spouseOk = !hasSpouse
+            ? true
+            : !!spouse?.idType &&
+              !!spouse?.idNumber?.trim() &&
+              !!spouse?.issuingState?.trim() &&
+              !!spouse?.expirationDate?.trim();
+
+        return taxTermsAccepted && taxpayerOk && spouseOk;
+    }, [useTaxFlow, isLastStep, taxTermsAccepted, formData]);
 
     if (loading || !service) {
         return (
@@ -422,6 +448,43 @@ export const WizardPage = () => {
         }
 
         if (isLastStep) {
+            // Validación final: términos + IDs/LICENCIAS requeridas
+            if (useTaxFlow) {
+                const tax = formData as TaxIntakeData;
+                const taxpayer = tax.taxpayerGovId;
+                const spouse = tax.spouseGovId;
+                const hasSpouse = tax.filingWithSpouse === "yes";
+
+                const missing: string[] = [];
+                if (!taxTermsAccepted) missing.push(t("tax_wizard.gov_id.missing_terms"));
+
+                if (!taxpayer?.idType) missing.push(t("tax_wizard.gov_id.missing_taxpayer_type"));
+                if (!taxpayer?.idNumber?.trim())
+                    missing.push(t("tax_wizard.gov_id.missing_taxpayer_number"));
+                if (!taxpayer?.issuingState?.trim())
+                    missing.push(t("tax_wizard.gov_id.missing_taxpayer_state"));
+                if (!taxpayer?.expirationDate?.trim())
+                    missing.push(t("tax_wizard.gov_id.missing_taxpayer_expiration"));
+
+                if (hasSpouse) {
+                    if (!spouse?.idType) missing.push(t("tax_wizard.gov_id.missing_spouse_type"));
+                    if (!spouse?.idNumber?.trim())
+                        missing.push(t("tax_wizard.gov_id.missing_spouse_number"));
+                    if (!spouse?.issuingState?.trim())
+                        missing.push(t("tax_wizard.gov_id.missing_spouse_state"));
+                    if (!spouse?.expirationDate?.trim())
+                        missing.push(t("tax_wizard.gov_id.missing_spouse_expiration"));
+                }
+
+                if (missing.length > 0) {
+                    return showAlert({
+                        title: t("tax_wizard.gov_id.validation_error"),
+                        message: missing.join("\n"),
+                        variant: "error",
+                    });
+                }
+            }
+
             await handleSubmit();
         } else {
             setCurrentStepIndex((prev) => prev + 1);
@@ -575,6 +638,15 @@ export const WizardPage = () => {
                             termsAccepted={taxTermsAccepted}
                             onAcceptTerms={setTaxTermsAccepted}
                             onEditStep={handleEditStep}
+                        />
+                    );
+                case "TAX_GOV_ID":
+                    return (
+                        <TaxGovernmentIdStep
+                            data={taxData}
+                            onChange={updateTaxData}
+                            docData={docData ?? {}}
+                            onDocChange={setDocData}
                         />
                     );
                 default:

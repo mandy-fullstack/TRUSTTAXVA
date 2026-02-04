@@ -10,3 +10,4 @@ export * from "./TaxMissingDocsStep";
 export * from "./TaxReviewStep";
 export * from "./TaxAddressStep";
 export * from "./TaxBankStep";
+export * from "./TaxGovernmentIdStep";

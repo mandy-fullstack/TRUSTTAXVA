@@ -476,6 +476,83 @@ export class OrdersService {
         return updated;
     }
 
+    /**
+     * Client: Completar una solicitud de documento (OrderApproval.type=DOCUMENT_REQUEST)
+     * subiendo un documento cifrado y ligándolo a la orden.
+     *
+     * - Setea status=COMPLETED
+     * - Guarda documentId en clientNote (JSON)
+     */
+    async completeDocumentRequest(
+        userId: string,
+        approvalId: string,
+        documentId: string,
+    ) {
+        const approval = await this.prisma.orderApproval.findUnique({
+            where: { id: approvalId },
+            include: { order: true },
+        });
+
+        if (!approval || approval.order.userId !== userId) {
+            throw new NotFoundException('Document request not found');
+        }
+
+        if (approval.type !== 'DOCUMENT_REQUEST') {
+            throw new NotFoundException('Document request not found');
+        }
+
+        const doc = await this.prisma.document.findFirst({
+            where: { id: documentId, userId },
+            select: { id: true, orderId: true, title: true },
+        });
+
+        if (!doc) {
+            throw new NotFoundException('Document not found');
+        }
+
+        // Ensure the document is linked to this order
+        if (doc.orderId !== approval.orderId) {
+            await this.prisma.document.update({
+                where: { id: documentId },
+                data: { orderId: approval.orderId },
+            });
+        }
+
+        const updated = await this.prisma.orderApproval.update({
+            where: { id: approvalId },
+            data: {
+                status: 'COMPLETED',
+                clientNote: JSON.stringify({ documentId }),
+                updatedAt: new Date(),
+            },
+        });
+
+        await this.prisma.orderTimeline.create({
+            data: {
+                orderId: approval.orderId,
+                title: 'Documento enviado',
+                description: `El cliente subió un documento para la solicitud: ${approval.title}.`,
+            },
+        });
+
+        // Notify admins
+        this.chatGateway.server.to('admin_notifications').emit('notification', {
+            type: 'order',
+            title: 'Documento recibido',
+            body: `Documento solicitado recibido para la orden ${approval.orderId.slice(0, 8)}`,
+            link: `/admin/orders/${approval.orderId}`,
+        });
+
+        // Trigger Push Notification for Admins
+        this.triggerAdminPushNotification(
+            'Documento recibido',
+            `Documento solicitado recibido para la orden ${approval.orderId.slice(0, 8)}`,
+            `/admin/orders/${approval.orderId}`,
+        );
+
+        return updated;
+    }
+
     private async triggerAdminPushNotification(
         title: string,
         body: string,

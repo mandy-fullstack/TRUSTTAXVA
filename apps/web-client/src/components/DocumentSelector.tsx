@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     backgroundColor: "#FFF",
     overflow: "hidden",
+    borderRadius: 0,
   },
   tabs: {
     flexDirection: "row",
@@ -324,7 +325,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#F1F5F9",
-    borderRadius: 4,
+    borderRadius: 0,
     gap: 12,
     backgroundColor: "#FFF",
   },
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 4,
+    borderRadius: 0,
   },
   docName: {
     fontSize: 14,

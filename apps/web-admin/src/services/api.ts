@@ -229,6 +229,15 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  requestOrderDocument: (
+    id: string,
+    data: { documentName: string; message?: string; docType?: string },
+  ) =>
+    request<any>(`/admin/orders/${id}/request-document`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // Chat
   getConversations: () => request<any[]>("/chat/conversations"),
   getConversation: (id: string) => request<any>(`/chat/conversations/${id}`),

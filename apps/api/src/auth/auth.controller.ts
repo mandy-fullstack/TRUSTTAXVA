@@ -21,6 +21,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { CheckEmailDto } from './dto/check-email.dto';
 
 // JWT Auth Guard for protected routes
 const JwtAuthGuard = AuthGuard('jwt');
@@ -28,6 +29,13 @@ const JwtAuthGuard = AuthGuard('jwt');
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) { }
+
+  @Post('check-email')
+  @Throttle({ default: { limit: 20, ttl: 3600000 } }) // 20 per hour per IP
+  checkEmail(@Body() dto: CheckEmailDto): Promise<{ exists: boolean }> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return this.authService.checkEmailExists(dto.email);
+  }
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 requests per hour

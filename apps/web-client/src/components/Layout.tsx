@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   Platform,
 } from "react-native";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   User,
@@ -239,23 +239,23 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
         const label = t(item.i18nKey, item.path);
         const active = isActive(item.path);
         return (
-          <Link
+          <TouchableOpacity
             key={`${item.path}-${item.i18nKey}`}
-            to={item.path}
-            onClick={handleMenuClose}
-            className={Platform.OS === "web" ? "nav-link" : undefined}
+            onPress={() => {
+              handleMenuClose();
+              navigate(item.path);
+            }}
+            activeOpacity={0.85}
             style={
               Platform.OS === "web"
                 ? {
-                    display: "flex",
                     flexDirection: "row",
                     alignItems: "center",
-                    padding: isTablet ? "6px 10px" : "8px 14px",
+                    paddingVertical: isTablet ? 6 : 8,
+                    paddingHorizontal: isTablet ? 10 : 14,
                     gap: isTablet ? 6 : 8,
                     borderRadius: 0,
                     backgroundColor: active ? "#EFF6FF" : "transparent",
-                    textDecoration: "none",
-                    outline: "none",
                   }
                 : ([
                     styles.navItem,
@@ -263,7 +263,6 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                     active && styles.navItemActive,
                   ] as any)
             }
-            aria-current={active ? "page" : undefined}
           >
             {Icon && (
               <Icon
@@ -280,7 +279,7 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
             >
               {label}
             </Text>
-          </Link>
+          </TouchableOpacity>
         );
       })}
       {isAuthenticated && (
@@ -355,14 +354,14 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
     <>
       {/* Skip to main content link - rendered outside View for web compatibility */}
       {Platform.OS === "web" && (
-        <Link
-          to="#main-content"
+        <a
+          href="#main-content"
           className="skip-link"
-          onClick={(e: any) => {
+          onClick={(e) => {
             e.preventDefault();
             const mainContent = document.getElementById("main-content");
             if (mainContent) {
-              mainContent.focus();
+              (mainContent as HTMLElement).focus();
               mainContent.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
@@ -371,7 +370,7 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
           }}
         >
           Skip to main content
-        </Link>
+        </a>
       )}
       <View style={styles.container}>
         <View style={styles.navBar}>
@@ -383,11 +382,13 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
               isTablet && styles.navInnerTablet,
             ]}
           >
-            <Link
-              to={isAuthenticated ? "/dashboard" : "/"}
-              onClick={handleMenuClose}
-              className={Platform.OS === "web" ? "logo-link" : undefined}
-              style={Platform.OS === "web" ? undefined : styles.brand}
+            <TouchableOpacity
+              onPress={() => {
+                handleMenuClose();
+                navigate(isAuthenticated ? "/dashboard" : "/");
+              }}
+              activeOpacity={0.85}
+              style={styles.brand as any}
             >
               <TrustTaxLogo
                 size={
@@ -406,7 +407,7 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
               >
                 TrustTax
               </Text>
-            </Link>
+            </TouchableOpacity>
             {isMobile ? (
               <View
                 style={[
@@ -549,25 +550,23 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
               const label = t(item.i18nKey, item.path);
               const active = isActive(item.path);
               return (
-                <Link
+                <TouchableOpacity
                   key={`${item.path}-${item.i18nKey}`}
-                  to={item.path}
-                  onClick={handleMenuClose}
-                  className={Platform.OS === "web" ? "nav-link" : undefined}
+                  onPress={() => {
+                    handleMenuClose();
+                    navigate(item.path);
+                  }}
+                  activeOpacity={0.85}
                   style={
                     Platform.OS === "web"
                       ? {
-                          display: "flex",
                           flexDirection: "row",
                           alignItems: "center",
-                          padding: "14px 0",
+                          paddingVertical: 14,
                           gap: 12,
-                          textDecoration: "none",
-                          outline: "none",
                         }
                       : (styles.mobileNavItem as any)
                   }
-                  aria-current={active ? "page" : undefined}
                 >
                   {Icon && (
                     <Icon size={20} color={active ? "#2563EB" : "#64748B"} />
@@ -581,29 +580,25 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                   >
                     {label}
                   </Text>
-                </Link>
+                </TouchableOpacity>
               );
             })}
             {isAuthenticated && (
-              <Link
-                to="/dashboard/profile"
-                onClick={handleMenuClose}
-                className={Platform.OS === "web" ? "nav-link" : undefined}
+              <TouchableOpacity
+                onPress={() => {
+                  handleMenuClose();
+                  navigate("/dashboard/profile");
+                }}
+                activeOpacity={0.85}
                 style={
                   Platform.OS === "web"
                     ? {
-                        display: "flex",
                         flexDirection: "row",
                         alignItems: "center",
-                        padding: "14px 0",
+                        paddingVertical: 14,
                         gap: 12,
-                        textDecoration: "none",
-                        outline: "none",
                       }
                     : (styles.mobileNavItem as any)
-                }
-                aria-current={
-                  isActive("/dashboard/profile") ? "page" : undefined
                 }
               >
                 <User
@@ -619,7 +614,7 @@ export const Layout = ({ children, noScroll = false }: LayoutProps) => {
                 >
                   {t("header.profile", "Profile")}
                 </Text>
-              </Link>
+              </TouchableOpacity>
             )}
             {isAuthenticated && (
               <View

@@ -113,7 +113,7 @@ export const StepPersonalDetails = ({
               label={t("profile.date_of_birth", "Date of Birth")}
               value={data.dateOfBirth || ""}
               onChange={(v) => handleChange("dateOfBirth", v)}
-              placeholder="YYYY-MM-DD"
+              placeholder="MM/DD/YYYY"
               required
               maxDate={new Date().toISOString().split("T")[0]}
               hasError={errors.has("dateOfBirth")}

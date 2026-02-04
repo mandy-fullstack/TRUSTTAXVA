@@ -36,7 +36,7 @@ export const Step1Identity: React.FC<Step1Props> = ({
           label={t("profile_wizard.step1.first_name", "LEGAL FIRST NAME")}
           value={firstName}
           onChangeText={(t: string) =>
-            setFirstName(t.replace(/\s/g, "").toUpperCase())
+            setFirstName(t.toUpperCase())
           }
           placeholder={t(
             "profile_wizard.step1.placeholder_first",
@@ -52,7 +52,7 @@ export const Step1Identity: React.FC<Step1Props> = ({
           )}
           value={middleName}
           onChangeText={(t: string) =>
-            setMiddleName(t.replace(/\s/g, "").toUpperCase())
+            setMiddleName(t.toUpperCase())
           }
           placeholder={t(
             "profile_wizard.step1.placeholder_middle",
@@ -65,7 +65,7 @@ export const Step1Identity: React.FC<Step1Props> = ({
           label={t("profile_wizard.step1.last_name", "LEGAL LAST NAME")}
           value={lastName}
           onChangeText={(t: string) =>
-            setLastName(t.replace(/\s/g, "").toUpperCase())
+            setLastName(t.toUpperCase())
           }
           placeholder={t("profile_wizard.step1.placeholder_last", "E.G. FERRO")}
           autoCapitalize="characters"
@@ -98,10 +98,11 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   btnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "400",
     letterSpacing: 1.5,
     color: "#FFFFFF",
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });

@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   titleWithIcon: { flexDirection: "row", alignItems: "center", gap: 8 },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#0F172A",
     textTransform: "uppercase",
     letterSpacing: 1,

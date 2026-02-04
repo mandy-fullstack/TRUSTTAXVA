@@ -39,17 +39,39 @@
     "yes": "Yes",
     "no": "No",
     "none": "None",
+    "months": {
+      "january": "JANUARY",
+      "february": "FEBRUARY",
+      "march": "MARCH",
+      "april": "APRIL",
+      "may": "MAY",
+      "june": "JUNE",
+      "july": "JULY",
+      "august": "AUGUST",
+      "september": "SEPTEMBER",
+      "october": "OCTOBER",
+      "november": "NOVEMBER",
+      "december": "DECEMBER"
+    },
     "urgent": "Urgent",
     "drop_file": "DROP FILE HERE",
     "required": "Required"
   },
   "settings": {
+    "sms_opt_out_title": "Disable SMS?",
+    "sms_opt_out_message": "You will stop receiving text messages. You can re-enable SMS anytime by opting in again.",
+    "disable": "Disable",
+    "logout": "Logout",
+    "logout_desc": "Sign out of your account on this device.",
     "title": "Settings",
     "account": "Account",
     "security": "Security",
     "preferences": "Preferences",
     "language_desc": "Select your preferred language",
     "notifications_desc": "Manage your alert preferences",
+    "sms_notifications": "SMS Messages",
+    "sms_desc": "Opt in to receive order updates, reminders, and document requests by text message.",
+    "sms_enabled": "SMS is enabled. Reply STOP to opt out.",
     "push_notifications": "Push Notifications",
     "email_notifications": "Email Notifications",
     "confirm_reset": "Reset Password",
@@ -223,6 +245,7 @@
     "language": "Language"
   },
   "auth": {
+    "sms_opt_in_label": "I agree to receive recurring SMS messages at the number provided.",
     "welcome_back": "Welcome Back",
     "sign_in_to_continue": "Sign in to access your portal",
     "email_label": "Email Address",
@@ -275,7 +298,8 @@
     "email_verified_description": "Your email has been verified successfully. You are now logged in.",
     "redirecting_to_dashboard": "Redirecting to dashboard...",
     "success": "Success",
-    "email_already_registered": "This email is already registered. Please log in or use a different email."
+    "email_already_registered": "This email is already registered. Please log in or use a different email.",
+    "email_check_failed": "We couldn’t verify this email right now. Please try again."
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -678,6 +702,39 @@
       "childcare": "Childcare",
       "claimable_by_other": "Claimable by other"
     },
+    "gov_id": {
+      "title": "Driver License / ID",
+      "description": "Enter the government ID details for the people involved (Taxpayer and, if applicable, Spouse).",
+      "taxpayer_title": "Taxpayer",
+      "spouse_title": "Spouse",
+      "id_type": "ID type",
+      "driver_license": "Driver license",
+      "id_card": "State ID",
+      "select": "Select",
+      "id_number": "Number",
+      "id_number_placeholder": "Ex: D1234567",
+      "issuing_state": "Issuing state",
+      "expiration": "Expiration",
+      "expiration_placeholder": "MM/DD/YYYY",
+      "upload_button": "Attach",
+      "upload_hint": "Attach a photo/PDF of your license/ID (recommended).",
+      "uploaded": "Attached",
+      "no_doc": "No document attached",
+      "select_doc": "Select document",
+      "taxpayer_doc_label": "Taxpayer Government ID",
+      "spouse_doc_label": "Spouse Government ID",
+      "spouse_note": "If you're filing with your spouse, select 'Filing with spouse: Yes' in the Filing Status step to enable their section.",
+      "validation_error": "Missing required information",
+      "missing_terms": "You must accept the Terms of Service in the Review step.",
+      "missing_taxpayer_type": "Taxpayer: select ID type (Driver license / State ID).",
+      "missing_taxpayer_number": "Taxpayer: enter the ID number.",
+      "missing_taxpayer_state": "Taxpayer: select issuing state.",
+      "missing_taxpayer_expiration": "Taxpayer: enter expiration date.",
+      "missing_spouse_type": "Spouse: select ID type (Driver license / State ID).",
+      "missing_spouse_number": "Spouse: enter the ID number.",
+      "missing_spouse_state": "Spouse: select issuing state.",
+      "missing_spouse_expiration": "Spouse: enter expiration date."
+    },
     "form": {
       "upload_not_supported": "Upload / signature not yet supported for this field."
     },
@@ -888,9 +945,19 @@
     "step1b": {
       "title": "BIRTH",
       "subtitle": "CHRONOLOGICAL VERIFICATION FOR IRS COMPLIANCE.",
-      "dob": "DATE OF BIRTH (MM / DD / YYYY)",
+      "dob": "DATE OF BIRTH",
       "hint": "CHRONOLOGICAL ALIGNMENT IS REQUIRED BY THE IRS.",
-      "proceed": "PROCEED TO ORIGIN"
+      "proceed": "PROCEED TO ORIGIN",
+      "required": "DATE OF BIRTH IS REQUIRED",
+      "invalid": "INVALID DATE FORMAT",
+      "invalid_date": "INVALID DATE",
+      "age_min": "MUST BE AT LEAST 18 YEARS OLD",
+      "age_max": "AGE EXCEEDS MAXIMUM LIMIT",
+      "month": "MONTH",
+      "day": "DAY",
+      "year": "YEAR",
+      "age_display": "AGE: {{age}} YEARS OLD",
+      "age_error": "AGE: {{age}} YEARS (MUST BE BETWEEN {{min}} AND {{max}} YEARS)"
     },
     "step1c": {
       "title": "ORIGIN",
@@ -1167,7 +1234,7 @@
     "phone_required": "Phone number is required",
     "opt_in_error": "Failed to opt-in to SMS messages",
     "opt_in_success": "Successfully opted in to SMS messages",
-    "consent_label": "I consent to receive SMS messages",
+    "consent_label": "I agree to receive SMS messages",
     "phone_placeholder": "Phone number",
     "opt_in_button": "Opt In",
     "read_consent": "Read SMS Consent Policy",
@@ -1176,9 +1243,11 @@
     "opt_in_success_title": "Successfully Opted In!",
     "opt_in_success_message": "You will now receive SMS messages from us. You can opt-out at any time by replying STOP to any message or updating your preferences in account settings.",
     "phone_label": "Phone Number",
-    "consent_full": "I consent to receive SMS messages from {{companyName}} and have read the SMS Consent Policy",
+    "consent_full": "I agree to receive recurring SMS messages from {{companyName}} at the number provided.",
     "read_consent_policy": "Read SMS Consent Policy",
+    "read_privacy": "Read Privacy Policy",
     "opt_in_button_full": "Opt-In to SMS Messages",
-    "info": "Message and data rates may apply. You can opt-out at any time by replying STOP. Supported by major U.S. carriers."
+    "info": "Message frequency varies. Message and data rates may apply. Reply STOP to cancel, HELP for help. Supported by major U.S. carriers.",
+    "disclosure_text": "Message frequency varies. Message and data rates may apply. Reply STOP to cancel, HELP for help."
   }
 }

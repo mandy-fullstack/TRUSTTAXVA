@@ -100,14 +100,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     marginBottom: s[6],
   },
-  title: { fontSize: 24, fontWeight: "700", letterSpacing: -0.5 },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    letterSpacing: -0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    color: "#0F172A",
+  },
   stepInfo: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#64748B",
-    fontWeight: "500",
+    fontWeight: "600",
     marginTop: 4,
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 
   progressContainer: {
@@ -138,7 +145,13 @@ const styles = StyleSheet.create({
     transform: [{ scale: 1.2 }],
   } as any,
   stepDotCompleted: { backgroundColor: "#94A3B8" },
-  activeStepText: { fontSize: 12, fontWeight: "600", color: "#0F172A" },
+  activeStepText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0F172A",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.1,
+  },
 
   contentWrapper: { width: "100%", maxWidth: 800, paddingHorizontal: s[4] },
   contentCard: {

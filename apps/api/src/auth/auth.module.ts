@@ -11,6 +11,7 @@ import { TwoFactorService } from './two-factor.service';
 import { ChatModule } from '../chat/chat.module';
 import { PinModule } from './pin/pin.module';
 import { TokenService } from './token.service';
+import { SMSModule } from '../sms/sms.module';
 
 @Module({
     imports: [
@@ -26,6 +27,7 @@ import { TokenService } from './token.service';
         EmailModule,
         ChatModule,
         PinModule,
+        SMSModule,
     ],
     providers: [
         AuthService,

@@ -223,6 +223,10 @@ export class EncryptionService {
             'stateIdNumber', // State ID from W-2
             'controlNumber', // W-2 control number
 
+            // === Government ID / Driver License (Tax Wizard) ===
+            'idNumber',
+            'expirationDate',
+
             // === Address Information (PII) ===
             'street',
             'apartment',

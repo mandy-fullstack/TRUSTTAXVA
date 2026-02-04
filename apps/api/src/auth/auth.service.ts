@@ -19,6 +19,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChatGateway } from '../chat/chat.gateway';
 import { StorageService } from '../common/services/storage.service';
 import { TokenService } from './token.service';
+import { SMSService } from '../sms/sms.service';
 
 @Injectable()
 export class AuthService {
@@ -33,6 +34,7 @@ export class AuthService {
     private chatGateway: ChatGateway,
     private storageService: StorageService,
     private tokenService: TokenService,
+    private smsService: SMSService,
   ) { }
 
   async register(data: {
@@ -40,8 +42,14 @@ export class AuthService {
     password: string;
     name?: string;
     role?: string;
+    phoneNumber?: string;
+    smsOptIn?: boolean;
+    smsOtpSessionId?: string;
     [key: string]: any;
   }) {
+    // Normalize email to avoid case/whitespace issues.
+    data.email = (data.email || '').trim().toLowerCase();
+
     // SECURITY: Check if user already exists
     // DO NOT throw error - this would reveal if email is registered (enumeration attack)
     const existingUser = await this.prisma.user.findUnique({
@@ -81,6 +89,19 @@ export class AuthService {
       },
     });
 
+    // Optional: SMS opt-in during registration (OTP temporarily disabled by request)
+    if (data.smsOptIn && data.phoneNumber) {
+      try {
+        await this.smsService.optInSMS(user.id, data.phoneNumber, data.smsOtpSessionId);
+      } catch (e) {
+        // Do not fail registration if SMS fails.
+        console.warn(
+          '[AuthService] SMS opt-in failed during registration:',
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+
     // Send verification email
     try {
       await this.emailService.sendEmailVerification(
@@ -101,6 +122,28 @@ export class AuthService {
       message:
         'Registration successful! Please check your email to verify your account.',
     };
+  }
+
+  /**
+   * Check whether an email is already registered.
+   *
+   * NOTE: This endpoint can be used for UX during signup, but it does reveal
+   * whether an email exists (enumeration risk). Keep it rate-limited.
+   */
+  async checkEmailExists(email: string): Promise<{ exists: boolean }> {
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) return { exists: false };
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: {
+          equals: normalized,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+    return { exists: !!user };
   }
 
   async validateUser(email: string, pass: string): Promise<any> {

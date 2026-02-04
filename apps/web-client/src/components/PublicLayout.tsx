@@ -6,7 +6,6 @@ import {
   type DimensionValue,
   Platform,
 } from "react-native";
-import { Link } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
@@ -23,14 +22,14 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
     <>
       {/* Skip to main content link - rendered outside View for web compatibility */}
       {Platform.OS === "web" && (
-        <Link
-          to="#main-content"
+        <a
+          href="#main-content"
           className="skip-link"
-          onClick={(e: any) => {
+          onClick={(e) => {
             e.preventDefault();
             const mainContent = document.getElementById("main-content");
             if (mainContent) {
-              mainContent.focus();
+              (mainContent as HTMLElement).focus();
               mainContent.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
@@ -39,7 +38,7 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
           }}
         >
           Skip to main content
-        </Link>
+        </a>
       )}
       <View
         style={[

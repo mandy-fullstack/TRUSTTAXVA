@@ -1,12 +1,17 @@
 import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
-import { H3, Text, Card } from "@trusttax/ui";
+import { H3, Text, Card, Button } from "@trusttax/ui";
 import { Mail, User, Calendar } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
 
 export const AccountSection = () => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
 
@@ -72,7 +77,41 @@ export const AccountSection = () => {
             </View>
           </>
         )}
+
+        <View style={styles.divider} />
+
+        <View style={[styles.row, isMobile && styles.rowMobile]}>
+          <View style={styles.rowContent}>
+            <Text style={styles.label}>
+              {t("settings.logout", "Logout")}
+            </Text>
+            <Text style={styles.value}>
+              {t("settings.logout_desc", "Sign out of your account on this device.")}
+            </Text>
+          </View>
+          <Button
+            variant="danger"
+            size="sm"
+            onPress={() => setShowLogoutConfirm(true)}
+          >
+            {t("header.logout", "Logout")}
+          </Button>
+        </View>
       </Card>
+
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          logout();
+          navigate("/login", { replace: true });
+        }}
+        title={t("dialog.logout_title", "Confirm Logout")}
+        message={t("dialog.logout_message", "Are you sure you want to log out?")}
+        confirmText={t("dialog.logout", "Logout")}
+        cancelText={t("dialog.cancel", "Cancel")}
+        variant="danger"
+      />
     </View>
   );
 };
@@ -107,7 +146,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 40,
     height: 40,
-    borderRadius: 8, // Rounded square
+    borderRadius: 0,
     backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",

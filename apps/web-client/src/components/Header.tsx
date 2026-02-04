@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   type ViewStyle,
 } from "react-native";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Text } from "@trusttax/ui";
 import { Menu, X } from "lucide-react";
 import { useCompany } from "../context/CompanyContext";
@@ -25,6 +25,7 @@ import { LanguageSelector } from "./LanguageSelector";
 
 export const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { width } = useWindowDimensions();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { profile } = useCompany();
@@ -105,6 +106,12 @@ export const Header = () => {
     menuButtonRef.current?.focus?.();
   };
 
+  const handleLogout = () => {
+    logout();
+    handleMenuClose();
+    navigate("/login", { replace: true });
+  };
+
   return (
     <View
       style={[
@@ -122,10 +129,10 @@ export const Header = () => {
         ]}
       >
         {/* Brand Section */}
-        <Link
-          to="/"
-          className={Platform.OS === "web" ? "logo-link" : undefined}
-          style={Platform.OS === "web" ? undefined : styles.logoContainer}
+        <TouchableOpacity
+          onPress={() => navigate("/")}
+          activeOpacity={0.85}
+          style={styles.logoContainer as any}
         >
           <TrustTaxLogo
             size={
@@ -144,7 +151,7 @@ export const Header = () => {
           >
             {companyName}
           </Text>
-        </Link>
+        </TouchableOpacity>
 
         {/* Desktop/Tablet Menu */}
         {!isMobile && (
@@ -167,19 +174,18 @@ export const Header = () => {
                 const label = t(item.i18nKey, item.path);
                 const active = isActive(item.path);
                 return (
-                  <Link
+                  <TouchableOpacity
                     key={item.path}
-                    to={item.path}
-                    className={Platform.OS === "web" ? "nav-link" : undefined}
+                    onPress={() => navigate(item.path)}
+                    activeOpacity={0.85}
                     style={
                       Platform.OS === "web"
-                        ? { padding: "8px 0", position: "relative" }
+                        ? ({ paddingVertical: 8, position: "relative" } as any)
                         : ([
-                            styles.navLink,
-                            active && styles.navLinkActive,
-                          ] as any)
+                          styles.navLink,
+                          active && styles.navLinkActive,
+                        ] as any)
                     }
-                    aria-current={active ? "page" : undefined}
                   >
                     <Text
                       style={[
@@ -198,7 +204,7 @@ export const Header = () => {
                         ]}
                       />
                     )}
-                  </Link>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -217,35 +223,33 @@ export const Header = () => {
                 if (item.type === "link") {
                   const isRegister = item.path === "/register";
                   return (
-                    <Link
+                    <TouchableOpacity
                       key={item.path}
-                      to={item.path}
-                      className={Platform.OS === "web" ? "nav-link" : undefined}
+                      onPress={() => navigate(item.path)}
+                      activeOpacity={0.85}
                       style={
                         Platform.OS === "web"
                           ? isRegister
                             ? {
-                                padding: "0 24px",
-                                height: 44,
-                                borderRadius: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                backgroundColor: secondaryColor,
-                              }
+                              paddingHorizontal: 24,
+                              height: 44,
+                              borderRadius: 0,
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backgroundColor: secondaryColor,
+                            }
                             : {
-                                height: 44,
-                                padding: "0 16px",
-                                borderRadius: 0,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }
+                              height: 44,
+                              paddingHorizontal: 16,
+                              borderRadius: 0,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }
                           : isRegister
                             ? ({
-                                ...styles.ctaButton,
-                                backgroundColor: secondaryColor,
-                              } as any)
+                              ...styles.ctaButton,
+                              backgroundColor: secondaryColor,
+                            } as any)
                             : (styles.loginButton as any)
                       }
                     >
@@ -254,36 +258,35 @@ export const Header = () => {
                           isRegister
                             ? styles.ctaButtonText
                             : {
-                                color: primaryColor,
-                                fontSize: 14,
-                                fontWeight: "500",
-                              }
+                              color: primaryColor,
+                              fontSize: 14,
+                              fontWeight: "500",
+                            }
                         }
                       >
                         {t(item.i18nKey, item.path)}
                       </Text>
-                    </Link>
+                    </TouchableOpacity>
                   );
                 }
                 if (item.type === "user") {
                   return (
-                    <Link
+                    <TouchableOpacity
                       key="user-profile"
-                      to="/dashboard"
-                      className={Platform.OS === "web" ? "nav-link" : undefined}
+                      onPress={() => navigate("/dashboard")}
+                      activeOpacity={0.85}
                       style={
                         Platform.OS === "web"
                           ? {
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 8,
-                            }
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          }
                           : ({
-                              flexDirection: "row",
-                              alignItems: "center",
-                              gap: 8,
-                            } as any)
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 8,
+                          } as any)
                       }
                     >
                       <Text
@@ -295,14 +298,14 @@ export const Header = () => {
                       >
                         {user?.name || user?.email || t(item.i18nKey)}
                       </Text>
-                    </Link>
+                    </TouchableOpacity>
                   );
                 }
                 if (item.type === "logout") {
                   return (
                     <TouchableOpacity
                       key="logout-btn"
-                      onPress={logout}
+                      onPress={handleLogout}
                       style={{ paddingHorizontal: 12, paddingVertical: 8 }}
                     >
                       <Text
@@ -367,17 +370,22 @@ export const Header = () => {
             const label = t(item.i18nKey, item.path);
             const active = isActive(item.path);
             return (
-              <Link
+              <TouchableOpacity
                 key={item.path}
-                to={item.path}
-                onClick={handleMenuClose}
-                className={Platform.OS === "web" ? "nav-link" : undefined}
+                onPress={() => {
+                  handleMenuClose();
+                  navigate(item.path);
+                }}
+                activeOpacity={0.85}
                 style={
                   Platform.OS === "web"
-                    ? { padding: "18px 0", borderBottom: "1px solid #F8FAFC" }
+                    ? ({
+                      paddingVertical: 18,
+                      borderBottomWidth: 1,
+                      borderBottomColor: "#F8FAFC",
+                    } as any)
                     : (styles.mobileNavLink as any)
                 }
-                aria-current={active ? "page" : undefined}
               >
                 <Text
                   style={[
@@ -387,47 +395,51 @@ export const Header = () => {
                 >
                   {label}
                 </Text>
-              </Link>
+              </TouchableOpacity>
             );
           })}
           {isAuthenticated && (
-            <Link
-              to="/dashboard/settings"
-              onClick={handleMenuClose}
+            <TouchableOpacity
+              onPress={() => {
+                handleMenuClose();
+                navigate("/dashboard/settings");
+              }}
+              activeOpacity={0.85}
               style={styles.mobileNavLink as any}
             >
               <Text style={styles.mobileNavLinkText}>
                 {t("settings.title", "Settings")}
               </Text>
-            </Link>
+            </TouchableOpacity>
           )}
           <View style={styles.mobileAuthRow}>
             {authItems.map((item) => {
               if (item.type === "link") {
                 return (
-                  <Link
+                  <TouchableOpacity
                     key={item.path}
-                    to={item.path}
-                    onClick={handleMenuClose}
+                    onPress={() => {
+                      handleMenuClose();
+                      navigate(item.path);
+                    }}
+                    activeOpacity={0.85}
                     style={
                       item.path === "/register"
                         ? {
-                            flex: 2,
-                            height: 44,
-                            borderRadius: 0,
-                            backgroundColor: secondaryColor,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }
+                          flex: 2,
+                          height: 44,
+                          borderRadius: 0,
+                          backgroundColor: secondaryColor,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }
                         : {
-                            flex: 1,
-                            height: 44,
-                            borderRadius: 0,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }
+                          flex: 1,
+                          height: 44,
+                          borderRadius: 0,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }
                     }
                   >
                     <Text
@@ -439,18 +451,20 @@ export const Header = () => {
                     >
                       {t(item.i18nKey, item.path)}
                     </Text>
-                  </Link>
+                  </TouchableOpacity>
                 );
               }
               if (item.type === "user") {
                 return (
-                  <Link
+                  <TouchableOpacity
                     key="user-profile-mobile"
-                    to="/dashboard"
-                    onClick={handleMenuClose}
+                    onPress={() => {
+                      handleMenuClose();
+                      navigate("/dashboard");
+                    }}
+                    activeOpacity={0.85}
                     style={{
                       height: 44,
-                      display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
@@ -458,7 +472,7 @@ export const Header = () => {
                     <Text style={{ color: primaryColor, fontWeight: "600" }}>
                       {user?.name || t(item.i18nKey)}
                     </Text>
-                  </Link>
+                  </TouchableOpacity>
                 );
               }
               if (item.type === "logout") {
@@ -466,8 +480,7 @@ export const Header = () => {
                   <TouchableOpacity
                     key="logout-btn-mobile"
                     onPress={() => {
-                      logout();
-                      handleMenuClose();
+                      handleLogout();
                     }}
                     style={{
                       height: 44,

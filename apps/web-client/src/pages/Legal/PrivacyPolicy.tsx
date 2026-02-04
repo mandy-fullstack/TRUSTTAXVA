@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Text, H1, H2 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
@@ -13,6 +13,8 @@ export const PrivacyPolicyPage = () => {
     const companyEmail = profile?.email || "contact@trusttax.com";
     const companyPhone = profile?.phone || "(540) 876-9748";
     const companyAddress = profile?.address || "123 Business Ave, VA";
+    const openUrl = (url: string) =>
+        Linking.openURL(url).catch((e) => console.error("Failed to open URL", e));
 
     return (
         <PublicLayout>
@@ -293,6 +295,25 @@ export const PrivacyPolicyPage = () => {
                                 "legal.privacy.protection_note",
                                 "While we strive to protect your personal information, no method of transmission over the Internet or electronic storage is 100% secure. We cannot guarantee absolute security but are committed to maintaining the highest standards of data protection.",
                             )}
+                        </Text>
+                    </View>
+
+                    {/* SMS Messaging Program */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Shield size={20} color="#2563EB" />
+                            <H2 style={styles.sectionTitle}>
+                                {t("legal.privacy.sms_program", "SMS Messaging Program")}
+                            </H2>
+                        </View>
+                        <Text style={styles.paragraph}>
+                            {t(
+                                "legal.privacy.sms_program_text",
+                                "If you opt in to receive SMS messages, we use your phone number and messaging preferences to send service-related communications (order updates, reminders, and document requests). Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help.",
+                            )}
+                        </Text>
+                        <Text style={styles.link} onPress={() => openUrl("/legal/sms-consent")}>
+                            {t("legal.sms_consent.page_title", "SMS Consent Policy")}
                         </Text>
                     </View>
 

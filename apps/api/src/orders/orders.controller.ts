@@ -86,4 +86,18 @@ export class OrdersController {
             body.clientNote,
         );
     }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('approvals/:approvalId/complete-document')
+  async completeDocumentRequest(
+    @Request() req: any,
+    @Param('approvalId') approvalId: string,
+    @Body() body: { documentId: string },
+  ) {
+    return this.ordersService.completeDocumentRequest(
+      req.user.userId,
+      approvalId,
+      body.documentId,
+    );
+  }
 }

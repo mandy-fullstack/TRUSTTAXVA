@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, Linking } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Text, H1, H2 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
@@ -11,6 +11,8 @@ export const SMSConsentPage = () => {
     const { profile } = useCompany();
     const companyName = profile?.companyName || "TrustTax";
     const companyPhone = profile?.phone || "(540) 876-9748";
+    const openUrl = (url: string) =>
+        Linking.openURL(url).catch((e) => console.error("Failed to open URL", e));
 
     return (
         <PublicLayout>
@@ -236,6 +238,51 @@ export const SMSConsentPage = () => {
                                 "legal.sms_consent.rates_text",
                                 "Standard message and data rates may apply to SMS messages sent and received, as determined by your mobile carrier. We are not responsible for any charges incurred as a result of receiving SMS messages from us.",
                             )}
+                        </Text>
+                    </View>
+
+                    {/* HELP Instructions */}
+                    <View style={styles.section}>
+                        <H2 style={styles.sectionTitle}>
+                            {t("legal.sms_consent.help", "HELP Instructions")}
+                        </H2>
+                        <Text style={styles.paragraph}>
+                            {t(
+                                "legal.sms_consent.help_text",
+                                `For help, reply HELP to any message from ${companyName} or contact our support team at ${companyPhone}.`,
+                            )}
+                        </Text>
+                    </View>
+
+                    {/* Privacy Policy Reference */}
+                    <View style={styles.section}>
+                        <H2 style={styles.sectionTitle}>
+                            {t("legal.sms_consent.privacy", "Privacy Policy")}
+                        </H2>
+                        <Text style={styles.paragraph}>
+                            {t(
+                                "legal.sms_consent.privacy_text",
+                                "For information about how we handle personal information used in our messaging program, please review our Privacy Policy.",
+                            )}
+                        </Text>
+                        <Text style={styles.link} onPress={() => openUrl("/legal/privacy")}>
+                            {t("legal.privacy_policy", "Privacy Policy")}
+                        </Text>
+                    </View>
+
+                    {/* Specific Opt-In Path */}
+                    <View style={styles.section}>
+                        <H2 style={styles.sectionTitle}>
+                            {t("legal.sms_consent.opt_in_path", "How to Opt-In (In-App Path)")}
+                        </H2>
+                        <Text style={styles.paragraph}>
+                            {t(
+                                "legal.sms_consent.opt_in_path_text",
+                                "Mobile/Web App: Dashboard → Settings → Preferences → SMS Messages → Opt-In.",
+                            )}
+                        </Text>
+                        <Text style={styles.link} onPress={() => openUrl("/legal/sms-test")}>
+                            {t("legal.sms_test.page_title", "SMS Consent Test")}
                         </Text>
                     </View>
 

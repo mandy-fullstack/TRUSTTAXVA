@@ -127,6 +127,16 @@ export interface BankInfo {
   accountType: "checking" | "savings";
 }
 
+/** Identificación gubernamental (licencia/ID). */
+export type GovernmentIdType = "DRIVER_LICENSE" | "ID_CARD" | "";
+
+export interface GovernmentIdInfo {
+  idType: GovernmentIdType;
+  idNumber: string;
+  issuingState: string;
+  expirationDate: string; // YYYY-MM-DD o texto (no forzar formato)
+}
+
 /** Opciones de estado civil al 31 dic. */
 export type FilingStatus =
   | "Single"
@@ -183,6 +193,10 @@ export interface TaxIntakeData {
   mailingAddress: MailingAddress;
   bankInfo: BankInfo;
   spouseInfo?: SpouseInfo;
+
+  /** IDs / Licencias (Taxpayer + Spouse si aplica) */
+  taxpayerGovId?: GovernmentIdInfo;
+  spouseGovId?: GovernmentIdInfo;
 
   /** Dependientes */
   dependents: Dependent[];
@@ -246,6 +260,12 @@ export const DEFAULT_TAX_INTAKE: TaxIntakeData = {
     routingNumber: "",
     accountNumber: "",
     accountType: "checking",
+  },
+  taxpayerGovId: {
+    idType: "",
+    idNumber: "",
+    issuingState: "",
+    expirationDate: "",
   },
   dependents: [],
   otherIncome: { ...DEFAULT_OTHER_INCOME },

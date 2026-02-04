@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   section: { gap: s[1], paddingHorizontal: s[2] },
   label: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     textTransform: "uppercase",
     marginBottom: s[1],

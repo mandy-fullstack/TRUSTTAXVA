@@ -23,7 +23,7 @@ export const ExpirationDatePicker = ({
       label={label ?? t("profile.expiration_date", "Expiration date")}
       value={value}
       onChange={onChange}
-      placeholder="YYYY-MM-DD"
+      placeholder="MM/DD/YYYY"
     />
   );
 };

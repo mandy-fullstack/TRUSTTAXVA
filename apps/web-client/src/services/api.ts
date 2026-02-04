@@ -120,6 +120,13 @@ class ApiService {
         });
     }
 
+    async checkEmailExists(email: string): Promise<{ exists: boolean }> {
+        return this.request<{ exists: boolean }>("/auth/check-email", {
+            method: "POST",
+            body: JSON.stringify({ email }),
+        });
+    }
+
     async requestPasswordReset(email: string): Promise<{ message: string }> {
         return this.request<{ message: string }>("/auth/forgot-password", {
             method: "POST",
@@ -589,6 +596,12 @@ class ApiService {
         file: File,
         title?: string,
         type: string = "OTHER",
+        options?: {
+            orderId?: string;
+            taxReturnId?: string;
+            immigrationCaseId?: string;
+            conversationId?: string;
+        },
     ): Promise<any> {
         const token = getToken();
         if (!token) throw new AuthenticationError("Please sign in to continue");
@@ -597,11 +610,31 @@ class ApiService {
         formData.append("file", file);
         if (title) formData.append("title", title);
         formData.append("type", type);
+        if (options?.orderId) formData.append("orderId", options.orderId);
+        if (options?.taxReturnId) formData.append("taxReturnId", options.taxReturnId);
+        if (options?.immigrationCaseId)
+            formData.append("immigrationCaseId", options.immigrationCaseId);
+        if (options?.conversationId)
+            formData.append("conversationId", options.conversationId);
 
         return this.request<any>("/documents/upload", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             body: formData,
+        });
+    }
+
+    async completeDocumentRequest(
+        approvalId: string,
+        documentId: string,
+    ): Promise<any> {
+        const token = getToken();
+        if (!token) throw new AuthenticationError("Please sign in to continue");
+
+        return this.request<any>(`/orders/approvals/${approvalId}/complete-document`, {
+            method: "PATCH",
+            headers: { Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ documentId }),
         });
     }
 
@@ -690,15 +723,38 @@ class ApiService {
     }
 
     // --- SMS ---
+    async startSmsOtp(
+        phoneNumber: string,
+        purpose: string = "REGISTRATION",
+    ): Promise<{ sessionId: string; expiresAt: string }> {
+        return this.request<{ sessionId: string; expiresAt: string }>("/sms/otp/start", {
+            method: "POST",
+            body: JSON.stringify({ phoneNumber, purpose }),
+        });
+    }
+
+    async verifySmsOtp(
+        sessionId: string,
+        code: string,
+    ): Promise<{ verified: boolean }> {
+        return this.request<{ verified: boolean }>("/sms/otp/verify", {
+            method: "POST",
+            body: JSON.stringify({ sessionId, code }),
+        });
+    }
+
     async optInSMS(
         phoneNumber: string,
+        otpSessionId?: string,
     ): Promise<{ success: boolean; message: string }> {
         const token = getToken();
         if (!token) throw new AuthenticationError("Please sign in");
         return this.request<{ success: boolean; message: string }>("/sms/opt-in", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ phoneNumber }),
+            body: JSON.stringify(
+                otpSessionId ? { phoneNumber, otpSessionId } : { phoneNumber },
+            ),
         });
     }
 

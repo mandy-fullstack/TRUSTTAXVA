@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   },
   typeText: {
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "600",
     letterSpacing: 1.5,
     color: "#0F172A",
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#0F172A",
     letterSpacing: 2,
     marginBottom: 16,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "600",
     letterSpacing: 2,
     color: "#FFFFFF",
   },
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
     letterSpacing: 1,
   },

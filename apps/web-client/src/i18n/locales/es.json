@@ -39,17 +39,39 @@
     "yes": "Sí",
     "no": "No",
     "none": "Ninguno",
+    "months": {
+      "january": "ENERO",
+      "february": "FEBRERO",
+      "march": "MARZO",
+      "april": "ABRIL",
+      "may": "MAYO",
+      "june": "JUNIO",
+      "july": "JULIO",
+      "august": "AGOSTO",
+      "september": "SEPTIEMBRE",
+      "october": "OCTUBRE",
+      "november": "NOVIEMBRE",
+      "december": "DICIEMBRE"
+    },
     "urgent": "Urgente",
     "drop_file": "SOLTAR ARCHIVO AQUÍ",
     "required": "Requerido"
   },
   "settings": {
+    "sms_opt_out_title": "¿Desactivar SMS?",
+    "sms_opt_out_message": "Dejarás de recibir mensajes de texto. Puedes volver a activarlos cuando quieras inscribiéndote de nuevo.",
+    "disable": "Desactivar",
+    "logout": "Cerrar sesión",
+    "logout_desc": "Cierra tu sesión en este dispositivo.",
     "title": "Configuración",
     "account": "Cuenta",
     "security": "Seguridad",
     "preferences": "Preferencias",
     "language_desc": "Selecciona tu idioma preferido",
     "notifications_desc": "Administra tus alertas",
+    "sms_notifications": "Mensajes SMS",
+    "sms_desc": "Inscríbete para recibir actualizaciones de órdenes, recordatorios y solicitudes de documentos por mensaje de texto.",
+    "sms_enabled": "SMS habilitado. Responde STOP para darte de baja.",
     "push_notifications": "Notificaciones Push",
     "email_notifications": "Notificaciones por Correo",
     "confirm_reset": "Restablecer Contraseña",
@@ -223,6 +245,7 @@
     "language": "Idioma"
   },
   "auth": {
+    "sms_opt_in_label": "Acepto recibir mensajes SMS recurrentes al número proporcionado.",
     "welcome_back": "Bienvenido de nuevo",
     "sign_in_to_continue": "Inicia sesión para acceder a tu portal",
     "email_label": "Correo Electrónico",
@@ -275,7 +298,8 @@
     "email_verified_description": "Tu correo ha sido verificado exitosamente. Ya has iniciado sesión.",
     "redirecting_to_dashboard": "Redirigiendo al panel...",
     "success": "Éxito",
-    "email_already_registered": "Este correo ya está registrado. Por favor inicia sesión o usa un correo diferente."
+    "email_already_registered": "Este correo ya está registrado. Por favor inicia sesión o usa un correo diferente.",
+    "email_check_failed": "No pudimos verificar este correo en este momento. Por favor intenta de nuevo."
   },
   "dashboard": {
     "welcome": "Bienvenido",
@@ -679,6 +703,39 @@
       "childcare": "Cuidado Infantil",
       "claimable_by_other": "Reclamable por otro"
     },
+    "gov_id": {
+      "title": "Licencia de Conducir / ID",
+      "description": "Ingresa los datos de identificación para las personas involucradas (Taxpayer y, si aplica, Spouse).",
+      "taxpayer_title": "Taxpayer",
+      "spouse_title": "Spouse",
+      "id_type": "Tipo de ID",
+      "driver_license": "Licencia de Conducir",
+      "id_card": "ID estatal",
+      "select": "Seleccionar",
+      "id_number": "Número",
+      "id_number_placeholder": "Ej: D1234567",
+      "issuing_state": "Estado emisor",
+      "expiration": "Vencimiento",
+      "expiration_placeholder": "MM/DD/YYYY",
+      "upload_button": "Adjuntar",
+      "upload_hint": "Adjunta una foto/PDF de tu licencia/ID (recomendado).",
+      "uploaded": "Adjunto",
+      "no_doc": "Sin documento adjunto",
+      "select_doc": "Seleccionar documento",
+      "taxpayer_doc_label": "Identificación del Taxpayer",
+      "spouse_doc_label": "Identificación del Spouse",
+      "spouse_note": "Si declaras con tu esposo/a, selecciona 'Filing with spouse: Yes' en el paso de Filing Status para habilitar su sección.",
+      "validation_error": "Falta información requerida",
+      "missing_terms": "Debes aceptar los Términos de Servicio en el paso de Revisión.",
+      "missing_taxpayer_type": "Taxpayer: selecciona el tipo de ID (Licencia / ID estatal).",
+      "missing_taxpayer_number": "Taxpayer: ingresa el número de identificación.",
+      "missing_taxpayer_state": "Taxpayer: selecciona el estado emisor.",
+      "missing_taxpayer_expiration": "Taxpayer: ingresa la fecha de vencimiento.",
+      "missing_spouse_type": "Spouse: selecciona el tipo de ID (Licencia / ID estatal).",
+      "missing_spouse_number": "Spouse: ingresa el número de identificación.",
+      "missing_spouse_state": "Spouse: selecciona el estado emisor.",
+      "missing_spouse_expiration": "Spouse: ingresa la fecha de vencimiento."
+    },
     "form": {
       "upload_not_supported": "Subida / firma aún no está soportada para este campo."
     },
@@ -889,9 +946,19 @@
     "step1b": {
       "title": "NACIMIENTO",
       "subtitle": "VERIFICACIÓN CRONOLÓGICA PARA CUMPLIMIENTO DEL IRS.",
-      "dob": "FECHA DE NACIMIENTO (MM / DD / AAAA)",
+      "dob": "FECHA DE NACIMIENTO",
       "hint": "EL ALINEAMIENTO CRONOLÓGICO ES REQUERIDO POR EL IRS.",
-      "proceed": "PROCEDER A ORIGEN"
+      "proceed": "PROCEDER A ORIGEN",
+      "required": "FECHA DE NACIMIENTO ES REQUERIDA",
+      "invalid": "FORMATO DE FECHA INVÁLIDO",
+      "invalid_date": "FECHA INVÁLIDA",
+      "age_min": "DEBE TENER AL MENOS 18 AÑOS",
+      "age_max": "LA EDAD EXCEDE EL LÍMITE MÁXIMO",
+      "month": "MES",
+      "day": "DÍA",
+      "year": "AÑO",
+      "age_display": "EDAD: {{age}} AÑOS",
+      "age_error": "EDAD: {{age}} AÑOS (DEBE ESTAR ENTRE {{min}} Y {{max}} AÑOS)"
     },
     "step1c": {
       "title": "ORIGEN",
@@ -1168,7 +1235,7 @@
     "phone_required": "El número de teléfono es requerido",
     "opt_in_error": "Error al inscribirse en mensajes SMS",
     "opt_in_success": "Inscripción exitosa en mensajes SMS",
-    "consent_label": "Consiento recibir mensajes SMS",
+    "consent_label": "Acepto recibir mensajes SMS",
     "phone_placeholder": "Número de teléfono",
     "opt_in_button": "Inscribirse",
     "read_consent": "Leer Política de Consentimiento SMS",
@@ -1177,9 +1244,11 @@
     "opt_in_success_title": "¡Inscripción Exitosa!",
     "opt_in_success_message": "Ahora recibirás mensajes SMS de nosotros. Puedes darte de baja en cualquier momento respondiendo STOP a cualquier mensaje o actualizando tus preferencias en la configuración de la cuenta.",
     "phone_label": "Número de Teléfono",
-    "consent_full": "Consiento recibir mensajes SMS de {{companyName}} y he leído la Política de Consentimiento SMS",
+    "consent_full": "Acepto recibir mensajes SMS recurrentes de {{companyName}} al número proporcionado.",
     "read_consent_policy": "Leer Política de Consentimiento SMS",
+    "read_privacy": "Leer Política de Privacidad",
     "opt_in_button_full": "Inscribirse en Mensajes SMS",
-    "info": "Pueden aplicarse tarifas de mensajes y datos. Puedes darte de baja en cualquier momento respondiendo STOP. Compatible con los principales operadores de EE.UU."
+    "info": "La frecuencia de mensajes varía. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar, HELP para ayuda. Compatible con los principales operadores de EE.UU.",
+    "disclosure_text": "La frecuencia de mensajes varía. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar, HELP para ayuda."
   }
 }

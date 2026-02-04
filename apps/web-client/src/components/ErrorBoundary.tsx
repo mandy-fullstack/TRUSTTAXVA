@@ -14,20 +14,24 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  componentStack?: string;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, componentStack: undefined };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, componentStack: undefined };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("App error:", error, errorInfo);
+    // Print a clean, copy-pastable stack to quickly locate RNW text-node issues.
+    console.error("App error:", error);
+    console.error("Component stack:", errorInfo?.componentStack || "(none)");
+    this.setState({ componentStack: errorInfo?.componentStack || undefined });
   }
 
   render() {
@@ -47,6 +51,16 @@ export class ErrorBoundary extends Component<Props, State> {
               ]}
             >
               Additional Info: {this.state.error.toString()}
+            </Text>
+          )}
+          {!!this.state.componentStack && (
+            <Text
+              style={[
+                styles.message,
+                { fontSize: 12, color: "#ef4444", fontFamily: "monospace" },
+              ]}
+            >
+              Component Stack: {this.state.componentStack}
             </Text>
           )}
           <TouchableOpacity

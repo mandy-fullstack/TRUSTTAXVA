@@ -3,9 +3,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Linking,
-  Platform,
 } from "react-native";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AuthorizedIRSBadge } from "./AuthorizedIRSBadge";
 import { Text } from "@trusttax/ui";
 import {
@@ -25,6 +24,7 @@ import { getPublicNav } from "../config/navigation";
 export const Footer = () => {
   const { t } = useTranslation();
   const { profile } = useCompany();
+  const navigate = useNavigate();
 
   const navItems = getPublicNav();
 
@@ -52,10 +52,14 @@ export const Footer = () => {
         <View style={styles.footerMain}>
           {/* Brand Section */}
           <View style={styles.brandSection}>
-            <Link to="/" style={styles.logoRow as any}>
+            <TouchableOpacity
+              onPress={() => navigate("/")}
+              style={styles.logoRow as any}
+              activeOpacity={0.8}
+            >
               <TrustTaxLogo size={44} bgColor={secondaryColor} />
               <Text style={styles.brandName}>{companyName}</Text>
-            </Link>
+            </TouchableOpacity>
             <Text style={styles.brandDesc}>
               {profile?.description ||
                 t(
@@ -108,14 +112,14 @@ export const Footer = () => {
               {navItems.map((item) => {
                 const label = t(item.i18nKey, item.path);
                 return (
-                  <Link
+                  <TouchableOpacity
                     key={item.path}
-                    to={item.path}
+                    onPress={() => navigate(item.path)}
                     style={styles.navLink as any}
-                    className={Platform.OS === "web" ? "nav-link" : undefined}
+                    activeOpacity={0.85}
                   >
                     <Text style={styles.navLinkText}>{label}</Text>
-                  </Link>
+                  </TouchableOpacity>
                 );
               })}
             </View>
@@ -168,23 +172,32 @@ export const Footer = () => {
               {t("footer.rights_reserved", "All rights reserved.")}
             </Text>
             <View style={styles.legalLinks}>
-              <Link to="/legal/privacy" style={styles.legalLink as any}>
+              <TouchableOpacity
+                onPress={() => navigate("/legal/privacy")}
+                style={styles.legalLink as any}
+              >
                 <Text style={styles.legalText}>
                   {t("footer.privacy_policy", "Privacy Policy")}
                 </Text>
-              </Link>
+              </TouchableOpacity>
               <View style={styles.legalDot} />
-              <Link to="/legal/terms" style={styles.legalLink as any}>
+              <TouchableOpacity
+                onPress={() => navigate("/legal/terms")}
+                style={styles.legalLink as any}
+              >
                 <Text style={styles.legalText}>
                   {t("footer.terms_of_service", "Terms of Service")}
                 </Text>
-              </Link>
+              </TouchableOpacity>
               <View style={styles.legalDot} />
-              <Link to="/legal/sms-consent" style={styles.legalLink as any}>
+              <TouchableOpacity
+                onPress={() => navigate("/legal/sms-consent")}
+                style={styles.legalLink as any}
+              >
                 <Text style={styles.legalText}>
                   {t("footer.sms_consent", "SMS Consent")}
                 </Text>
-              </Link>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

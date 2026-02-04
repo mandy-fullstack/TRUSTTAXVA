@@ -158,7 +158,7 @@ export class CompanyService {
             }
           }
         } else {
-          updateData[key] = data[key];
+        updateData[key] = data[key];
         }
       }
     });

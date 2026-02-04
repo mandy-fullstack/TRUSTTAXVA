@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   legalTitle: {
     fontSize: 12,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#0F172A",
     letterSpacing: 2,
     marginBottom: 20,
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     flex: 1,
     fontSize: 11,
-    fontWeight: "900",
+    fontWeight: "600",
     color: "#0F172A",
     letterSpacing: 1.5,
     lineHeight: 18,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 14,
-    fontWeight: "900",
+    fontWeight: "600",
     letterSpacing: 2,
     color: "#FFFFFF",
   },
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 12,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#64748B",
     letterSpacing: 1,
   },

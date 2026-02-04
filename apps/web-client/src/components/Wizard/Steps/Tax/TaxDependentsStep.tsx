@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   depTitle: {
     fontSize: 14,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     textTransform: "uppercase",
   },

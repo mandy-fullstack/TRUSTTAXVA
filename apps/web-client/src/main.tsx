@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { HelmetProvider } from "react-helmet-async";
+import "react-phone-number-input/style.css";
 import "./global.css";
 import "./index.css";
 import "./i18n";

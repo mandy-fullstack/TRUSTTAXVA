@@ -516,11 +516,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headerTitle: {
-    fontSize: 14,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "600",
     color: "#0F172A",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   typeSelector: {
     flexDirection: "row",
@@ -542,10 +542,10 @@ const styles = StyleSheet.create({
   },
   typeBtnText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#64748B",
     letterSpacing: 1,
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   typeBtnTextActive: {
     color: "#FFFFFF",
@@ -562,12 +562,11 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#64748B",
-    letterSpacing: 1.5,
-    marginBottom: 10,
-    fontFamily: "Inter",
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#334155",
+    marginBottom: 8,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   photoSection: {
     gap: 12,
@@ -613,11 +612,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0FDF4",
   },
   photoBtnText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "600",
     color: "#64748B",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   photoHint: {
     fontSize: 10,
@@ -625,7 +624,7 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     textAlign: "center",
     letterSpacing: 0.5,
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   errorRow: {
     flexDirection: "row",
@@ -637,7 +636,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#EF4444",
     fontWeight: "600",
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   footer: {
     gap: 16,
@@ -649,11 +648,12 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   btnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "400",
     letterSpacing: 1.5,
     color: "#FFFFFF",
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   back: {
     alignItems: "center",
@@ -661,9 +661,10 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#94A3B8",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });

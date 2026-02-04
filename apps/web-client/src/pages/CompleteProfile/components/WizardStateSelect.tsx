@@ -27,6 +27,7 @@ export const WizardStateSelect: React.FC<WizardStateSelectProps> = ({
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef<TextInput>(null);
+  const justSelectedRef = useRef(false);
 
   const selected = useMemo(
     () => usStates.find((s) => s.isoCode === value),
@@ -34,12 +35,12 @@ export const WizardStateSelect: React.FC<WizardStateSelectProps> = ({
   );
 
   useEffect(() => {
-    if (selected && !isOpen) {
+    if (selected) {
       setQuery(selected.name.toUpperCase());
-    } else if (!value && !isOpen) {
+    } else if (!value) {
       setQuery("");
     }
-  }, [selected, value, isOpen]);
+  }, [selected, value]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return usStates;
@@ -51,9 +52,18 @@ export const WizardStateSelect: React.FC<WizardStateSelectProps> = ({
   }, [query]);
 
   const handleSelect = (isoCode: string) => {
-    onChange(isoCode);
-    setIsOpen(false);
-    inputRef.current?.blur();
+    const selectedState = usStates.find((s) => s.isoCode === isoCode);
+    if (selectedState) {
+      justSelectedRef.current = true;
+      setQuery(selectedState.name.toUpperCase());
+      onChange(isoCode);
+      setIsOpen(false);
+      // Prevent blur from interfering
+      setTimeout(() => {
+        justSelectedRef.current = false;
+        inputRef.current?.blur();
+      }, 100);
+    }
   };
 
   return (
@@ -71,13 +81,22 @@ export const WizardStateSelect: React.FC<WizardStateSelectProps> = ({
           }}
           onFocus={() => {
             setIsOpen(true);
-            setQuery("");
+            // Keep current query when focusing, don't clear it
           }}
           onBlur={() => {
+            // Don't update query if we just selected something
+            if (justSelectedRef.current) {
+              return;
+            }
             setTimeout(() => {
               setIsOpen(false);
-              if (selected) setQuery(selected.name.toUpperCase());
-              else setQuery("");
+              // Use the current value prop to find the selected state
+              const currentSelected = usStates.find((s) => s.isoCode === value);
+              if (currentSelected) {
+                setQuery(currentSelected.name.toUpperCase());
+              } else if (!query.trim()) {
+                setQuery("");
+              }
             }, 200);
           }}
           placeholder={placeholder || "TYPE TO SEARCH..."}
@@ -127,7 +146,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    height: 52, // Standard height
+    height: 48, // Match Input component height
     borderWidth: 1.5,
     borderColor: "#E2E8F0",
     backgroundColor: "#FFFFFF",
@@ -141,15 +160,15 @@ const styles = StyleSheet.create({
     flex: 1,
     height: "100%",
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "400",
     color: "#0F172A",
-    fontFamily: "Inter",
-    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: 0.2,
     outlineStyle: "none", // Remove web outline
   } as any,
   dropdown: {
     position: "absolute",
-    top: 51, // offset by 1px for overlap
+    top: 47, // offset by 1px for overlap (48 - 1)
     left: 0,
     right: 0,
     backgroundColor: "#FFFFFF",
@@ -179,9 +198,9 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "400",
     color: "#475569",
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   optionTextActive: {
     color: "#FFFFFF",
@@ -191,6 +210,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#94A3B8",
     textAlign: "center",
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    fontWeight: "400",
   },
 });

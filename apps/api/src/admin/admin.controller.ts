@@ -26,6 +26,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadDocumentDto } from '../documents/dto/upload-document.dto';
 import { DocType } from '@trusttax/database';
 import { AdminGuard } from '../auth/admin.guard';
+import { RequestOrderDocumentDto } from './dto/request-order-document.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
@@ -101,6 +102,14 @@ export class AdminController {
       body.title,
       body.description,
     );
+  }
+
+  @Post('orders/:id/request-document')
+  async requestOrderDocument(
+    @Param('id') id: string,
+    @Body() body: RequestOrderDocumentDto,
+  ) {
+    return this.adminService.requestOrderDocument(id, body);
   }
 
   @Get('dashboard/metrics')

@@ -47,7 +47,7 @@ export class ErrorInterceptor implements NestInterceptor {
           name: err?.name,
           stack: err?.stack,
         });
-
+        
         const status = HttpStatus.INTERNAL_SERVER_ERROR;
 
         // Don't expose internal error details

@@ -4,6 +4,9 @@ import {
   MinLength,
   MaxLength,
   Matches,
+  IsOptional,
+  IsBoolean,
+  ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -27,4 +30,21 @@ export class RegisterDto {
   })
   @Transform(({ value }) => value?.trim())
   name: string;
+
+  @IsOptional()
+  @IsBoolean()
+  smsOptIn?: boolean;
+
+  @ValidateIf((o) => o.smsOptIn === true)
+  @IsString({ message: 'Phone number must be a string' })
+  @MinLength(7, { message: 'Phone number is too short' })
+  @MaxLength(20, { message: 'Phone number is too long' })
+  @Transform(({ value }) => value?.trim())
+  phoneNumber?: string;
+
+  @ValidateIf((o) => o.smsOptIn === true)
+  @IsString({ message: 'SMS OTP session id must be a string' })
+  @IsOptional()
+  @Transform(({ value }) => value?.trim())
+  smsOtpSessionId?: string;
 }

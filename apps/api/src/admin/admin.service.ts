@@ -9,6 +9,8 @@ import { EncryptionService } from '../common/services/encryption.service';
 import { StorageService } from '../common/services/storage.service';
 import { ChatGateway } from '../chat/chat.gateway';
 import { FirebaseService } from '../common/services/firebase.service';
+import { EmailService } from '../email/email.service';
+import { DocType } from '@trusttax/database';
 
 @Injectable()
 export class AdminService {
@@ -18,6 +20,7 @@ export class AdminService {
         private storageService: StorageService,
         private chatGateway: ChatGateway,
         private firebaseService: FirebaseService,
+        private emailService: EmailService,
     ) { }
 
     async getAllClients() {
@@ -241,6 +244,9 @@ export class AdminService {
                     },
                 },
                 documents: true,
+                approvals: {
+                    orderBy: { createdAt: 'desc' },
+                },
                 user: {
                     select: {
                         id: true,
@@ -289,6 +295,107 @@ export class AdminService {
 
         const total = Number((order.service as { price?: unknown }).price ?? 0);
         return { ...order, total };
+    }
+
+    /**
+     * Admin: Solicitar un documento al cliente (se guarda en OrderApproval como DOCUMENT_REQUEST)
+     * y se envía un email al usuario con un link directo a su Order Detail.
+     */
+    async requestOrderDocument(
+        orderId: string,
+        payload: { documentName: string; message?: string; docType?: DocType },
+    ) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            select: {
+                id: true,
+                userId: true,
+                displayId: true,
+                user: {
+                    select: {
+                        email: true,
+                        firstName: true,
+                        lastName: true,
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        const docType = payload.docType ?? DocType.OTHER;
+        const description = JSON.stringify({
+            message: payload.message || '',
+            docType,
+        });
+
+        const approval = await this.prisma.orderApproval.create({
+            data: {
+                orderId,
+                type: 'DOCUMENT_REQUEST',
+                title: payload.documentName,
+                description,
+            },
+        });
+
+        await this.prisma.order.update({
+            where: { id: orderId },
+            data: { updatedAt: new Date() },
+        });
+
+        await this.prisma.orderTimeline.create({
+            data: {
+                orderId,
+                title: `Documento solicitado: ${payload.documentName}`,
+                description:
+                    payload.message ||
+                    `Se solicitó el documento: ${payload.documentName}`,
+            },
+        });
+
+        // Notificación en tiempo real (socket + push)
+        this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
+            type: 'order',
+            title: 'Documento requerido',
+            body: `Por favor sube: ${payload.documentName}`,
+            link: `/dashboard/orders/${orderId}`,
+        });
+
+        void this.triggerOrderPushNotification(
+            order.userId,
+            'Documento requerido',
+            `Por favor sube: ${payload.documentName}`,
+            `/orders/${orderId}`,
+        );
+
+        // Email (no debe bloquear el request si falla)
+        try {
+            const userEmail = order.user.email;
+            const userName =
+                order.user.firstName ||
+                order.user.name ||
+                userEmail.split('@')[0] ||
+                'there';
+
+            await this.emailService.sendOrderDocumentRequestEmail(userEmail, {
+                userName,
+                orderId,
+                orderDisplayId: order.displayId || order.id.slice(0, 8),
+                documentName: payload.documentName,
+                message: payload.message || '',
+                docType: String(docType),
+            });
+        } catch (e: any) {
+            console.warn(
+                '[AdminService] Failed to send document request email:',
+                e?.message || e,
+            );
+        }
+
+        return approval;
     }
 
     async updateOrderStatus(orderId: string, status: string, notes?: string) {

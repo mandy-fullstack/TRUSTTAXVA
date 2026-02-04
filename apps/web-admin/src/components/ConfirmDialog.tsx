@@ -143,14 +143,14 @@ export const ConfirmDialog = ({
                   </Text>
                 </View>
               ) : (
-                <Text
+              <Text
                   style={[
                     styles.confirmButtonText,
                     { color: colors.buttonText },
                   ]}
-                >
-                  {confirmText}
-                </Text>
+              >
+                {confirmText}
+              </Text>
               )}
             </TouchableOpacity>
           </View>

@@ -147,6 +147,7 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
           }}
           placeholder={t("profile_wizard.common.enter_number", "ENTER NUMBER")}
           style={error && !dlNumber ? { borderColor: "#EF4444" } : undefined}
+          labelStyle={styles.label}
         />
 
         <View style={[styles.group, { zIndex: 100 }]}>
@@ -170,7 +171,7 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
                 color: "#EF4444",
                 fontSize: 10,
                 marginTop: 4,
-                fontFamily: "Inter",
+                fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
               }}
             >
               {t("profile_wizard.common.required", "REQUIRED")}
@@ -199,6 +200,7 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
               style={
                 error && !dlIssueDate ? { borderColor: "#EF4444" } : undefined
               }
+              labelStyle={styles.label}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -216,6 +218,7 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
               style={
                 error && !dlExpiration ? { borderColor: "#EF4444" } : undefined
               }
+              labelStyle={styles.label}
             />
           </View>
         </View>
@@ -323,22 +326,21 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "600",
     color: "#0F172A",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   form: { gap: 24, marginBottom: 40 },
   row: { gap: 16 },
   group: { flex: 1 },
   label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#64748B",
-    letterSpacing: 1.5,
-    marginBottom: 10,
-    fontFamily: "Inter",
+    fontSize: 14,
+    fontWeight: "400",
+    color: "#334155",
+    marginBottom: 8,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   photoSection: {
     gap: 12,
@@ -371,11 +373,11 @@ const styles = StyleSheet.create({
   },
   photoBtnSuccess: { borderColor: "#16A34A", backgroundColor: "#F0FDF4" },
   photoBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "600",
     color: "#64748B",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   errorRow: {
     flexDirection: "row",
@@ -387,23 +389,25 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#EF4444",
     fontWeight: "600",
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   footer: { gap: 16, paddingBottom: 40 },
   btn: { height: 52, backgroundColor: "#0F172A", borderRadius: 0 },
   btnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "400",
     letterSpacing: 1.5,
     color: "#FFFFFF",
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   back: { alignItems: "center", paddingVertical: 8 },
   backText: {
-    fontSize: 12,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     color: "#94A3B8",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });

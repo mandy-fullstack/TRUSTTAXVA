@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
 import { useTranslation } from "react-i18next";
-import { H3, Text, Card, Tabs, Switch } from "@trusttax/ui";
+import { H3, Text, Card, Tabs, Switch, Button } from "@trusttax/ui";
 import { Globe, Bell } from "lucide-react";
+import { SMSOptIn } from "../../../components/SMSOptIn";
+import { api } from "../../../services/api";
+import { ConfirmDialog } from "../../../components/ConfirmDialog";
 
 export const PreferencesSection = () => {
   const { t, i18n } = useTranslation();
@@ -12,6 +15,26 @@ export const PreferencesSection = () => {
   // Notification states (local only for now)
   const [pushEnabled, setPushEnabled] = useState(true);
   const [emailEnabled, setEmailEnabled] = useState(true);
+  const [smsEnabled, setSmsEnabled] = useState<boolean | null>(null);
+  const [loadingSms, setLoadingSms] = useState(false);
+  const [showSmsOptIn, setShowSmsOptIn] = useState(false);
+  const [showSmsOptOutConfirm, setShowSmsOptOutConfirm] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await api.getSMSConsentStatus();
+        if (!cancelled) setSmsEnabled(!!status.hasConsent);
+      } catch (e) {
+        // If backend is unavailable, don't block settings page
+        if (!cancelled) setSmsEnabled(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const languages = [
     { id: "en", label: "English" },
@@ -99,9 +122,81 @@ export const PreferencesSection = () => {
               </Text>
               <Switch value={emailEnabled} onValueChange={setEmailEnabled} />
             </View>
+
+            <View style={styles.dividerInner} />
+
+            <View style={styles.optionRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.optionLabel}>
+                  {t("settings.sms_notifications", "SMS Messages")}
+                </Text>
+                <Text style={styles.helperSmall}>
+                  {smsEnabled
+                    ? t("settings.sms_enabled", "SMS is enabled. Reply STOP to opt out.")
+                    : t(
+                        "settings.sms_desc",
+                        "Opt in to receive order updates, reminders, and document requests by text message.",
+                      )}
+                </Text>
+              </View>
+
+              {smsEnabled ? (
+                <Switch
+                  value={true}
+                  onValueChange={() => setShowSmsOptOutConfirm(true)}
+                  disabled={loadingSms}
+                />
+              ) : (
+                <Button
+                  variant="neutral"
+                  size="sm"
+                  onPress={() => setShowSmsOptIn((v) => !v)}
+                >
+                  {showSmsOptIn
+                    ? t("common.cancel", "Cancel")
+                    : t("common.enable", "Enable")}
+                </Button>
+              )}
+            </View>
+
+            {/* Explicit opt-in widget (required for carrier compliance) */}
+            {!smsEnabled && showSmsOptIn && (
+              <View style={{ marginTop: 12 }}>
+                <SMSOptIn
+                  variant="compact"
+                  showPhoneInput={true}
+                  onSuccess={() => {
+                    setSmsEnabled(true);
+                    setShowSmsOptIn(false);
+                  }}
+                />
+              </View>
+            )}
           </View>
         </View>
       </Card>
+
+      <ConfirmDialog
+        isOpen={showSmsOptOutConfirm}
+        onClose={() => setShowSmsOptOutConfirm(false)}
+        onConfirm={async () => {
+          try {
+            setLoadingSms(true);
+            await api.optOutSMS();
+            setSmsEnabled(false);
+          } finally {
+            setLoadingSms(false);
+          }
+        }}
+        title={t("settings.sms_opt_out_title", "Disable SMS?")}
+        message={t(
+          "settings.sms_opt_out_message",
+          "You will stop receiving text messages. You can re-enable SMS anytime by opting in again.",
+        )}
+        confirmText={t("settings.disable", "Disable")}
+        cancelText={t("dialog.cancel", "Cancel")}
+        variant="danger"
+      />
     </View>
   );
 };
@@ -141,7 +236,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
@@ -167,6 +262,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingLeft: 56, // Align with rowContent
   },
+  dividerInner: {
+    height: 1,
+    backgroundColor: "#E2E8F0",
+    marginVertical: 8,
+  },
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -177,5 +277,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#334155",
     fontWeight: "500",
+  },
+  helperSmall: {
+    fontSize: 12,
+    color: "#64748B",
+    lineHeight: 16,
+    marginTop: 6,
   },
 });

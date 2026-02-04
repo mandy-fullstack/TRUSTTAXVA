@@ -80,144 +80,144 @@ function App() {
           <SocketProvider>
             <BrowserRouter>
               <Suspense fallback={null}>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route
-                    path="/login"
-                    element={
-                      <AuthRoute>
-                        <LoginPage />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/forgot-password"
-                    element={
-                      <AuthRoute>
-                        <ForgotPasswordPage />
-                      </AuthRoute>
-                    }
-                  />
-                  <Route
-                    path="/reset-password/:token"
-                    element={
-                      <AuthRoute>
-                        <ResetPasswordPage />
-                      </AuthRoute>
-                    }
-                  />
+              <Routes>
+                {/* Public Routes */}
+                <Route
+                  path="/login"
+                  element={
+                    <AuthRoute>
+                      <LoginPage />
+                    </AuthRoute>
+                  }
+                />
+                <Route
+                  path="/forgot-password"
+                  element={
+                    <AuthRoute>
+                      <ForgotPasswordPage />
+                    </AuthRoute>
+                  }
+                />
+                <Route
+                  path="/reset-password/:token"
+                  element={
+                    <AuthRoute>
+                      <ResetPasswordPage />
+                    </AuthRoute>
+                  }
+                />
 
-                  {/* Protected Admin Routes */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <DashboardPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/clients"
-                    element={
-                      <ProtectedRoute>
-                        <ClientsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/clients/:id"
-                    element={
-                      <ProtectedRoute>
-                        <ClientDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/staff"
-                    element={
-                      <ProtectedRoute>
-                        <StaffPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders"
-                    element={
-                      <ProtectedRoute>
-                        <OrdersPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/orders/:id"
-                    element={
-                      <ProtectedRoute>
-                        <OrderDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/services"
-                    element={
-                      <ProtectedRoute>
-                        <ServicesPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/services/:id"
-                    element={
-                      <ProtectedRoute>
-                        <ServiceDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/forms"
-                    element={
-                      <ProtectedRoute>
-                        <FormsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/forms/:id"
-                    element={
-                      <ProtectedRoute>
-                        <FormDetailPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/settings"
-                    element={
-                      <ProtectedRoute>
-                        <CompanySettingsPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/chat"
-                    element={
-                      <ProtectedRoute>
-                        <AdminChatPage />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/chat/:id"
-                    element={
-                      <ProtectedRoute>
-                        <AdminChatPage />
-                      </ProtectedRoute>
-                    }
-                  />
+                {/* Protected Admin Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients"
+                  element={
+                    <ProtectedRoute>
+                      <ClientsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/clients/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ClientDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/staff"
+                  element={
+                    <ProtectedRoute>
+                      <StaffPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <OrdersPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/services"
+                  element={
+                    <ProtectedRoute>
+                      <ServicesPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/services/:id"
+                  element={
+                    <ProtectedRoute>
+                      <ServiceDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/forms"
+                  element={
+                    <ProtectedRoute>
+                      <FormsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/forms/:id"
+                  element={
+                    <ProtectedRoute>
+                      <FormDetailPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <CompanySettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chat"
+                  element={
+                    <ProtectedRoute>
+                      <AdminChatPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chat/:id"
+                  element={
+                    <ProtectedRoute>
+                      <AdminChatPage />
+                    </ProtectedRoute>
+                  }
+                />
 
-                  <Route
-                    path="*"
-                    element={<Navigate to="/dashboard" replace />}
-                  />
-                </Routes>
+                <Route
+                  path="*"
+                  element={<Navigate to="/dashboard" replace />}
+                />
+              </Routes>
               </Suspense>
             </BrowserRouter>
           </SocketProvider>

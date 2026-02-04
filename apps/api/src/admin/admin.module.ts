@@ -6,9 +6,10 @@ import { EncryptionService } from '../common/services/encryption.service';
 
 import { ChatModule } from '../chat/chat.module';
 import { DocumentsModule } from '../documents/documents.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [ChatModule, DocumentsModule],
+  imports: [ChatModule, DocumentsModule, EmailModule],
   controllers: [AdminController],
   providers: [AdminService, PrismaService, EncryptionService],
 })

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { useNavigate, useLocation, Link, Navigate } from "react-router-dom";
+import { View, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   api,
@@ -11,7 +11,7 @@ import {
 import { Card, Button, Input, H1, Subtitle, Text } from "@trusttax/ui";
 import { useTranslation } from "react-i18next";
 import { TrustTaxLogo } from "../components/TrustTaxLogo";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Home } from "lucide-react";
 
 export const LoginPage = () => {
   const { t } = useTranslation();
@@ -86,6 +86,17 @@ export const LoginPage = () => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.homeButton}
+        onPress={() => navigate("/")}
+        activeOpacity={0.7}
+      >
+        <Home size={18} color="#64748B" />
+        <Text style={styles.homeButtonText}>
+          {t("common.home", "Home")}
+        </Text>
+      </TouchableOpacity>
+
       <View style={styles.wrapper}>
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -125,13 +136,15 @@ export const LoginPage = () => {
                 }
                 iconPosition="right"
               />
-              <Link to="/forgot-password">
-                <TouchableOpacity style={styles.forgotBtn}>
-                  <Text style={styles.forgotText}>
-                    {t("auth.forgot_password", "Forgot password?")}
-                  </Text>
-                </TouchableOpacity>
-              </Link>
+              <TouchableOpacity
+                style={styles.forgotBtn}
+                onPress={() => navigate("/forgot-password")}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.forgotText}>
+                  {t("auth.forgot_password", "Forgot password?")}
+                </Text>
+              </TouchableOpacity>
             </View>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -147,11 +160,13 @@ export const LoginPage = () => {
               <Text style={styles.footerText}>
                 {t("auth.dont_have_account", "Don't have an account?")}
               </Text>
-              <Link to="/register">
-                <Text style={styles.linkText}>
-                  {t("auth.sign_up", "Sign Up")}
-                </Text>
-              </Link>
+              <TouchableOpacity
+                onPress={() => navigate("/register")}
+                activeOpacity={0.85}
+                style={styles.linkTouch as any}
+              >
+                <Text style={styles.linkText}>{t("auth.sign_up", "Sign Up")}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Card>
@@ -177,6 +192,34 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
     padding: 24,
     minHeight: "100%",
+    position: "relative",
+  },
+  homeButton: {
+    position: "absolute",
+    top: Platform.OS === "web" ? 24 : 16,
+    left: Platform.OS === "web" ? 24 : 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 0,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    zIndex: 100,
+    ...(Platform.OS === "web"
+      ? {
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+        }
+      : {}),
+  } as any,
+  homeButtonText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   wrapper: { width: "100%", maxWidth: 400 },
   header: { alignItems: "center", marginBottom: 32 },
@@ -204,6 +247,9 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 16,
   },
+  linkTouch: {
+    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+  } as any,
   footerText: { color: "#64748B", fontSize: 14 },
   linkText: { color: "#2563EB", fontWeight: "600", fontSize: 14 } as any,
   legalWrapper: { marginTop: 32 },

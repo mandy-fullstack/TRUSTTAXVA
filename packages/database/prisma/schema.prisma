@@ -62,6 +62,21 @@ model User {
   preparedTaxReturns     TaxReturn[]       @relation("PreparerReturns")
 }
 
+model SmsOtpSession {
+  id        String   @id @default(uuid())
+  phone     String
+  codeHash  String
+  purpose   String   @default("REGISTRATION")
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  verifiedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phone])
+  @@index([expiresAt])
+}
+
 model TaxReturn {
   id         String      @id @default(uuid())
   year       Int

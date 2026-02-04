@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Request - TrustTax</title>
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: Arial, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc;">
+    <tr>
+      <td align="center" style="padding: 24px 12px;">
+        <table width="600" cellpadding="0" cellspacing="0"
+          style="width: 100%; max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0;">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 24px 28px; background-color: #0f172a;">
+              <p style="margin: 0; font-size: 14px; letter-spacing: 1px; color: #cbd5e1; font-weight: 700;">
+                TRUSTTAX
+              </p>
+              <h1 style="margin: 8px 0 0 0; font-size: 20px; font-weight: 600; color: #ffffff;">
+                Action Required: Upload a Document
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding: 32px 28px;">
+              <p style="margin: 0 0 12px 0; font-size: 16px; line-height: 24px; color: #334155;">
+                Hello {{userName}},
+              </p>
+
+              <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 24px; color: #334155;">
+                We need an additional document to continue processing your order <strong>#{{orderId}}</strong>.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0;">
+                <tr>
+                  <td style="padding: 16px 16px; background-color: #f8fafc;">
+                    <p style="margin: 0; font-size: 13px; color: #64748b; font-weight: 700; letter-spacing: 0.5px;">
+                      DOCUMENT REQUESTED
+                    </p>
+                    <p style="margin: 10px 0 0 0; font-size: 16px; color: #0f172a; font-weight: 700;">
+                      {{documentName}}
+                    </p>
+                    <p style="margin: 8px 0 0 0; font-size: 13px; color: #475569;">
+                      Type: {{docType}}
+                    </p>
+                    {{messageBlock}}
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 22px;">
+                <tr>
+                  <td>
+                    <a href="{{orderUrl}}"
+                      style="display: inline-block; background-color: #0f172a; color: #ffffff; padding: 14px 22px; text-decoration: none; font-weight: 600; font-size: 15px; border-radius: 0;">
+                      Upload Document Securely
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 18px 0 0 0; font-size: 13px; color: #64748b; line-height: 20px;">
+                Security note: documents are encrypted (AES-256) before storage and are only accessible by authorized
+                TrustTax professionals.
+              </p>
+
+              <p style="margin: 18px 0 0 0; font-size: 12px; color: #94a3b8;">
+                If the button doesn’t work, copy and paste this link:
+              </p>
+              <p style="margin: 6px 0 0 0; font-size: 12px; color: #3b82f6; word-break: break-all;">
+                {{orderUrl}}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td
+              style="padding: 20px 28px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
+              <p style="margin: 0 0 6px 0; font-size: 12px; color: #64748b;">
+                &copy; {{year}} TrustTax LLC. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+
+</html>
+

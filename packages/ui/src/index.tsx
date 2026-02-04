@@ -154,12 +154,13 @@ export const Input = ({
   keyboardType,
   maxLength,
   autoCapitalize,
+  labelStyle,
 }: any) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
     <View style={[styles.inputGroup, style]}>
-      {label && <RNText style={styles.inputLabel}>{label}</RNText>}
+      {label && <RNText style={[styles.inputLabel, labelStyle]}>{label}</RNText>}
       <View
         style={[
           styles.inputWrapper,
@@ -483,7 +484,7 @@ const styles = StyleSheet.create({
   btnContent: { flexDirection: "row", alignItems: "center", flexShrink: 0 },
   btnText: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "400",
     textTransform: "uppercase",
     letterSpacing: 1.5,
     flexShrink: 0,
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
   inputGroup: { marginBottom: s[4], width: "100%" },
   inputLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "400",
     color: theme.colors.slate[700],
     marginBottom: s[2],
     fontFamily: theme.fonts.inter,

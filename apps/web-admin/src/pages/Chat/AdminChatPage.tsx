@@ -114,7 +114,7 @@ export const AdminChatPage = () => {
         variant: "success",
       });
     } catch (error: any) {
-      console.error("Failed to delete conversation:", error);
+        console.error("Failed to delete conversation:", error);
       setAlertDialog({
         isOpen: true,
         title: t("chat.delete_error_title", "Error al eliminar"),

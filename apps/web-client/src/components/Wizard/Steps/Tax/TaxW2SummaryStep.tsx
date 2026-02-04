@@ -285,7 +285,7 @@ export function TaxW2SummaryStep({
 const styles = StyleSheet.create({
   scrollContent: { paddingBottom: s[10] },
   header: { paddingHorizontal: s[2] },
-  title: { fontSize: 22, fontWeight: "800", letterSpacing: -0.5 },
+  title: { fontSize: 22, fontWeight: "700", letterSpacing: -0.5 },
   desc: { fontSize: 15, color: "#64748B", lineHeight: 22 },
   card: {
     backgroundColor: "#FFF",
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     textTransform: "uppercase",
     letterSpacing: 0.5,

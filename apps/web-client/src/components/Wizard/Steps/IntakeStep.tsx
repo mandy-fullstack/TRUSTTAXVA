@@ -1,6 +1,7 @@
 import { View, StyleSheet, TextInput, Switch } from "react-native";
 import { useTranslation } from "react-i18next";
 import { H3, Text, spacing, Spacer, Stack } from "@trusttax/ui";
+import { DatePicker } from "../../profile/DatePicker";
 import type {
   ServiceStep,
   FormField as FormFieldType,
@@ -294,13 +295,12 @@ function FormField({
     case "date":
       return (
         <View style={styles.field}>
-          {label}
-          <TextInput
-            style={styles.input}
-            placeholder={placeholderStr ?? "YYYY-MM-DD"}
-            placeholderTextColor="#94A3B8"
+          <DatePicker
+            label={labelStr}
+            required={required}
             value={value ?? ""}
-            onChangeText={onChange}
+            onChange={onChange}
+            placeholder={placeholderStr ?? "MM/DD/YYYY"}
           />
         </View>
       );
@@ -378,27 +378,43 @@ const s = spacing;
 const styles = StyleSheet.create({
   stepHeader: { marginBottom: s[6] },
   stepCategory: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "var(--primary-color, #2563EB)",
     textTransform: "uppercase",
     letterSpacing: 1.5,
     marginBottom: s[2],
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
-  desc: { fontSize: 18, color: "#334155", lineHeight: 28, fontWeight: "500" },
+  desc: {
+    fontSize: 17,
+    color: "#334155",
+    lineHeight: 28,
+    fontWeight: "400",
+    letterSpacing: -0.2,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+  },
   form: { gap: s[6] },
   section: { marginBottom: s[10] },
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: s[4] },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#64748B",
     textTransform: "uppercase",
-    letterSpacing: 1,
+    letterSpacing: 1.2,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   sectionLine: { flex: 1, height: 1, backgroundColor: "#F1F5F9" },
   field: { gap: s[3] },
-  label: { fontSize: 15, fontWeight: "600", color: "#1E293B", marginBottom: 2 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+    marginBottom: 2,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.1,
+  },
   input: {
     height: 56,
     minHeight: 56,
@@ -409,6 +425,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0F172A",
     backgroundColor: "#FFF",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.1,
   },
   textArea: {
     height: 160,
@@ -416,6 +434,8 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
     fontSize: 16,
     borderRadius: 0,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.1,
   },
   switchRow: {
     flexDirection: "row",
@@ -438,6 +458,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     color: "#0F172A",
     height: 56,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.1,
   },
-  unsupported: { fontSize: 14, color: "#94A3B8", fontStyle: "italic" },
+  unsupported: {
+    fontSize: 14,
+    color: "#94A3B8",
+    fontStyle: "italic",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+  },
 });

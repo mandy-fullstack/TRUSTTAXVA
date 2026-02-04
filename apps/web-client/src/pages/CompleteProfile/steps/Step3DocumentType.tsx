@@ -124,11 +124,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#64748B",
-    fontFamily: "Inter",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     lineHeight: 18,
     fontWeight: "500",
+    letterSpacing: 0.3,
     marginBottom: 32,
   },
   options: {
@@ -162,18 +163,18 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F172A",
-    fontFamily: "Inter",
-    letterSpacing: 1,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   cardDesc: {
     fontSize: 11,
     fontWeight: "500",
     color: "#64748B",
-    fontFamily: "Inter",
-    letterSpacing: 0.5,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: 0.3,
   },
   textActive: {
     // Keeps default colors for now, but allows future overrides
@@ -187,11 +188,12 @@ const styles = StyleSheet.create({
     borderRadius: 0,
   },
   btnText: {
-    fontSize: 14,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "400",
     letterSpacing: 1.5,
     color: "#FFFFFF",
-    fontFamily: "Inter",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   back: {
     alignItems: "center",
@@ -199,9 +201,10 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#94A3B8",
-    letterSpacing: 1,
-    fontFamily: "Inter",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });

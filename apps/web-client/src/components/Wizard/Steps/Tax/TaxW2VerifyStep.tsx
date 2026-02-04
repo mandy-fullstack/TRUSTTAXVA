@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 13,
-    fontWeight: "800",
+    fontWeight: "600",
     color: "#1E293B",
     textTransform: "uppercase",
     marginBottom: s[5],

@@ -78,11 +78,13 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   label: {
-    fontSize: 12,
-    fontWeight: "900",
+    fontSize: 11,
+    fontWeight: "700",
     color: "#0F172A",
     letterSpacing: 2,
     marginBottom: 16,
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
   input: {
     height: 72,
@@ -90,9 +92,11 @@ const styles = StyleSheet.create({
     borderBottomColor: "#0F172A",
     borderRadius: 0,
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#0F172A",
     paddingHorizontal: 0,
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    letterSpacing: -0.3,
   },
   footer: {
     width: "100%",
@@ -105,9 +109,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonText: {
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 2,
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 1.5,
     color: "#FFFFFF",
+    textTransform: "uppercase",
+    fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
   },
 });
