@@ -25,6 +25,8 @@ import {
     Filter,
     Copy,
     Check,
+    Trash2,
+    Plus,
 } from "lucide-react";
 import { DocumentCard } from "../../components/DocumentCard";
 import { DocumentPreviewModal } from "../../components/DocumentPreviewModal";
@@ -136,13 +138,11 @@ export const OrderDetailPage = () => {
     });
     const [postingApproval, setPostingApproval] = useState(false);
 
-    // New: Document Request State (sends email to client)
-    const [docRequest, setDocRequest] = useState({
-        documentName: "",
-        message: "",
-        docType: "OTHER",
-        requireLogin: false,
-    });
+    // New: Document Request State (Bulk)
+    const [docRequests, setDocRequests] = useState([
+        { id: Date.now(), documentName: "", message: "", docType: "OTHER" },
+    ]);
+    const [requestRequireLogin, setRequestRequireLogin] = useState(false);
     const [requestingDoc, setRequestingDoc] = useState(false);
 
     // Document Viewer State
@@ -218,28 +218,62 @@ export const OrderDetailPage = () => {
         }
     };
 
+    const handleAddRequestRow = () => {
+        setDocRequests([
+            ...docRequests,
+            { id: Date.now(), documentName: "", message: "", docType: "OTHER" },
+        ]);
+    };
+
+    const handleRemoveRequestRow = (id: number) => {
+        if (docRequests.length > 1) {
+            setDocRequests(docRequests.filter((r) => r.id !== id));
+        }
+    };
+
+    const handleRequestChange = (id: number, field: string, value: string) => {
+        setDocRequests(
+            docRequests.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+        );
+    };
+
     const handleRequestDocument = async () => {
-        if (!id || !docRequest.documentName.trim()) return;
+        if (!id) return;
+
+        // Filter out empty rows
+        const validRequests = docRequests.filter(r => r.documentName.trim());
+        if (validRequests.length === 0) {
+            Alert.alert("Error", "Please specify at least one document name.");
+            return;
+        }
+
         try {
             setRequestingDoc(true);
             await api.requestOrderDocument(id, {
-                documentName: docRequest.documentName.trim(),
-                message: docRequest.message.trim() || undefined,
-                docType: docRequest.docType || "OTHER",
-                requireLogin: !!docRequest.requireLogin,
+                requireLogin: requestRequireLogin,
+                requests: validRequests.map(r => ({
+                    documentName: r.documentName.trim(),
+                    message: r.message.trim() || undefined,
+                    docType: r.docType,
+                }))
             });
-            setDocRequest({
-                documentName: "",
-                message: "",
-                docType: "OTHER",
-                requireLogin: false,
-            });
+
+            // Reset form
+            setDocRequests([
+                { id: Date.now(), documentName: "", message: "", docType: "OTHER" },
+            ]);
+
             await fetchOrder();
+
+            const msg = validRequests.length > 1
+                ? `Se han solicitado ${validRequests.length} documentos.`
+                : "Solicitud enviada.";
+
             Alert.alert(
                 "Éxito",
-                docRequest.requireLogin
-                    ? "Solicitud enviada (requiere login en el portal del cliente)."
-                    : "Solicitud enviada (portal privado sin login por email).",
+                requestRequireLogin
+                    ? `${msg} (Requiere login en el portal del cliente).`
+                    : `${msg} (Portal privado sin login por email).`,
             );
         } catch (error) {
             console.error("Failed to request document:", error);
@@ -421,6 +455,64 @@ export const OrderDetailPage = () => {
                                                     </View>
                                                 )}
 
+                                                {/* Action Buttons for Pending/Completed Requests */}
+                                                <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                                                    {/* RESEND: Only for PENDING Document Requests */}
+                                                    {isDocRequest && approval.status === 'PENDING' && (
+                                                        <TouchableOpacity
+                                                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, backgroundColor: '#EFF6FF', borderRadius: 4 }}
+                                                            onPress={async () => {
+                                                                if (confirm("¿Reenviar email de solicitud?")) {
+                                                                    try {
+                                                                        await api.resendDocumentRequest(order.id, approval.id);
+                                                                        Alert.alert("Éxito", "Solicitud reenviada.");
+                                                                    } catch (e) { Alert.alert("Error", "Falló el reenvío."); }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <ArrowLeft size={14} color="#2563EB" />
+                                                            <Text style={{ fontSize: 12, color: '#2563EB', fontWeight: '500' }}>Reenviar</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+
+                                                    {/* CANCEL: Only for PENDING Document Requests */}
+                                                    {isDocRequest && approval.status === 'PENDING' && (
+                                                        <TouchableOpacity
+                                                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, backgroundColor: '#FEF2F2', borderRadius: 4 }}
+                                                            onPress={async () => {
+                                                                if (confirm("¿Cancelar esta solicitud? El enlace dejará de funcionar.")) {
+                                                                    try {
+                                                                        await api.cancelDocumentRequest(order.id, approval.id);
+                                                                        fetchOrder();
+                                                                    } catch (e) { Alert.alert("Error", "Falló la cancelación."); }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Text style={{ fontSize: 12, color: '#DC2626', fontWeight: '500' }}>Cancelar</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+
+                                                    {/* REJECT/RE-REQUEST: For COMPLETED (Uploaded) Requests */}
+                                                    {isDocRequest && approval.status === 'COMPLETED' && (
+                                                        <TouchableOpacity
+                                                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6, backgroundColor: '#FFF7ED', borderRadius: 4, borderWidth: 1, borderColor: '#FED7AA' }}
+                                                            onPress={async () => {
+                                                                const reason = prompt("Razón del rechazo (se enviará al cliente):");
+                                                                if (reason) {
+                                                                    try {
+                                                                        await api.rejectDocumentRequest(order.id, approval.id, reason);
+                                                                        Alert.alert("Éxito", "Documento rechazado y nueva solicitud creada.");
+                                                                        fetchOrder();
+                                                                    } catch (e) { Alert.alert("Error", "Falló el rechazo."); }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <AlertCircle size={14} color="#EA580C" />
+                                                            <Text style={{ fontSize: 12, color: '#EA580C', fontWeight: '500' }}>Rechazar y Solicitar de Nuevo</Text>
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+
                                                 {isCompleted && clientNoteData?.documentId && (
                                                     <View style={styles.completedRequestDoc}>
                                                         <View style={styles.completedRequestHeader}>
@@ -493,60 +585,89 @@ export const OrderDetailPage = () => {
 
                             <View style={styles.newUpdateForm}>
                                 <Text style={[styles.label, { marginTop: 24 }]}>
-                                    Solicitar Documento al Cliente (Email + Upload Cifrado)
+                                    Solicitar Documentos al Cliente (Email + Upload Cifrado)
                                 </Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder='Nombre del documento (ej: "1098-T", "ID del cónyuge", "License")'
-                                    value={docRequest.documentName}
-                                    onChangeText={(t) =>
-                                        setDocRequest({ ...docRequest, documentName: t })
-                                    }
-                                />
-                                <TextInput
-                                    style={[
-                                        styles.input,
-                                        { height: 70, textAlignVertical: "top" },
-                                    ]}
-                                    placeholder="Mensaje / instrucciones para el cliente (opcional)..."
-                                    multiline
-                                    value={docRequest.message}
-                                    onChangeText={(t) =>
-                                        setDocRequest({ ...docRequest, message: t })
-                                    }
-                                />
+
+                                {docRequests.map((req, index) => (
+                                    <View key={req.id} style={{
+                                        marginBottom: 16,
+                                        padding: 12,
+                                        backgroundColor: "#F8FAFC",
+                                        borderWidth: 1,
+                                        borderColor: "#E2E8F0"
+                                    }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '600', color: '#64748B' }}>
+                                                Documento #{index + 1}
+                                            </Text>
+                                            {docRequests.length > 1 && (
+                                                <TouchableOpacity onPress={() => handleRemoveRequestRow(req.id)}>
+                                                    <Trash2 size={16} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        <TextInput
+                                            style={[styles.input, { backgroundColor: '#FFF' }]}
+                                            placeholder='Nombre de documento (ej: "1098-T")'
+                                            value={req.documentName}
+                                            onChangeText={(t) => handleRequestChange(req.id, "documentName", t)}
+                                        />
+
+                                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                                            <View style={{ flex: 1 }}>
+                                                <TextInput
+                                                    style={[styles.input, { height: 40, backgroundColor: '#FFF' }]}
+                                                    placeholder="Notas (opcional)..."
+                                                    value={req.message}
+                                                    onChangeText={(t) => handleRequestChange(req.id, "message", t)}
+                                                />
+                                            </View>
+                                            <View style={{ width: 140 }}>
+                                                <select
+                                                    value={req.docType}
+                                                    onChange={(e) => handleRequestChange(req.id, "docType", e.target.value)}
+                                                    style={{ ...styles.select, height: 40 } as any}
+                                                >
+                                                    <option value="OTHER">Other</option>
+                                                    <option value="DRIVER_LICENSE">Driver License</option>
+                                                    <option value="ID_CARD">ID Card</option>
+                                                    <option value="PASSPORT">Passport</option>
+                                                    <option value="TAX_FORM">Tax Form</option>
+                                                    <option value="PROOF_OF_INCOME">Proof of Income</option>
+                                                    <option value="SSN_CARD">SSN Card</option>
+                                                    <option value="W2_FORM">W-2</option>
+                                                    <option value="PAYSTUB">Paystub</option>
+                                                    <option value="LEGAL_DOCUMENT">Legal Doc</option>
+                                                </select>
+                                            </View>
+                                        </View>
+                                    </View>
+                                ))}
+
+                                <TouchableOpacity
+                                    onPress={handleAddRequestRow}
+                                    style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        padding: 8,
+                                        borderWidth: 1,
+                                        borderColor: '#CBD5E1',
+                                        borderStyle: 'dashed',
+                                        marginBottom: 16
+                                    }}
+                                >
+                                    <Plus size={16} color="#475569" />
+                                    <Text style={{ marginLeft: 6, color: '#475569', fontSize: 13, fontWeight: '500' }}>
+                                        + Agregar otro documento
+                                    </Text>
+                                </TouchableOpacity>
+
                                 <View style={styles.selectWrap}>
                                     <select
-                                        value={docRequest.docType}
-                                        onChange={(e) =>
-                                            setDocRequest({
-                                                ...docRequest,
-                                                docType: e.target.value,
-                                            })
-                                        }
-                                        style={styles.select as any}
-                                    >
-                                        <option value="OTHER">OTHER</option>
-                                        <option value="DRIVER_LICENSE">DRIVER_LICENSE</option>
-                                        <option value="ID_CARD">ID_CARD</option>
-                                        <option value="PASSPORT">PASSPORT</option>
-                                        <option value="TAX_FORM">TAX_FORM</option>
-                                        <option value="PROOF_OF_INCOME">PROOF_OF_INCOME</option>
-                                        <option value="SSN_CARD">SSN_CARD</option>
-                                        <option value="W2_FORM">W2_FORM</option>
-                                        <option value="PAYSTUB">PAYSTUB</option>
-                                        <option value="LEGAL_DOCUMENT">LEGAL_DOCUMENT</option>
-                                    </select>
-                                </View>
-                                <View style={styles.selectWrap}>
-                                    <select
-                                        value={docRequest.requireLogin ? "login" : "portal"}
-                                        onChange={(e) =>
-                                            setDocRequest({
-                                                ...docRequest,
-                                                requireLogin: e.target.value === "login",
-                                            })
-                                        }
+                                        value={requestRequireLogin ? "login" : "portal"}
+                                        onChange={(e) => setRequestRequireLogin(e.target.value === "login")}
                                         style={styles.select as any}
                                         aria-label="Document request access mode"
                                     >
@@ -559,7 +680,7 @@ export const OrderDetailPage = () => {
                                     </select>
                                 </View>
                                 <Button
-                                    title={requestingDoc ? "Enviando..." : "Solicitar Documento"}
+                                    title={requestingDoc ? "Enviando Solicitud..." : `Solicitar ${docRequests.length > 1 ? `(${docRequests.length}) Documentos` : 'Documento'}`}
                                     onPress={handleRequestDocument}
                                     loading={requestingDoc}
                                     style={{ marginTop: 8 }}
@@ -2030,11 +2151,11 @@ export const OrderDetailPage = () => {
                             />
                         </Card>
                     </View>
-                </View>
-            </ScrollView>
+                </View >
+            </ScrollView >
 
             {/* Document Preview Modal */}
-            <DocumentPreviewModal
+            < DocumentPreviewModal
                 visible={!!previewUrl}
                 previewUrl={previewUrl}
                 mimeType={previewMimeType}
@@ -2054,7 +2175,7 @@ export const OrderDetailPage = () => {
                     }
                 }}
             />
-        </Layout>
+        </Layout >
     );
 };
 

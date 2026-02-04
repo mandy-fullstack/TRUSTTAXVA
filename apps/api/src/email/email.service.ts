@@ -632,6 +632,117 @@ export class EmailService {
   }
 
   /**
+   * Admin -> Client: Bulk document request (login required)
+   */
+  async sendOrderDocumentRequestEmailBulk(
+    email: string,
+    data: {
+      userName: string;
+      orderId: string;
+      orderDisplayId: string;
+      items: { name: string; message?: string; docType: string }[];
+      origin?: string;
+    },
+  ) {
+    const baseUrl =
+      data.origin ||
+      process.env.CLIENT_URL ||
+      process.env.ADMIN_URL ||
+      'http://localhost:5175';
+    const orderUrl = `${baseUrl}/dashboard/orders/${data.orderId}`;
+
+    // Build items HTML list
+    const itemsHtml = data.items
+      .map(
+        (item) =>
+          `<li style="margin-bottom: 8px;">
+             <strong>${item.name}</strong>
+             ${item.message ? `<br/><span style="font-size: 13px; color: #64748B;">${item.message}</span>` : ''}
+           </li>`,
+      )
+      .join('');
+
+    try {
+      const htmlContent = this.loadTemplate('document-request-bulk', {
+        userName: data.userName || 'there',
+        orderUrl,
+        orderId: data.orderDisplayId || data.orderId,
+        itemsHtml,
+        itemCount: String(data.items.length),
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from: process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
+        subject: `Action Required: Upload ${data.items.length} Documents for Order #${data.orderDisplayId || data.orderId.slice(0, 8)}`,
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ [EmailService] Bulk document request email sent to ${email}`);
+      return info;
+    } catch (error: any) {
+      console.error(`❌ [EmailService] Error sending bulk document request:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Admin -> Client: Bulk document request (Portal - No Login)
+   */
+  async sendOrderDocumentRequestPortalEmailBulk(
+    email: string,
+    data: {
+      userName: string;
+      orderId: string;
+      orderDisplayId: string;
+      items: { name: string; message?: string; docType: string }[];
+      portalUrl: string;
+    },
+  ) {
+    // Build items HTML list
+    const itemsHtml = data.items
+      .map(
+        (item) =>
+          `<li style="margin-bottom: 8px;">
+             <strong>${item.name}</strong>
+             ${item.message ? `<br/><span style="font-size: 13px; color: #64748B;">${item.message}</span>` : ''}
+           </li>`,
+      )
+      .join('');
+
+    try {
+      const htmlContent = this.loadTemplate('document-request-portal-bulk', {
+        userName: data.userName || 'there',
+        portalUrl: data.portalUrl,
+        orderId: data.orderDisplayId || data.orderId,
+        itemsHtml,
+        itemCount: String(data.items.length),
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from: process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
+        subject: `Action Required: Upload ${data.items.length} Documents for Order #${data.orderDisplayId || data.orderId.slice(0, 8)}`,
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+      console.log(`✅ [EmailService] Bulk portal document request sent to ${email}`);
+      return info;
+    } catch (error: any) {
+      console.error(`❌ [EmailService] Error sending bulk portal request:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Send document uploaded notification
    */
   async sendDocumentUploaded(

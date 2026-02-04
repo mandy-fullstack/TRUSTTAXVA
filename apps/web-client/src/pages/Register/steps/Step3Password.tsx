@@ -157,7 +157,7 @@ export const Step3Password = ({
             />
             {confirmPassword && passwordsMatch && (
               <Text style={styles.matchText}>
-                {t("auth.passwords_match", "✓ Passwords match")}
+                {t("auth.passwords_match", "Passwords match")}
               </Text>
             )}
           </View>

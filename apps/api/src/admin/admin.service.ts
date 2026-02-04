@@ -426,7 +426,7 @@ export class AdminService {
             const order = await this.prisma.order.findUnique({ where: { id: orderId } });
             if (!order) throw new Error('Order not found');
 
-            const rawToken = crypto.randomBytes(32).toString('hex');
+            rawToken = crypto.randomBytes(32).toString('hex');
             const tokenHash = crypto
                 .createHash('sha256')
                 .update(rawToken)
@@ -579,10 +579,11 @@ export class AdminService {
     async requestOrderDocument(
         orderId: string,
         payload: {
-            documentName: string;
+            documentName?: string;
             message?: string;
             docType?: DocType;
             requireLogin?: boolean;
+            requests?: { documentName: string; message?: string; docType?: DocType }[];
         },
     ) {
         const order = await this.prisma.order.findUnique({
@@ -606,57 +607,84 @@ export class AdminService {
             throw new NotFoundException('Order not found');
         }
 
-        const docType = payload.docType ?? DocType.OTHER;
-        const description = JSON.stringify({
-            message: payload.message || '',
-            docType,
-        });
+        // Normalize requests into an array
+        const requestItems = payload.requests && payload.requests.length > 0
+            ? payload.requests
+            : payload.documentName
+                ? [{
+                    documentName: payload.documentName,
+                    message: payload.message,
+                    docType: payload.docType,
+                }]
+                : [];
 
-        const approval = await this.prisma.orderApproval.create({
-            data: {
+        if (requestItems.length === 0) {
+            throw new BadRequestException('No documents requested');
+        }
+
+        const createdApprovals = [];
+
+        // 1. Create all approvals and timelines
+        for (const item of requestItems) {
+            const docType = item.docType ?? DocType.OTHER;
+            const description = JSON.stringify({
+                message: item.message || '',
+                docType,
+            });
+
+            const approval = await this.prisma.orderApproval.create({
+                data: {
+                    orderId,
+                    type: 'DOCUMENT_REQUEST',
+                    title: item.documentName,
+                    description,
+                },
+            });
+            createdApprovals.push(approval);
+
+            await this.prisma.orderTimeline.create({
+                data: {
+                    orderId,
+                    title: `Documento solicitado: ${item.documentName}`,
+                    description: item.message || `Se solicitó el documento: ${item.documentName}`,
+                },
+            });
+
+            // Socket notification (per item, or we could just do one generic one)
+            this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
+                type: 'order',
+                subtype: 'DOCUMENT_REQUEST',
                 orderId,
-                type: 'DOCUMENT_REQUEST',
-                title: payload.documentName,
-                description,
-            },
-        });
+                approvalId: approval.id,
+                documentName: item.documentName,
+                docType: String(docType),
+                title: 'Documento requerido',
+                body: `Por favor sube: ${item.documentName}`,
+                link: `/dashboard/orders/${orderId}`,
+            });
+        }
 
         await this.prisma.order.update({
             where: { id: orderId },
             data: { updatedAt: new Date() },
         });
 
-        await this.prisma.orderTimeline.create({
-            data: {
-                orderId,
-                title: `Documento solicitado: ${payload.documentName}`,
-                description:
-                    payload.message ||
-                    `Se solicitó el documento: ${payload.documentName}`,
-            },
-        });
-
-        // Notificación en tiempo real (socket + push)
-        this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
-            type: 'order',
-            subtype: 'DOCUMENT_REQUEST',
-            orderId,
-            approvalId: approval.id,
-            documentName: payload.documentName,
-            docType: String(docType),
-            title: 'Documento requerido',
-            body: `Por favor sube: ${payload.documentName}`,
-            link: `/dashboard/orders/${orderId}`,
-        });
+        // 2. Send Notifications (Push & Email) - Consolidated
+        const isBulk = requestItems.length > 1;
+        const mainItem = requestItems[0];
+        const pushTitle = isBulk ? 'Documentos requeridos' : 'Documento requerido';
+        const pushBody = isBulk
+            ? `Se han solicitado ${requestItems.length} documentos. Revisa tu orden.`
+            : `Por favor sube: ${mainItem.documentName}`;
 
         void this.triggerOrderPushNotification(
             order.userId,
-            'Documento requerido',
-            `Por favor sube: ${payload.documentName}`,
+            pushTitle,
+            pushBody,
             `/orders/${orderId}`,
         );
 
-        // Email (no debe bloquear el request si falla)
+        // Email (Consolidated)
         try {
             const userEmail = order.user.email;
             const userName =
@@ -667,23 +695,42 @@ export class AdminService {
 
             const orderDisplayId = order.displayId || order.id.slice(0, 8);
 
-            // Configurable: require login vs portal (no login)
             if (payload.requireLogin) {
-                await this.emailService.sendOrderDocumentRequestEmail(userEmail, {
-                    userName,
-                    orderId,
-                    orderDisplayId,
-                    documentName: payload.documentName,
-                    message: payload.message || '',
-                    docType: String(docType),
-                });
+                // Dashboard Login Flow
+                if (isBulk) {
+                    await this.emailService.sendOrderDocumentRequestEmailBulk(userEmail, {
+                        userName,
+                        orderId,
+                        orderDisplayId,
+                        items: requestItems.map(r => ({
+                            name: r.documentName,
+                            message: r.message,
+                            docType: String(r.docType || 'OTHER'),
+                        })),
+                    });
+                } else {
+                    await this.emailService.sendOrderDocumentRequestEmail(userEmail, {
+                        userName,
+                        orderId,
+                        orderDisplayId,
+                        documentName: mainItem.documentName,
+                        message: mainItem.message || '',
+                        docType: String(mainItem.docType || 'OTHER'),
+                    });
+                }
             } else {
-                // Private one-time portal link
+                // Portal Flow (No Login)
+                // Generate ONE portal token that links to the first approval (or a general list view if we supported it)
+                // Currently portal tokens are tied to a specific approvalId.
+                // For bulk, we'll just link to the FIRST one, and the frontend portal should ideally show all pending for that order,
+                // OR we generate separate tokens but that defeats the "single link" purpose.
+                // Strategy: Link refers to Approval #1. The portal UI *should* allow navigating back to order or seeing other pending docs.
+                // If the portal is strict 1:1, we might need a "Master Token" or just link the first one.
+                // Let's assume linking the first one is sufficient entry point.
+
+                const firstApproval = createdApprovals[0];
                 const rawToken = crypto.randomBytes(32).toString('hex');
-                const tokenHash = crypto
-                    .createHash('sha256')
-                    .update(rawToken)
-                    .digest('hex');
+                const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
                 const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
                 await (this.prisma as any).portalAccessToken.create({
@@ -692,35 +739,155 @@ export class AdminService {
                         purpose: 'DOCUMENT_REQUEST',
                         userId: order.userId,
                         orderId,
-                        approvalId: approval.id,
+                        approvalId: firstApproval.id, // Entry point
                         expiresAt,
                     },
                 });
 
-                const baseUrl =
-                    process.env.CLIENT_URL ||
-                    process.env.ADMIN_URL ||
-                    'http://localhost:5175';
+                const baseUrl = process.env.CLIENT_URL || process.env.ADMIN_URL || 'http://localhost:5175';
                 const portalUrl = `${baseUrl}/portal/document-request/${rawToken}`;
 
-                await this.emailService.sendOrderDocumentRequestPortalEmail(userEmail, {
-                    userName,
-                    orderId,
-                    orderDisplayId,
-                    documentName: payload.documentName,
-                    message: payload.message || '',
-                    docType: String(docType),
-                    portalUrl,
-                });
+                if (isBulk) {
+                    await this.emailService.sendOrderDocumentRequestPortalEmailBulk(userEmail, {
+                        userName,
+                        orderId,
+                        orderDisplayId,
+                        items: requestItems.map(r => ({
+                            name: r.documentName,
+                            message: r.message,
+                            docType: String(r.docType || 'OTHER'),
+                        })),
+                        portalUrl,
+                    });
+                } else {
+                    await this.emailService.sendOrderDocumentRequestPortalEmail(userEmail, {
+                        userName,
+                        orderId,
+                        orderDisplayId,
+                        documentName: mainItem.documentName,
+                        message: mainItem.message || '',
+                        docType: String(mainItem.docType || 'OTHER'),
+                        portalUrl,
+                    });
+                }
             }
         } catch (e: any) {
-            console.warn(
-                '[AdminService] Failed to send document request email:',
-                e?.message || e,
-            );
+            console.warn('[AdminService] Failed to send document request email:', e?.message || e);
         }
 
-        return approval;
+        return createdApprovals;
+    }
+
+    async resendDocumentRequest(orderId: string, approvalId: string) {
+        const approval = await this.prisma.orderApproval.findUnique({
+            where: { id: approvalId },
+            include: { order: { include: { user: true } } },
+        });
+
+        if (!approval || approval.orderId !== orderId) {
+            throw new NotFoundException('Approval not found');
+        }
+
+        const payload = approval.description ? JSON.parse(approval.description) : {};
+        const documentName = approval.title;
+        const message = payload.message || '';
+        const docType = payload.docType || DocType.OTHER;
+
+        // Generate or retrieve portal link
+        const { portalUrl } = await this.getOrCreatePortalLink(orderId, approvalId);
+
+        // Send Email
+        const userEmail = approval.order.user.email;
+        const userName = approval.order.user.name || 'Client';
+        const orderDisplayId = approval.order.displayId || approval.order.id.slice(0, 8);
+
+        await this.emailService.sendOrderDocumentRequestPortalEmail(userEmail, {
+            userName,
+            orderId,
+            orderDisplayId,
+            documentName,
+            message,
+            docType: String(docType),
+            portalUrl,
+        });
+
+        return { success: true, message: 'Request resent' };
+    }
+
+    async cancelDocumentRequest(orderId: string, approvalId: string) {
+        // 1. Update Approval Status
+        await this.prisma.orderApproval.update({
+            where: { id: approvalId },
+            data: { status: 'CANCELLED' },
+        });
+
+        // 2. Invalidate Token
+        await (this.prisma as any).portalAccessToken.updateMany({
+            where: { approvalId },
+            data: { expiresAt: new Date() }, // Expire immediately
+        });
+
+        // 3. Add Timeline
+        await this.prisma.orderTimeline.create({
+            data: {
+                orderId,
+                title: 'Solicitud de documento cancelada',
+                description: `El administrador canceló la solicitud: ${approvalId}`,
+            },
+        });
+
+        return { success: true };
+    }
+
+    async rejectAndReRequestDocument(orderId: string, approvalId: string, reason: string) {
+        // 1. Mark old approval as REJECTED
+        const oldApproval = await this.prisma.orderApproval.update({
+            where: { id: approvalId },
+            data: {
+                status: 'REJECTED',
+                clientNote: reason ? `Razón de rechazo: ${reason}` : undefined
+            },
+        });
+
+        // 2. Create NEW Approval (Clone)
+        const payload = oldApproval.description ? JSON.parse(oldApproval.description) : {};
+        const newDescription = JSON.stringify({
+            ...payload,
+            message: reason ? `Re-solicitado: ${reason}` : payload.message
+        });
+
+        const newApproval = await this.prisma.orderApproval.create({
+            data: {
+                orderId,
+                type: 'DOCUMENT_REQUEST',
+                title: oldApproval.title, // Keep same title
+                description: newDescription,
+                status: 'PENDING',
+            },
+        });
+
+        // 3. Generate Link & Notify for NEW approval
+        const { portalUrl } = await this.getOrCreatePortalLink(orderId, newApproval.id);
+
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { user: true }
+        });
+
+        if (order) {
+            const orderDisplayId = order.displayId || order.id.slice(0, 8);
+            await this.emailService.sendOrderDocumentRequestPortalEmail(order.user.email, {
+                userName: order.user.name || 'Client',
+                orderId,
+                orderDisplayId,
+                documentName: newApproval.title,
+                message: reason || 'Por favor suba el documento nuevamente.',
+                docType: String(payload.docType || 'OTHER'),
+                portalUrl,
+            });
+        }
+
+        return newApproval;
     }
 
     async updateOrderStatus(orderId: string, status: string, notes?: string) {

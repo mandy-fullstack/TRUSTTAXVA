@@ -273,4 +273,29 @@ export class AdminController {
   ) {
     return this.adminService.getOrCreatePortalLink(orderId, approvalId);
   }
+
+  @Post('orders/:id/approvals/:approvalId/resend')
+  async resendDocumentRequest(
+    @Param('id') orderId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    return this.adminService.resendDocumentRequest(orderId, approvalId);
+  }
+
+  @Post('orders/:id/approvals/:approvalId/cancel')
+  async cancelDocumentRequest(
+    @Param('id') orderId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    return this.adminService.cancelDocumentRequest(orderId, approvalId);
+  }
+
+  @Post('orders/:id/approvals/:approvalId/reject')
+  async rejectDocumentRequest(
+    @Param('id') orderId: string,
+    @Param('approvalId') approvalId: string,
+    @Body() body: { reason: string },
+  ) {
+    return this.adminService.rejectAndReRequestDocument(orderId, approvalId, body.reason);
+  }
 }

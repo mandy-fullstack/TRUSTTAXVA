@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   Param,
@@ -12,7 +13,7 @@ import { PortalService } from './portal.service';
 
 @Controller('portal')
 export class PortalController {
-  constructor(private readonly portalService: PortalService) {}
+  constructor(private readonly portalService: PortalService) { }
 
   /**
    * Public: Fetch metadata for a document request portal link.
@@ -32,11 +33,12 @@ export class PortalController {
   async uploadDocumentForRequest(
     @Param('token') token: string,
     @UploadedFile() file: Express.Multer.File,
+    @Body('approvalId') approvalId?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    return this.portalService.uploadForDocumentRequest(token, file);
+    return this.portalService.uploadForDocumentRequest(token, file, approvalId);
   }
 }
 

@@ -257,10 +257,11 @@ export const api = {
   requestOrderDocument: (
     id: string,
     data: {
-      documentName: string;
+      documentName?: string;
       message?: string;
       docType?: string;
       requireLogin?: boolean;
+      requests?: { documentName: string; message?: string; docType?: string }[];
     },
   ) =>
     request<any>(`/admin/orders/${id}/request-document`, {
@@ -512,6 +513,24 @@ export const api = {
   getPortalLink: (orderId: string, approvalId: string) =>
     request<{ portalUrl: string }>(
       `/admin/orders/${orderId}/approvals/${approvalId}/portal-link`,
+    ),
+  resendDocumentRequest: (orderId: string, approvalId: string) =>
+    request<{ success: boolean; message: string }>(
+      `/admin/orders/${orderId}/approvals/${approvalId}/resend`,
+      { method: "POST" },
+    ),
+  cancelDocumentRequest: (orderId: string, approvalId: string) =>
+    request<{ success: boolean }>(
+      `/admin/orders/${orderId}/approvals/${approvalId}/cancel`,
+      { method: "POST" },
+    ),
+  rejectDocumentRequest: (orderId: string, approvalId: string, reason: string) =>
+    request<any>(
+      `/admin/orders/${orderId}/approvals/${approvalId}/reject`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      },
     ),
   deleteFormField: (formId: string, fieldId: string) =>
     request<any>(`/admin/forms/${formId}/fields/${fieldId}`, {

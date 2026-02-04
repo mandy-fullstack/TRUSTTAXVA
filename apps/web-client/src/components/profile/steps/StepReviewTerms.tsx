@@ -1,7 +1,7 @@
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Card, H3, Text } from "@trusttax/ui";
-import { FileText, CheckCircle2 } from "lucide-react";
+import { FileText, CheckCircle2, Check } from "lucide-react";
 
 interface StepReviewTermsProps {
   data: any;
@@ -82,7 +82,7 @@ export const StepReviewTerms = ({
                 data.acceptTerms && styles.checkboxChecked,
               ]}
             >
-              {data.acceptTerms && <Text style={styles.checkmark}>✓</Text>}
+              {data.acceptTerms && <Check size={16} color="#FFFFFF" />}
             </View>
             <View style={styles.termsText}>
               <Text style={styles.termsLabel}>

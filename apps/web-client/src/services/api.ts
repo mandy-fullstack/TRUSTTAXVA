@@ -778,13 +778,15 @@ class ApiService {
 
     // --- Public Portal (no auth) ---
     async getPortalDocumentRequest(token: string): Promise<{
-        approvalId: string;
         orderId: string;
         orderDisplayId: string;
-        documentName: string;
-        message?: string;
-        docType: string;
         expiresAt: string;
+        requests: Array<{
+            id: string;
+            documentName: string;
+            message?: string;
+            docType: string;
+        }>;
     }> {
         return this.request(`/portal/document-request/${encodeURIComponent(token)}`, {
             method: "GET",
@@ -794,9 +796,12 @@ class ApiService {
     async uploadPortalDocumentRequest(
         token: string,
         file: File,
+        approvalId?: string,
     ): Promise<{ success: boolean; documentId: string }> {
         const formData = new FormData();
         formData.append("file", file);
+        if (approvalId) formData.append("approvalId", approvalId);
+
         return this.request(
             `/portal/document-request/${encodeURIComponent(token)}/upload`,
             {
