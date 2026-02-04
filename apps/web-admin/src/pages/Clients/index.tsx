@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { H1, H4, Text, Badge, Button, Input, Inline, Stack, Spacer } from "@trusttax/ui";
-import { Users, Mail, Calendar, Trash2, Phone, UserPlus, Info, XCircle, X, CheckCircle } from "lucide-react";
+import { Users, Mail, Calendar, Trash2, Phone, UserPlus, Info, XCircle, X, CheckCircle, Send } from "lucide-react";
 import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
@@ -84,6 +84,12 @@ export function ClientsPage() {
     message: string;
     variant: "success" | "error" | "info" | "warning";
   }>({ isOpen: false, title: "", message: "", variant: "info" });
+  const [reinviteConfirm, setReinviteConfirm] = useState<{
+    isOpen: boolean;
+    email: string | null;
+    clientName: string;
+  }>({ isOpen: false, email: null, clientName: "" });
+  const [reinviting, setReinviting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createForm, setCreateForm] = useState({
@@ -195,6 +201,42 @@ export function ClientsPage() {
     }
   };
 
+  const handleReinviteClick = (e: any, client: Client) => {
+    e.stopPropagation();
+    setReinviteConfirm({
+      isOpen: true,
+      email: client.email,
+      clientName: fullName(client),
+    });
+  };
+
+  const handleConfirmReinvite = async () => {
+    if (!reinviteConfirm.email) return;
+
+    try {
+      setReinviting(true);
+      const response = await api.reinviteClient(reinviteConfirm.email);
+
+      setAlertDialog({
+        isOpen: true,
+        title: t("clients.reinvite_sent_title", "Invitation Re-sent"),
+        message: response.message || t("clients.invite_sent_msg", "Invitation email sent successfully."),
+        variant: "success",
+      });
+
+      setReinviteConfirm({ isOpen: false, email: null, clientName: "" });
+    } catch (e: any) {
+      setAlertDialog({
+        isOpen: true,
+        title: t("common.error"),
+        message: e?.message || "Failed to resend invitation",
+        variant: "error",
+      });
+    } finally {
+      setReinviting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -303,17 +345,32 @@ export function ClientsPage() {
                         (c._count?.orders ?? 0) > 0 ? "primary" : "secondary"
                       }
                     />
-                    <TouchableOpacity
-                      onPress={(e) => handleDeleteClick(e, c)}
-                      style={styles.deleteButton}
-                      disabled={deleting}
-                    >
-                      {deleting && deleteConfirm.clientId === c.id ? (
-                        <ActivityIndicator size="small" color="#EF4444" />
-                      ) : (
-                        <Trash2 size={16} color="#EF4444" />
+                    <View style={styles.cardActions}>
+                      {c.invitationPending && (
+                        <TouchableOpacity
+                          onPress={(e) => handleReinviteClick(e, c)}
+                          style={styles.actionButton}
+                          disabled={reinviting}
+                        >
+                          {reinviting && reinviteConfirm.email === c.email ? (
+                            <ActivityIndicator size="small" color="#2563EB" />
+                          ) : (
+                            <Send size={16} color="#2563EB" />
+                          )}
+                        </TouchableOpacity>
                       )}
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={(e) => handleDeleteClick(e, c)}
+                        style={styles.deleteButton}
+                        disabled={deleting}
+                      >
+                        {deleting && deleteConfirm.clientId === c.id ? (
+                          <ActivityIndicator size="small" color="#EF4444" />
+                        ) : (
+                          <Trash2 size={16} color="#EF4444" />
+                        )}
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -389,6 +446,19 @@ export function ClientsPage() {
                   </Text>
                 </View>
                 <View style={styles.colActions}>
+                  {c.invitationPending && (
+                    <TouchableOpacity
+                      onPress={(e) => handleReinviteClick(e, c)}
+                      style={styles.actionButton}
+                      disabled={reinviting}
+                    >
+                      {reinviting && reinviteConfirm.email === c.email ? (
+                        <ActivityIndicator size="small" color="#2563EB" />
+                      ) : (
+                        <Send size={16} color="#2563EB" />
+                      )}
+                    </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     onPress={(e) => handleDeleteClick(e, c)}
                     style={styles.deleteButton}
@@ -642,6 +712,33 @@ export function ClientsPage() {
         variant="danger"
       />
 
+      <ConfirmDialog
+        isOpen={reinviteConfirm.isOpen}
+        onClose={() =>
+          setReinviteConfirm({ isOpen: false, email: null, clientName: "" })
+        }
+        onConfirm={handleConfirmReinvite}
+        isLoading={reinviting}
+        autoCloseOnConfirm={false}
+        title={t("clients.reinvite_title", "Resend Secure Invitation")}
+        message={
+          <Text style={{ color: "#475569", fontSize: 15, lineHeight: 24 }}>
+            You are about to send a new secure invitation link to{" "}
+            <Text style={{ fontWeight: "700", color: "#0F172A" }}>
+              {reinviteConfirm.email}
+            </Text>
+            .{"\n\n"}
+            <Text style={{ fontSize: 13, color: "#64748B" }}>
+              Note: Any previous invitation links sent to this client will be
+              invalidated immediately for security purposes.
+            </Text>
+          </Text>
+        }
+        confirmText={t("clients.reinvite_confirm", "Send Invitation")}
+        cancelText={t("common.cancel", "Cancel")}
+        variant="info"
+      />
+
       {/* Alert Dialog */}
       <AlertDialog
         isOpen={alertDialog.isOpen}
@@ -822,7 +919,13 @@ const styles = StyleSheet.create({
   colEmail: { flex: 3 },
   colOrders: { flex: 2 },
   colDate: { flex: 2 },
-  colActions: { flex: 1, alignItems: "center" },
+  colActions: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 8,
+  },
 
   avatar: {
     width: 36,
@@ -891,5 +994,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FEF2F2",
     borderWidth: 1,
     borderColor: "#FECACA",
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 0,
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#DBEAFE",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

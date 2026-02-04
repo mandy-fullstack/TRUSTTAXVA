@@ -183,6 +183,11 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  reinviteClient: (email: string) =>
+    request<any>("/admin/clients", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
   deleteClient: (id: string) =>
     request<{ success: boolean; message: string; deleted: any }>(
