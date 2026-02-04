@@ -789,7 +789,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 4,
-    borderRadius: 4,
+    borderRadius: 0,
   },
   imagePreviewWrapper: {
     width: 220,
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   },
   sidebarActionButton: {
     padding: 4,
-    borderRadius: 4,
+    borderRadius: 0,
   },
   emptySidebar: {
     flex: 1,

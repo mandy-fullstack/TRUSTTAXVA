@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
   successIcon: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: 0,
     backgroundColor: "#10B981",
     justifyContent: "center",
     alignItems: "center",

@@ -8,7 +8,7 @@ import { ChatModule } from '../chat/chat.module';
 @Module({
   imports: [ChatModule],
   controllers: [OrdersController],
-  providers: [OrdersService, PrismaService],
+  providers: [OrdersService],
   exports: [OrdersService],
 })
-export class OrdersModule {}
+export class OrdersModule { }

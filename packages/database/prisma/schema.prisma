@@ -60,6 +60,7 @@ model User {
   orders                 Order[]
   clientTaxReturns       TaxReturn[]       @relation("ClientReturns")
   preparedTaxReturns     TaxReturn[]       @relation("PreparerReturns")
+  portalAccessTokens     PortalAccessToken[]
 }
 
 model SmsOtpSession {
@@ -75,6 +76,28 @@ model SmsOtpSession {
 
   @@index([phone])
   @@index([expiresAt])
+}
+
+model PortalAccessToken {
+  id        String   @id @default(uuid())
+  // Only store a hash in DB (never the raw token)
+  tokenHash String   @unique
+  purpose   String   // e.g. "DOCUMENT_REQUEST"
+  userId    String
+  orderId   String?
+  approvalId String?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([purpose])
+  @@index([expiresAt])
+  @@index([approvalId])
+  @@index([userId])
 }
 
 model TaxReturn {
@@ -156,6 +179,13 @@ model Document {
   conversationId    String?
   conversation      Conversation?    @relation(fields: [conversationId], references: [id])
   messages          Message[]
+  status            DocumentStatus   @default(PENDING)
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
 }
 
 model AuditLog {
@@ -352,6 +382,7 @@ model Order {
   approvals OrderApproval[]
   progress  OrderStepProgress[]
   timeline  OrderTimeline[]
+  portalAccessTokens PortalAccessToken[]
 }
 
 model OrderTimeline {

@@ -10,6 +10,7 @@ import { useAuth } from "./AuthContext";
 import { useToast } from "./ToastContext";
 import { useSocketContext } from "./SocketContext";
 import { requestFCMToken, onMessageListener } from "../lib/firebase";
+import { useTranslation } from "react-i18next";
 
 interface NotificationItem {
   id: string;
@@ -43,12 +44,22 @@ export const NotificationProvider = ({
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
   const { socket, isConnected } = useSocketContext();
+  const { t } = useTranslation();
   const [permission, setPermission] =
     useState<NotificationPermission>("default");
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const lastCheckRef = useRef<Date>(new Date());
+  const lastOrderStateRef = useRef<
+    Map<
+      string,
+      {
+        status?: string;
+        pendingApprovalIds: string[];
+      }
+    >
+  >(new Map());
   // Track recent socket notifications to avoid duplicates with polling
   const recentSocketNotificationsRef = useRef<Set<string>>(new Set());
   // Dedupe guard (covers socket/poll/FCM duplicates)
@@ -79,9 +90,12 @@ export const NotificationProvider = ({
       if (ios && !standalone) {
         setTimeout(() => {
           showToast({
-            title: "💡 Tip para iPhone",
+            title: t("notifications.ios_tip_title", "Tip para iPhone"),
             message:
-              'Para recibir notificaciones, pulsa "Compartir" y luego "Añadir a la pantalla de inicio".',
+              t(
+                "notifications.ios_tip_body",
+                'Para recibir notificaciones, pulsa "Compartir" y luego "Añadir a la pantalla de inicio".',
+              ),
             type: "info",
             duration: 10000,
           });
@@ -219,8 +233,10 @@ export const NotificationProvider = ({
               // Dedupe across sources (poll can still overlap with socket/FCM)
               const dedupeKey = makeDedupeKey({
                 type: "message",
-                title: "Nuevo mensaje",
-                body: `De: ${conv.preparer?.name || "Soporte"}`,
+                title: t("notifications.new_message", "Nuevo mensaje"),
+                body: t("notifications.from_support", "De: {{name}}", {
+                  name: conv.preparer?.name || t("notifications.support", "Soporte"),
+                }),
                 link: `/dashboard/chat/${conv.id}`,
               });
               if (shouldSkipAsDuplicate(dedupeKey, 15_000)) {
@@ -230,8 +246,10 @@ export const NotificationProvider = ({
               newNotifications.push({
                 id: lastMsg.id,
                 type: "message",
-                title: "Nuevo mensaje",
-                body: `De: ${conv.preparer?.name || "Soporte"}`,
+                title: t("notifications.new_message", "Nuevo mensaje"),
+                body: t("notifications.from_support", "De: {{name}}", {
+                  name: conv.preparer?.name || t("notifications.support", "Soporte"),
+                }),
                 date: msgDate,
                 read: false,
                 link: `/dashboard/chat/${conv.id}`,
@@ -258,26 +276,64 @@ export const NotificationProvider = ({
 
         if (isNewer) {
           const isNewUpdate = orderDate > lastCheckRef.current;
+          const notifLink = `/dashboard/orders/${order.id}`;
 
-          const statusMap: Record<string, string> = {
-            APPROVED: "Aprobada",
-            REJECTED: "Rechazada",
-            IN_PROGRESS: "En Progreso",
-            COMPLETED: "Completada",
-            PENDING: "Pendiente",
-            needs_info: "Requiere Información",
-          };
+          const pendingApprovals = (order.approvals || []).filter(
+            (a: any) => a && a.status === "PENDING",
+          );
+          const pendingIds = pendingApprovals.map((a: any) => String(a.id)).sort();
 
-          let notifTitle = "Actualización de Orden";
-          let notifBody = `Orden ${order.displayId || order.id.slice(0, 8)}: ${statusMap[order.status] || order.status}`;
-          let notifLink = `/dashboard/orders/${order.id}`;
+          const prev = lastOrderStateRef.current.get(order.id);
+          const prevPending = prev?.pendingApprovalIds || [];
+          const newPendingIds = pendingIds.filter((id: string) => !prevPending.includes(id));
+          const statusChanged = !!prev?.status && prev.status !== order.status;
 
-          if (order.approvals && order.approvals.length > 0) {
-            const pendingApproval = order.approvals[0];
-            notifTitle = "Acción Requerida";
-            notifBody = `Aprobación pendiente: ${pendingApproval.title}`;
+          // Update baseline state for next run
+          lastOrderStateRef.current.set(order.id, {
+            status: order.status,
+            pendingApprovalIds: pendingIds,
+          });
+
+          // Human-readable localized status (only used when status changes)
+          const statusLabel =
+            (order.status === "APPROVED" && t("orders.status_approved", "Aprobada")) ||
+            (order.status === "REJECTED" && t("orders.status_rejected", "Rechazada")) ||
+            (order.status === "IN_PROGRESS" &&
+              t("orders.status_in_progress", "En progreso")) ||
+            (order.status === "COMPLETED" && t("orders.status_completed", "Completada")) ||
+            (order.status === "PENDING" && t("orders.status_pending", "Pendiente")) ||
+            (order.status === "needs_info" &&
+              t("orders.status_needs_info", "Requiere información")) ||
+            String(order.status);
+
+          // Decide what to show (prefer new approvals, otherwise status change)
+          let notifTitle = t("notifications.order_update", "Actualización de Orden");
+          let notifBody = t("notifications.order_update_status", "Orden {{id}}: {{status}}", {
+            id: order.displayId || order.id.slice(0, 8),
+            status: statusLabel,
+          });
+
+          if (newPendingIds.length > 0) {
+            const newApproval = pendingApprovals.find(
+              (a: any) => String(a.id) === newPendingIds[0],
+            );
+            if (newApproval?.type === "DOCUMENT_REQUEST") {
+              notifTitle = t("notifications.document_required_title", "Documento requerido");
+              notifBody = t(
+                "notifications.document_required_body",
+                "Por favor sube: {{doc}}",
+                { doc: newApproval.title || t("notifications.document", "documento") },
+              );
+            } else {
+              notifTitle = t("orders.action_required", "Acción Requerida");
+              notifBody = t(
+                "notifications.pending_approval_body",
+                "Aprobación pendiente: {{title}}",
+                { title: newApproval?.title || "" },
+              );
+            }
           } else if (existingNotif && existingNotif.body !== notifBody) {
-            notifTitle = "Estado Actualizado";
+            notifTitle = t("notifications.order_status_updated", "Estado actualizado");
           }
 
           const newItem: NotificationItem = {
@@ -310,22 +366,24 @@ export const NotificationProvider = ({
           }
 
           if (isNewUpdate) {
-            hasNewAlert = true;
-            sendBrowserNotification(
-              "TrustTax Update",
-              newItem.body,
-              `order-${order.id}`,
-            );
+            // Don't be annoying: only alert for meaningful events:
+            // - new pending approval / document request
+            // - status change
+            const shouldAlert = newPendingIds.length > 0 || statusChanged;
+            if (shouldAlert) {
+              hasNewAlert = true;
+              sendBrowserNotification(newItem.title, newItem.body, `order-${order.id}`);
 
-            showToast({
-              title: newItem.title,
-              message: newItem.body,
-              type:
-                order.status === "REJECTED" || order.status === "needs_info"
-                  ? "warning"
-                  : "info",
-              link: newItem.link,
-            });
+              showToast({
+                title: newItem.title,
+                message: newItem.body,
+                type:
+                  order.status === "REJECTED" || order.status === "needs_info"
+                    ? "warning"
+                    : "info",
+                link: newItem.link,
+              });
+            }
           }
         }
       }
@@ -391,6 +449,16 @@ export const NotificationProvider = ({
         link: payload.link,
       };
 
+      // Localize / normalize document request notifications if backend provided structured fields
+      if (payload.type === "order" && payload.subtype === "DOCUMENT_REQUEST") {
+        newNotif.title = t("notifications.document_required_title", "Documento requerido");
+        newNotif.body = t(
+          "notifications.document_required_body",
+          "Por favor sube: {{doc}}",
+          { doc: payload.documentName || payload.title || "" },
+        );
+      }
+
       // Global dedupe: if we just showed the same notif via polling/FCM, skip
       const dedupeKey = makeDedupeKey({
         type: newNotif.type,
@@ -398,7 +466,10 @@ export const NotificationProvider = ({
         body: newNotif.body,
         link: newNotif.link,
       });
-      if (shouldSkipAsDuplicate(dedupeKey, 10_000)) {
+      // Document requests are especially annoying if duplicated; use a longer window
+      const windowMs =
+        payload?.subtype === "DOCUMENT_REQUEST" ? 120_000 : 10_000;
+      if (shouldSkipAsDuplicate(dedupeKey, windowMs)) {
         return;
       }
 

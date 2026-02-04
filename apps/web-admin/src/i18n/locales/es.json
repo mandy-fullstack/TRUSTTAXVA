@@ -95,6 +95,22 @@
     "clients": {
         "title": "Clientes",
         "add_client": "Agregar Cliente",
+        "create_client": "Crear cliente",
+        "create_title": "Invitar Nuevo Cliente",
+        "create_hint": "Invite a un cliente para colaborar de forma segura. Recibirá un correo para configurar su acceso al portal.",
+        "optional": "Opcional",
+        "first_name": "Nombre",
+        "last_name": "Apellido",
+        "invalid_email": "Ingrese una dirección de correo válida",
+        "sending": "Enviando...",
+        "send_invite": "Enviar Invitación",
+        "invite_sent_title": "Invitación Enviada",
+        "invite_sent_msg": "La invitación ha sido enviada exitosamente al cliente.",
+        "reinvite_sent_title": "Invitación Reenviada",
+        "invite_failed": "No se pudo enviar la invitación. Por favor intente de nuevo.",
+        "invite_info": "La invitación expira en 7 días por motivos de seguridad.",
+        "phone": "Teléfono",
+        "email": "Email",
         "search_placeholder": "Buscar clientes...",
         "no_clients": "No se encontraron clientes",
         "no_clients_yet": "Aún No Hay Clientes",
@@ -116,7 +132,8 @@
         "delete_error_message": "No se pudo eliminar el cliente. Por favor, intenta nuevamente.",
         "actions": "Acciones",
         "profile_complete": "Perfil completo",
-        "joined": "Registrado"
+        "joined": "Registrado",
+        "invitation_pending": "Invitación pendiente"
     },
     "staff": {
         "title": "Personal y Equipo",

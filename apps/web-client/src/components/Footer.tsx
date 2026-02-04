@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   legalDot: {
     width: 3,
     height: 3,
-    borderRadius: 2,
+    borderRadius: 0,
     backgroundColor: "rgba(255,255,255,0.05)",
   },
 });

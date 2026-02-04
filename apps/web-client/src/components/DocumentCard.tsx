@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FEF3C7",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
     },
     newBadgeText: {
         fontSize: 9,
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#EFF6FF",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         borderWidth: 1,
         borderColor: "#BFDBFE",
     },

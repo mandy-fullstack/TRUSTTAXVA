@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   errorContainer: {
     padding: 24,
     backgroundColor: "#FEF2F2",
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: "#FECACA",
   },

@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    borderRadius: 1,
+    borderRadius: 0,
   },
   authButtons: {
     flexDirection: "row",

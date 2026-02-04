@@ -59,6 +59,14 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return (this.client as any).document;
   }
 
+  get portalAccessToken() {
+    return (this.client as any).portalAccessToken;
+  }
+
+  get auditLog() {
+    return (this.client as any).auditLog;
+  }
+
   async onModuleInit() {
     await this.client.$connect();
   }

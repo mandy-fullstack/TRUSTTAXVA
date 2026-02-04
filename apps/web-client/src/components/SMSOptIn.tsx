@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     successIconBox: {
         width: 64,
         height: 64,
-        borderRadius: 32,
+        borderRadius: 0,
         backgroundColor: "#ECFDF5",
         alignItems: "center",
         justifyContent: "center",

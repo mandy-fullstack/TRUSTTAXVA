@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     backgroundColor: "#2563eb",
-    borderRadius: 8,
+    borderRadius: 0,
     ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
   },
   buttonText: {

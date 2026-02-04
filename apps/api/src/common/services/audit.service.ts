@@ -7,7 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
  */
 @Injectable()
 export class AuditService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Log a security-sensitive action
@@ -21,7 +21,7 @@ export class AuditService {
     ipAddress?: string;
   }) {
     try {
-      return await this.prisma.client.auditLog.create({
+      return await this.prisma.auditLog.create({
         data: {
           userId: params.userId,
           action: params.action,

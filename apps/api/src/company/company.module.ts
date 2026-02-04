@@ -13,7 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   controllers: [CompanyController],
-  providers: [CompanyService, PrismaService],
+  providers: [CompanyService],
   exports: [CompanyService],
 })
-export class CompanyModule {}
+export class CompanyModule { }

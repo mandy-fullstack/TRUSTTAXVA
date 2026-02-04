@@ -14,6 +14,8 @@ import { useNavigate } from "react-router-dom";
 import { Layout } from "../../components/Layout";
 import { useTranslation } from "react-i18next";
 import { useSocketContext } from "../../context/SocketContext";
+import { CreateOrderModal } from "../../components/Orders/CreateOrderModal";
+import { Plus } from "lucide-react";
 
 interface Order {
   id: string;
@@ -25,11 +27,11 @@ interface Order {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  PENDING: "#F59E0B",
-  IN_PROGRESS: "#3B82F6",
+  PENDING: "#D97706",
+  IN_PROGRESS: "#2563EB",
   COMPLETED: "#10B981",
   CANCELLED: "#EF4444",
-  SUBMITTED: "#8B5CF6",
+  SUBMITTED: "#0F172A",
 };
 
 const getStatusLabels = (t: (key: string) => string): Record<string, string> => ({
@@ -52,6 +54,7 @@ export function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const navigate = useNavigate();
   const STATUS_LABELS = getStatusLabels(t);
 
@@ -158,7 +161,7 @@ export function OrdersPage() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <View style={styles.headerContent}>
           <View>
             <H1 style={isMobile ? styles.titleMobile : undefined}>
               {t("orders.title")}
@@ -170,7 +173,23 @@ export function OrdersPage() {
               })}
             </Text>
           </View>
+          <TouchableOpacity
+            style={styles.createButton}
+            onPress={() => setIsModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Plus size={20} color="#FFF" />
+            <Text style={styles.createButtonText}>Nueva Orden</Text>
+          </TouchableOpacity>
         </View>
+
+        <CreateOrderModal
+          visible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          onSuccess={(newOrder) => {
+            setOrders((prev) => [newOrder, ...prev]);
+          }}
+        />
 
         <View style={[styles.filterTabs, isMobile && styles.filterTabsMobile]}>
           {statusList.map((s) => (
@@ -344,7 +363,7 @@ export function OrdersPage() {
           </View>
         )}
       </ScrollView>
-    </Layout>
+    </Layout >
   );
 }
 
@@ -369,6 +388,25 @@ const styles = StyleSheet.create({
   titleMobile: { fontSize: 24 },
   subtitle: { color: "#64748B", marginTop: 4 },
   errorText: { color: "#EF4444", fontSize: 14 },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  createButton: {
+    backgroundColor: "#0F172A",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 0,
+    gap: 8,
+  },
+  createButtonText: {
+    color: "#FFF",
+    fontWeight: "700",
+    fontSize: 14,
+  },
 
   filterTabs: {
     flexDirection: "row",
@@ -446,7 +484,7 @@ const styles = StyleSheet.create({
     gap: 6,
     alignSelf: "flex-start",
   },
-  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusDot: { width: 6, height: 6, borderRadius: 0 },
   statusText: { fontSize: 12, fontWeight: "600" },
   amountText: { fontSize: 14, fontWeight: "600", color: "#10B981" },
   dateText: { fontSize: 13, color: "#64748B" },

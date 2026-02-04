@@ -157,6 +157,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'Password Reset Request - TrustTax',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -237,6 +238,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: `Action Required: Upload Document for Order #${data.orderDisplayId || data.orderId.slice(0, 8)}`,
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -267,6 +269,129 @@ export class EmailService {
   }
 
   /**
+   * Admin -> Client: Request a document upload via a private portal link (no login required).
+   * The portal link should be a one-time secure token URL.
+   */
+  async sendOrderDocumentRequestPortalEmail(
+    email: string,
+    data: {
+      userName: string;
+      orderId: string;
+      orderDisplayId: string;
+      documentName: string;
+      message?: string;
+      docType?: string;
+      portalUrl: string;
+    },
+  ) {
+    const messageBlock =
+      data.message && data.message.trim().length > 0
+        ? `<p style="margin: 12px 0 0 0; font-size: 14px; color: #334155; line-height: 20px;"><strong>Message:</strong> ${data.message}</p>`
+        : '';
+
+    try {
+      const htmlContent = this.loadTemplate('document-request-portal', {
+        userName: data.userName || 'there',
+        portalUrl: data.portalUrl,
+        orderId: data.orderDisplayId || data.orderId,
+        documentName: data.documentName,
+        messageBlock,
+        docType: data.docType || 'OTHER',
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
+        subject: `Action Required: Upload Document for Order #${data.orderDisplayId || data.orderId.slice(0, 8)}`,
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] DOCUMENT REQUEST PORTAL EMAIL (DEV MODE)');
+        console.log('═══════════════════════════════════════════');
+        console.log(`To: ${email}`);
+        console.log(`Portal URL: ${data.portalUrl}`);
+        console.log(`Document: ${data.documentName}`);
+        console.log('═══════════════════════════════════════════\n');
+      } else {
+        console.log(
+          `✅ [EmailService] Document request portal email sent to ${email}`,
+        );
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
+      }
+
+      return info;
+    } catch (error: any) {
+      console.error(
+        `❌ [EmailService] Error sending document request portal email to ${email}:`,
+        error?.message || error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Admin -> Client: Invitation email to set password and access client portal.
+   */
+  async sendClientInvitationEmail(
+    email: string,
+    setupToken: string,
+    data?: { name?: string; origin?: string },
+  ) {
+    const baseUrl =
+      data?.origin ||
+      process.env.CLIENT_URL ||
+      process.env.ADMIN_URL ||
+      'http://localhost:5175';
+    const setupUrl = `${baseUrl}/reset-password/${setupToken}`;
+
+    try {
+      const htmlContent = this.loadTemplate('client-invitation', {
+        userName: data?.name || 'there',
+        setupUrl,
+        year: new Date().getFullYear().toString(),
+      });
+
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
+        to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
+        subject: 'TrustTax Client Portal Invitation',
+        html: htmlContent,
+        text: this.htmlToText(htmlContent),
+      };
+
+      const info = await this.transporter.sendMail(mailOptions);
+
+      if (!this.isProductionMode) {
+        console.log('\n📧 [EmailService] CLIENT INVITATION EMAIL (DEV MODE)');
+        console.log('═══════════════════════════════════════════');
+        console.log(`To: ${email}`);
+        console.log(`Setup URL: ${setupUrl}`);
+        console.log('═══════════════════════════════════════════\n');
+      } else {
+        console.log(`✅ [EmailService] Client invitation email sent to ${email}`);
+        console.log(`📬 [EmailService] Message ID: ${info.messageId}`);
+      }
+
+      return info;
+    } catch (error: any) {
+      console.error(
+        `❌ [EmailService] Error sending client invitation email to ${email}:`,
+        error?.message || error,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Send account not found email (marketing opportunity)
    */
   async sendAccountNotFoundEmail(email: string) {
@@ -280,6 +405,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'Account Not Found - TrustTax Services',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -332,6 +458,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'Verify Your Email Address - TrustTax',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -378,6 +505,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'Password Changed Successfully - TrustTax',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -428,6 +556,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'TrustTax Administration Panel Invitation',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -472,6 +601,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'Security Alert: PIN Activated - TrustTax',
         html: htmlContent,
         text: this.htmlToText(htmlContent),
@@ -526,6 +656,7 @@ export class EmailService {
         from:
           process.env.SMTP_FROM || '"TrustTax Support" <noreply@trusttax.com>',
         to: email,
+        replyTo: process.env.SMTP_REPLY_TO || process.env.SMTP_FROM,
         subject: 'New Document Available - TrustTax',
         html: htmlContent,
         text: this.htmlToText(htmlContent),

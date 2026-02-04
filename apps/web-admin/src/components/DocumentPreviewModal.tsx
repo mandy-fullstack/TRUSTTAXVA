@@ -268,12 +268,12 @@ const styles = StyleSheet.create({
     },
     headerButton: {
         padding: 8,
-        borderRadius: 4,
+        borderRadius: 0,
         backgroundColor: "#EFF6FF",
     },
     closeButton: {
         padding: 8,
-        borderRadius: 4,
+        borderRadius: 0,
         backgroundColor: "#F1F5F9",
     },
     content: {

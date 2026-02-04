@@ -4,7 +4,7 @@ import { FaqController } from './faq.controller';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
-  providers: [FaqService, PrismaService],
+  providers: [FaqService],
   controllers: [FaqController],
 })
-export class FaqModule {}
+export class FaqModule { }

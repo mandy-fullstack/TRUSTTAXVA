@@ -44,6 +44,11 @@ const ResetPasswordPage = lazy(() =>
 const VerifyEmailPage = lazy(() =>
   import("./pages/Auth/VerifyEmailPage").then((m) => ({ default: m.VerifyEmailPage })),
 );
+const DocumentRequestPortalPage = lazy(() =>
+  import("./pages/Portal/DocumentRequestPortalPage").then((m) => ({
+    default: m.DocumentRequestPortalPage,
+  })),
+);
 const PublicServicesPage = lazy(() =>
   import("./pages/PublicServices").then((m) => ({ default: m.PublicServicesPage })),
 );
@@ -193,6 +198,10 @@ function App() {
                     <Route
                       path="/reset-password/:token"
                       element={<ResetPasswordPage />}
+                    />
+                    <Route
+                      path="/portal/document-request/:token"
+                      element={<DocumentRequestPortalPage />}
                     />
                     <Route
                       path="/verify-email/:token"

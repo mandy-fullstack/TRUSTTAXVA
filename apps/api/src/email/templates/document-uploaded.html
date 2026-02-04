@@ -10,7 +10,7 @@
             color: #333;
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
+            background-color: #f8fafc;
         }
 
         .container {
@@ -18,8 +18,7 @@
             margin: 0 auto;
             background: #ffffff;
             padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
             margin-top: 40px;
             margin-bottom: 40px;
         }
@@ -27,7 +26,7 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid #0f172a;
             padding-bottom: 20px;
         }
 
@@ -36,6 +35,8 @@
             font-weight: bold;
             color: #0F172A;
             text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         .accent {
@@ -48,35 +49,35 @@
 
         .button {
             display: inline-block;
-            padding: 12px 24px;
+            padding: 14px 28px;
             background-color: #0F172A;
             color: #ffffff;
             text-decoration: none;
-            border-radius: 6px;
             font-weight: bold;
             text-align: center;
+            border-radius: 0;
         }
 
         .footer {
             font-size: 12px;
-            color: #666;
+            color: #64748b;
             text-align: center;
             margin-top: 30px;
-            border-top: 1px solid #f0f0f0;
+            border-top: 1px solid #e2e8f0;
             padding-top: 20px;
         }
 
         .document-box {
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
-            padding: 15px;
-            border-radius: 6px;
+            padding: 20px;
             margin: 20px 0;
         }
 
         .doc-title {
-            font-weight: 600;
+            font-weight: 700;
             color: #0F172A;
+            font-size: 16px;
         }
 
         .doc-meta {
@@ -90,11 +91,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">TrustTax<span class="accent">VA</span></div>
+            <div class="logo">TrustTax</div>
         </div>
         <div class="content">
-            <h2>New Document Available</h2>
-            <p>Hi {{userName}},</p>
+            <h2 style="color: #0f172a; margin-top: 0;">New Document Available</h2>
+            <p>Hello {{userName}},</p>
             <p>A new document has been uploaded to your secure client portal by your tax preparer.</p>
 
             <div class="document-box">
@@ -105,12 +106,12 @@
             <p>You can view and download this document securely by logging into your account.</p>
 
             <div style="text-align: center; margin-top: 30px;">
-                <a href="{{actionUrl}}" class="button">View Document</a>
+                <a href="{{actionUrl}}" class="button">VIEW DOCUMENT SECURELY</a>
             </div>
         </div>
         <div class="footer">
-            <p>&copy; {{year}} TrustTax Services. All rights reserved.</p>
-            <p>This is an automated notification. Please do not reply to this email.</p>
+            <p>&copy; {{year}} TrustTax LLC. All rights reserved.</p>
+            <p>This is an automated notification from our secure server. Please do not reply directly to this email.</p>
         </div>
     </div>
 </body>

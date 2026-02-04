@@ -55,7 +55,20 @@
     },
     "urgent": "Urgent",
     "drop_file": "DROP FILE HERE",
-    "required": "Required"
+    "required": "Required",
+    "home": "Home"
+  },
+  "portal": {
+    "upload_title": "SECURE DOCUMENT UPLOAD",
+    "upload_subtitle": "Upload the requested document using this private portal link.",
+    "upload_success": "Upload complete",
+    "upload_success_hint": "Thank you. Your document was uploaded securely and attached to your order.",
+    "back_home": "Back to Home",
+    "order": "Order",
+    "document": "Document requested",
+    "expires": "Link expires",
+    "choose_file": "Choose File",
+    "uploading": "Uploading..."
   },
   "settings": {
     "sms_opt_out_title": "Disable SMS?",
@@ -871,7 +884,17 @@
     "enable_btn": "Enable Notifications",
     "new_message": "New message",
     "order_update": "Order Update",
-    "order_update_body": "Your order for {{service}} has been updated."
+    "order_update_body": "Your order for {{service}} has been updated.",
+    "order_update_status": "Order {{id}}: {{status}}",
+    "order_status_updated": "Status updated",
+    "document_required_title": "Document required",
+    "document_required_body": "Please upload: {{doc}}",
+    "pending_approval_body": "Pending approval: {{title}}",
+    "support": "Support",
+    "from_support": "From: {{name}}",
+    "ios_tip_title": "iPhone tip",
+    "ios_tip_body": "To receive notifications, tap \"Share\" and then \"Add to Home Screen\".",
+    "document": "document"
   },
   "orders": {
     "progress": "Request Progress",
@@ -883,6 +906,19 @@
     "reject": "Reject",
     "approved": "Approved",
     "rejected": "Rejected",
+    "pending_approvals_title": "Action required: pending approvals",
+    "document_requests_title": "Requested documents",
+    "document_requests_hint": "Upload the requested documents to continue. They will be securely attached to your order.",
+    "document_type": "Type",
+    "upload_document": "Upload document",
+    "upload_web_only": "File upload is available on web.",
+    "uploading": "Uploading...",
+    "status_approved": "Approved",
+    "status_rejected": "Rejected",
+    "status_in_progress": "In progress",
+    "status_completed": "Completed",
+    "status_pending": "Pending",
+    "status_needs_info": "Needs information",
     "id": "ID",
     "date": "Date"
   },

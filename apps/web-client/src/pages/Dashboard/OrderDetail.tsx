@@ -297,7 +297,9 @@ export const OrderDetailPage = () => {
 
                 {/* Stepper Section */}
                 <Card style={styles.stepperCard}>
-                    <H4 style={styles.sectionTitle}>Progreso de tu Solicitud</H4>
+                    <H4 style={styles.sectionTitle}>
+                        {t("orders.progress", "Progreso de tu Solicitud")}
+                    </H4>
                     <ProgressStepper
                         steps={serviceSteps}
                         currentStepIndex={currentStepIndex}
@@ -321,16 +323,22 @@ export const OrderDetailPage = () => {
                             return (
                                 <>
                                     {docRequests.length > 0 && (
-                                        <Card style={styles.approvalCard}>
+                                        <Card style={styles.actionCard}>
                                             <View style={styles.cardHeader}>
-                                                <AlertCircle size={20} color="#E11D48" />
-                                                <Text style={[styles.label, { color: "#E11D48" }]}>
+                                                <FileText size={20} color="#B45309" />
+                                                <Text style={[styles.label, { color: "#92400E" }]}>
                                                     {t(
-                                                        "order.doc_requests_title",
-                                                        "Documento(s) requerido(s)",
+                                                        "orders.document_requests_title",
+                                                        "Documentos solicitados",
                                                     )}
                                                 </Text>
                                             </View>
+                                            <Text style={styles.actionHint}>
+                                                {t(
+                                                    "orders.document_requests_hint",
+                                                    "Sube los documentos solicitados para continuar. Se adjuntarán de forma segura a tu orden.",
+                                                )}
+                                            </Text>
 
                                             {docRequests.map((req: any) => {
                                                 const meta = parseRequestDescription(req.description);
@@ -339,7 +347,7 @@ export const OrderDetailPage = () => {
                                                 const inputId = `reqdoc-${req.id}`;
 
                                                 return (
-                                                    <View key={req.id} style={styles.approvalItem}>
+                                                    <View key={req.id} style={styles.actionItem}>
                                                         <Text style={styles.approvalTitle}>
                                                             {req.title}
                                                         </Text>
@@ -349,7 +357,7 @@ export const OrderDetailPage = () => {
                                                             </Text>
                                                         ) : null}
                                                         <Text style={styles.approvalMeta}>
-                                                            {t("order.doc_type", "Tipo")}: {docType}
+                                                            {t("orders.document_type", "Tipo")}: {docType}
                                                         </Text>
 
                                                         {Platform.OS === "web" ? (
@@ -358,8 +366,16 @@ export const OrderDetailPage = () => {
                                                                 <input
                                                                     id={inputId}
                                                                     type="file"
-                                                                    style={{ display: "none" }}
+                                                                    style={styles.hiddenFileInput as any}
                                                                     accept="image/*,.pdf"
+                                                                    aria-label={t(
+                                                                        "orders.upload_document",
+                                                                        "Subir documento",
+                                                                    )}
+                                                                    title={t(
+                                                                        "orders.upload_document",
+                                                                        "Subir documento",
+                                                                    )}
                                                                     onChange={(e: any) => {
                                                                         const file: File | undefined =
                                                                             e?.target?.files?.[0];
@@ -376,11 +392,11 @@ export const OrderDetailPage = () => {
                                                                     title={
                                                                         uploadingRequestId === req.id
                                                                             ? t(
-                                                                                  "common.uploading",
+                                                                                  "orders.uploading",
                                                                                   "Subiendo...",
                                                                               )
                                                                             : t(
-                                                                                  "order.upload_document",
+                                                                                  "orders.upload_document",
                                                                                   "Subir documento",
                                                                               )
                                                                     }
@@ -397,7 +413,7 @@ export const OrderDetailPage = () => {
                                                         ) : (
                                                             <Text style={styles.noData}>
                                                                 {t(
-                                                                    "order.upload_web_only",
+                                                                    "orders.upload_web_only",
                                                                     "Subida de archivos disponible en web.",
                                                                 )}
                                                             </Text>
@@ -409,15 +425,18 @@ export const OrderDetailPage = () => {
                                     )}
 
                                     {approvals.length > 0 && (
-                                        <Card style={styles.approvalCard}>
+                                        <Card style={styles.actionCard}>
                                             <View style={styles.cardHeader}>
-                                                <AlertCircle size={20} color="#E11D48" />
-                                                <Text style={[styles.label, { color: "#E11D48" }]}>
-                                                    Acción Requerida: Aprobaciones Pendientes
+                                                <AlertCircle size={20} color="#B45309" />
+                                                <Text style={[styles.label, { color: "#92400E" }]}>
+                                                    {t(
+                                                        "orders.pending_approvals_title",
+                                                        "Acción requerida: aprobaciones pendientes",
+                                                    )}
                                                 </Text>
                                             </View>
                                             {approvals.map((approval: any) => (
-                                                <View key={approval.id} style={styles.approvalItem}>
+                                                <View key={approval.id} style={styles.actionItem}>
                                                     <Text style={styles.approvalTitle}>
                                                         {approval.title}
                                                     </Text>
@@ -426,7 +445,7 @@ export const OrderDetailPage = () => {
                                                     </Text>
                                                     <View style={styles.approvalActions}>
                                                         <Button
-                                                            title="Aprobar"
+                                                            title={t("orders.approve", "Aprobar")}
                                                             onPress={() =>
                                                                 handleApproval(
                                                                     approval.id,
@@ -437,7 +456,7 @@ export const OrderDetailPage = () => {
                                                             style={styles.actionBtn}
                                                         />
                                                         <Button
-                                                            title="Rechazar"
+                                                            title={t("orders.reject", "Rechazar")}
                                                             variant="outline"
                                                             onPress={() =>
                                                                 handleApproval(
@@ -1850,7 +1869,7 @@ const styles = StyleSheet.create({
     },
     orderId: { color: "#64748B", fontFamily: "monospace", fontSize: 13 },
     orderDate: { color: "#64748B", fontSize: 13 },
-    dot: { width: 4, height: 4, borderRadius: 2, backgroundColor: "#CBD5E1" },
+    dot: { width: 4, height: 4, borderRadius: 0, backgroundColor: "#CBD5E1" },
 
     stepperCard: {
         padding: 24,
@@ -1871,7 +1890,7 @@ const styles = StyleSheet.create({
     stepCircle: {
         width: 32,
         height: 32,
-        borderRadius: 16,
+        borderRadius: 0,
         backgroundColor: "#F1F5F9",
         alignItems: "center",
         justifyContent: "center",
@@ -1927,12 +1946,35 @@ const styles = StyleSheet.create({
         borderLeftWidth: 4,
         borderLeftColor: "#E11D48",
     },
+    actionCard: {
+        padding: 24,
+        marginBottom: 24,
+        backgroundColor: "#FFFBEB",
+        borderColor: "#FDE68A",
+        borderLeftWidth: 4,
+        borderLeftColor: "#B45309",
+    },
+    actionHint: {
+        marginTop: -8,
+        marginBottom: 8,
+        fontSize: 13,
+        lineHeight: 20,
+        color: "#92400E",
+        fontWeight: "400",
+    },
     approvalItem: {
         marginTop: 16,
         padding: 16,
         backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: "#FECDD3",
+    },
+    actionItem: {
+        marginTop: 16,
+        padding: 16,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#FDE68A",
     },
     approvalTitle: {
         fontSize: 16,
@@ -1944,6 +1986,7 @@ const styles = StyleSheet.create({
     approvalMeta: { fontSize: 12, color: "#64748B", marginTop: 8, marginBottom: 12 },
     approvalActions: { flexDirection: "row", gap: 12 },
     actionBtn: { flex: 1 },
+    hiddenFileInput: { display: "none" } as any,
 
     infoBox: {
         padding: 16,
@@ -2305,7 +2348,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F1F5F9",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         fontWeight: "500",
     },
     itemRow: {
@@ -2367,7 +2410,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#EFF6FF",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         borderWidth: 1,
         borderColor: "#BFDBFE",
     },
@@ -2403,7 +2446,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#ECFDF5",
         borderWidth: 1,
         borderColor: "#A7F3D0",
-        borderRadius: 4,
+        borderRadius: 0,
     },
     idDocText: { fontSize: 12, fontWeight: "600", color: "#065F46" },
 

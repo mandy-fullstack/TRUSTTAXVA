@@ -7,7 +7,7 @@ import { EmailModule } from '../../email/email.module';
 @Module({
   imports: [EmailModule],
   controllers: [PinController],
-  providers: [PinService, PrismaService],
+  providers: [PinService],
   exports: [PinService],
 })
-export class PinModule {}
+export class PinModule { }

@@ -15,8 +15,8 @@ import { CompanyModule } from '../company/company.module';
     }),
     CompanyModule,
   ],
-  providers: [ChatService, PrismaService, ChatGateway],
+  providers: [ChatService, ChatGateway],
   controllers: [ChatController],
   exports: [ChatService, ChatGateway],
 })
-export class ChatModule {}
+export class ChatModule { }

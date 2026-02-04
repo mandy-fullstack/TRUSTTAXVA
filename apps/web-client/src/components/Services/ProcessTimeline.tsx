@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   processIcon: {
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 0,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     right: 16,
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 0,
     backgroundColor: "#F1F5F9",
     alignItems: "center",
     justifyContent: "center",

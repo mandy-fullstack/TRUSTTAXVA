@@ -3,7 +3,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../common/services/encryption.service';
 import { StorageService } from '../common/services/storage.service';
@@ -11,6 +12,10 @@ import { ChatGateway } from '../chat/chat.gateway';
 import { FirebaseService } from '../common/services/firebase.service';
 import { EmailService } from '../email/email.service';
 import { DocType } from '@trusttax/database';
+import type { CreateClientInvitationDto } from './dto/create-client-invitation.dto';
+import { OrdersService } from '../orders/orders.service';
+import { AuditService } from '../common/services/audit.service';
+import { TokenService } from '../auth/token.service';
 
 @Injectable()
 export class AdminService {
@@ -21,6 +26,9 @@ export class AdminService {
         private chatGateway: ChatGateway,
         private firebaseService: FirebaseService,
         private emailService: EmailService,
+        private ordersService: OrdersService,
+        private auditService: AuditService,
+        private tokenService: TokenService,
     ) { }
 
     async getAllClients() {
@@ -29,6 +37,7 @@ export class AdminService {
             select: {
                 id: true,
                 email: true,
+                password: true,
                 name: true,
                 firstName: true,
                 middleName: true,
@@ -51,7 +60,171 @@ export class AdminService {
             },
             orderBy: { createdAt: 'desc' },
         });
-        return clients;
+        // Avoid returning password, but provide invitation status
+        return (clients || []).map((c: any) => {
+            const password = String(c.password || '');
+            const invitationPending = !password || password.length < 10;
+            const { password: _pw, ...rest } = c;
+            return { ...rest, invitationPending };
+        });
+    }
+
+    /**
+     * Admin: Create or re-invite a CLIENT user and send an email invitation
+     * to set a password (uses the same reset-password setup flow).
+     */
+    async createClientInvitation(payload: CreateClientInvitationDto, adminUserId?: string) {
+        const email = (payload.email || '').trim().toLowerCase();
+        if (!email) throw new BadRequestException('Email is required');
+
+        const existing = await (this.prisma.user as any).findUnique({
+            where: { email },
+        });
+
+        // Generate setup expiry (7 days)
+        const setupExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        const firstName = payload.firstName?.trim();
+        const lastName = payload.lastName?.trim();
+
+        if (existing) {
+            // Only allow inviting CLIENT accounts via this endpoint
+            if (existing.role && existing.role !== 'CLIENT') {
+                throw new BadRequestException(
+                    `A user with role ${existing.role} already exists with this email`,
+                );
+            }
+
+            // Generate secure token for EXISTING user
+            const setupToken = this.tokenService.createUrlToken({
+                sub: existing.id,
+                type: 'password_reset',
+            });
+
+            const name =
+                [firstName, lastName].filter(Boolean).join(' ') ||
+                (existing?.name as string) ||
+                'Client';
+
+            await (this.prisma.user as any).update({
+                where: { id: existing.id },
+                data: {
+                    firstName: firstName || existing.firstName || undefined,
+                    lastName: lastName || existing.lastName || undefined,
+                    name: name || existing.name || undefined,
+                    phone: payload.phone?.trim() || existing.phone || undefined,
+                    passwordResetToken: setupToken,
+                    passwordResetExpires: setupExpires,
+                    emailVerified: true,
+                    emailVerifiedAt: existing.emailVerifiedAt || new Date(),
+                },
+            });
+
+            let emailSent = false;
+            try {
+                await this.emailService.sendClientInvitationEmail(email, setupToken, {
+                    name,
+                });
+                emailSent = true;
+            } catch (error) {
+                console.error('[AdminService] Client re-invitation email failed:', error);
+            }
+
+            // Log the re-invitation
+            if (adminUserId) {
+                await this.auditService.log({
+                    userId: adminUserId,
+                    action: 'REINVITE_CLIENT',
+                    entity: 'User',
+                    entityId: existing.id,
+                    details: {
+                        email,
+                        name,
+                        emailSent,
+                        method: 'POST /admin/clients'
+                    },
+                });
+            }
+
+            return {
+                message: emailSent
+                    ? 'Client re-invitation has been sent successfully'
+                    : 'Client re-invited, but invitation email failed to send. Please check email configuration.',
+                email,
+                userId: existing.id,
+                isReinvite: true,
+                emailSent,
+            };
+        }
+
+        const name = [firstName, lastName].filter(Boolean).join(' ') || 'Client';
+
+        // Create new client first (without token) to get ID
+        let user = await (this.prisma.user as any).create({
+            data: {
+                email,
+                role: 'CLIENT',
+                password: '',
+                name,
+                firstName: firstName || undefined,
+                lastName: lastName || undefined,
+                phone: payload.phone?.trim() || undefined,
+                emailVerified: true,
+                emailVerifiedAt: new Date(),
+            },
+        });
+
+        // Generate secure token using NEW user ID
+        const setupToken = this.tokenService.createUrlToken({
+            sub: user.id,
+            type: 'password_reset',
+        });
+
+        // Update user with token
+        user = await (this.prisma.user as any).update({
+            where: { id: user.id },
+            data: {
+                passwordResetToken: setupToken,
+                passwordResetExpires: setupExpires,
+            },
+        });
+
+        let emailSent = false;
+        try {
+            await this.emailService.sendClientInvitationEmail(email, setupToken, {
+                name,
+            });
+            emailSent = true;
+        } catch (error) {
+            console.error('[AdminService] Client invitation email failed:', error);
+        }
+
+        // Log the new invitation
+        if (adminUserId) {
+            await this.auditService.log({
+                userId: adminUserId,
+                action: 'INVITE_NEW_CLIENT',
+                entity: 'User',
+                entityId: user.id,
+                details: {
+                    email,
+                    name,
+                    phone: payload.phone,
+                    emailSent,
+                    method: 'POST /admin/clients'
+                },
+            });
+        }
+
+        return {
+            message: emailSent
+                ? 'Client invitation has been sent successfully'
+                : 'Client created, but invitation email failed to send. Please check email configuration.',
+            email,
+            userId: user.id,
+            isReinvite: false,
+            emailSent,
+        };
     }
 
     async getStaff() {
@@ -90,6 +263,19 @@ export class AdminService {
                 invoices: {
                     orderBy: { createdAt: 'desc' as const },
                 },
+                auditLogs: {
+                    orderBy: { createdAt: 'desc' as const },
+                    take: 50,
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                name: true,
+                                email: true,
+                            }
+                        }
+                    }
+                }
             },
         });
 
@@ -203,6 +389,86 @@ export class AdminService {
         return { ssn, driverLicense, passport };
     }
 
+    async updateDocumentStatus(docId: string, status: 'PENDING' | 'VERIFIED' | 'REJECTED') {
+        const doc = await this.prisma.document.update({
+            where: { id: docId },
+            data: { status: status as any },
+        });
+
+        // Add timeline entry if it's related to an order
+        if (doc.orderId) {
+            await this.prisma.orderTimeline.create({
+                data: {
+                    orderId: doc.orderId,
+                    title: `Documento ${status === 'VERIFIED' ? 'verificado' : status === 'REJECTED' ? 'rechazado' : 'marcado como pendiente'}`,
+                    description: `El documento "${doc.title}" ha sido ${status === 'VERIFIED' ? 'aprobado' : status === 'REJECTED' ? 'rechazado' : 'cambiado a pendiente'} por el administrador.`,
+                },
+            });
+        }
+
+        return doc;
+    }
+
+    async getOrCreatePortalLink(orderId: string, approvalId: string) {
+        // Find existing valid token
+        let token = await this.prisma.portalAccessToken.findFirst({
+            where: {
+                orderId,
+                approvalId,
+                expiresAt: { gt: new Date() },
+                usedAt: null,
+            },
+        });
+
+        let rawToken: string;
+        if (!token) {
+            // Create new one if none exists or expired
+            const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+            if (!order) throw new Error('Order not found');
+
+            const rawToken = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto
+                .createHash('sha256')
+                .update(rawToken)
+                .digest('hex');
+
+            token = await this.prisma.portalAccessToken.create({
+                data: {
+                    tokenHash,
+                    purpose: 'DOCUMENT_REQUEST',
+                    userId: order.userId,
+                    orderId,
+                    approvalId,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+                },
+            });
+        } else {
+            // We can't recover the raw token from the hash.
+            // So if we need to show it again, we MUST generate a new one
+            // unless we store it (which we don't for security).
+            // Actually, for "Copy Link", it's better to just generate a new one every time or store it temporarily.
+            // Let's just generate a new one to be sure.
+            rawToken = crypto.randomBytes(32).toString('hex');
+            const tokenHash = crypto
+                .createHash('sha256')
+                .update(rawToken)
+                .digest('hex');
+
+            await this.prisma.portalAccessToken.update({
+                where: { id: token.id },
+                data: {
+                    tokenHash,
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+                },
+            });
+        }
+
+        const baseUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+        const portalUrl = `${baseUrl}/portal/document-request/${rawToken!}`;
+
+        return { portalUrl };
+    }
+
     async getAllOrders() {
         const orders = await this.prisma.order.findMany({
             include: {
@@ -231,6 +497,15 @@ export class AdminService {
             ...o,
             total: Number((o.service as { price: unknown }).price ?? 0),
         }));
+    }
+
+    async createOrder(data: { userId: string; serviceId: string; metadata?: any; status?: string }) {
+        return this.ordersService.create(
+            data.userId,
+            data.serviceId,
+            data.metadata || {},
+            data.status || 'SUBMITTED',
+        );
     }
 
     async getOrderDetails(orderId: string) {
@@ -303,7 +578,12 @@ export class AdminService {
      */
     async requestOrderDocument(
         orderId: string,
-        payload: { documentName: string; message?: string; docType?: DocType },
+        payload: {
+            documentName: string;
+            message?: string;
+            docType?: DocType;
+            requireLogin?: boolean;
+        },
     ) {
         const order = await this.prisma.order.findUnique({
             where: { id: orderId },
@@ -359,6 +639,11 @@ export class AdminService {
         // Notificación en tiempo real (socket + push)
         this.chatGateway.server.to(`user_${order.userId}`).emit('notification', {
             type: 'order',
+            subtype: 'DOCUMENT_REQUEST',
+            orderId,
+            approvalId: approval.id,
+            documentName: payload.documentName,
+            docType: String(docType),
             title: 'Documento requerido',
             body: `Por favor sube: ${payload.documentName}`,
             link: `/dashboard/orders/${orderId}`,
@@ -380,14 +665,54 @@ export class AdminService {
                 userEmail.split('@')[0] ||
                 'there';
 
-            await this.emailService.sendOrderDocumentRequestEmail(userEmail, {
-                userName,
-                orderId,
-                orderDisplayId: order.displayId || order.id.slice(0, 8),
-                documentName: payload.documentName,
-                message: payload.message || '',
-                docType: String(docType),
-            });
+            const orderDisplayId = order.displayId || order.id.slice(0, 8);
+
+            // Configurable: require login vs portal (no login)
+            if (payload.requireLogin) {
+                await this.emailService.sendOrderDocumentRequestEmail(userEmail, {
+                    userName,
+                    orderId,
+                    orderDisplayId,
+                    documentName: payload.documentName,
+                    message: payload.message || '',
+                    docType: String(docType),
+                });
+            } else {
+                // Private one-time portal link
+                const rawToken = crypto.randomBytes(32).toString('hex');
+                const tokenHash = crypto
+                    .createHash('sha256')
+                    .update(rawToken)
+                    .digest('hex');
+                const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+                await (this.prisma as any).portalAccessToken.create({
+                    data: {
+                        tokenHash,
+                        purpose: 'DOCUMENT_REQUEST',
+                        userId: order.userId,
+                        orderId,
+                        approvalId: approval.id,
+                        expiresAt,
+                    },
+                });
+
+                const baseUrl =
+                    process.env.CLIENT_URL ||
+                    process.env.ADMIN_URL ||
+                    'http://localhost:5175';
+                const portalUrl = `${baseUrl}/portal/document-request/${rawToken}`;
+
+                await this.emailService.sendOrderDocumentRequestPortalEmail(userEmail, {
+                    userName,
+                    orderId,
+                    orderDisplayId,
+                    documentName: payload.documentName,
+                    message: payload.message || '',
+                    docType: String(docType),
+                    portalUrl,
+                });
+            }
         } catch (e: any) {
             console.warn(
                 '[AdminService] Failed to send document request email:',

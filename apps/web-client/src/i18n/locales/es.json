@@ -55,7 +55,20 @@
     },
     "urgent": "Urgente",
     "drop_file": "SOLTAR ARCHIVO AQUÍ",
-    "required": "Requerido"
+    "required": "Requerido",
+    "home": "Inicio"
+  },
+  "portal": {
+    "upload_title": "SUBIDA SEGURA DE DOCUMENTOS",
+    "upload_subtitle": "Sube el documento solicitado usando este enlace privado.",
+    "upload_success": "Carga completada",
+    "upload_success_hint": "Gracias. Tu documento se subió de forma segura y se adjuntó a tu orden.",
+    "back_home": "Volver al inicio",
+    "order": "Orden",
+    "document": "Documento solicitado",
+    "expires": "El enlace expira",
+    "choose_file": "Elegir archivo",
+    "uploading": "Subiendo..."
   },
   "settings": {
     "sms_opt_out_title": "¿Desactivar SMS?",
@@ -872,7 +885,17 @@
     "enable_btn": "Activar Notificaciones",
     "new_message": "Nuevo mensaje",
     "order_update": "Actualización de Orden",
-    "order_update_body": "Tu orden para {{service}} ha sido actualizada."
+    "order_update_body": "Tu orden para {{service}} ha sido actualizada.",
+    "order_update_status": "Orden {{id}}: {{status}}",
+    "order_status_updated": "Estado actualizado",
+    "document_required_title": "Documento requerido",
+    "document_required_body": "Por favor sube: {{doc}}",
+    "pending_approval_body": "Aprobación pendiente: {{title}}",
+    "support": "Soporte",
+    "from_support": "De: {{name}}",
+    "ios_tip_title": "Tip para iPhone",
+    "ios_tip_body": "Para recibir notificaciones, pulsa \"Compartir\" y luego \"Añadir a la pantalla de inicio\".",
+    "document": "documento"
   },
   "orders": {
     "progress": "Progreso de tu Solicitud",
@@ -884,6 +907,19 @@
     "reject": "Rechazar",
     "approved": "Aprobado",
     "rejected": "Rechazado",
+    "pending_approvals_title": "Acción requerida: aprobaciones pendientes",
+    "document_requests_title": "Documentos solicitados",
+    "document_requests_hint": "Sube los documentos solicitados para continuar. Se adjuntarán de forma segura a tu orden.",
+    "document_type": "Tipo",
+    "upload_document": "Subir documento",
+    "upload_web_only": "Subida de archivos disponible en web.",
+    "uploading": "Subiendo...",
+    "status_approved": "Aprobada",
+    "status_rejected": "Rechazada",
+    "status_in_progress": "En progreso",
+    "status_completed": "Completada",
+    "status_pending": "Pendiente",
+    "status_needs_info": "Requiere información",
     "id": "ID",
     "date": "Fecha"
   },

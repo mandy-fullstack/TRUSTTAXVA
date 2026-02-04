@@ -27,6 +27,7 @@ import { UploadDocumentDto } from '../documents/dto/upload-document.dto';
 import { DocType } from '@trusttax/database';
 import { AdminGuard } from '../auth/admin.guard';
 import { RequestOrderDocumentDto } from './dto/request-order-document.dto';
+import { CreateClientInvitationDto } from './dto/create-client-invitation.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), AdminGuard)
@@ -39,6 +40,16 @@ export class AdminController {
   @Get('clients')
   async getAllClients() {
     return this.adminService.getAllClients();
+  }
+
+  /**
+   * Admin: Create (or re-invite) a client user and send an invitation email
+   * so they can set their password and access the private portal.
+   */
+  @Post('clients')
+  async createClient(@Request() req: any, @Body() body: CreateClientInvitationDto) {
+    const adminUserId = req.user?.userId;
+    return this.adminService.createClientInvitation(body, adminUserId);
   }
 
   @Get('staff')
@@ -69,6 +80,11 @@ export class AdminController {
   @Get('orders/:id')
   async getOrderDetails(@Param('id') id: string) {
     return this.adminService.getOrderDetails(id);
+  }
+
+  @Post('orders')
+  async createOrder(@Body() body: { userId: string; serviceId: string; metadata?: any; status?: string }) {
+    return this.adminService.createOrder(body);
   }
 
   @Patch('orders/:id/status')
@@ -240,5 +256,21 @@ export class AdminController {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  @Patch('documents/:id/status')
+  async updateDocumentStatus(
+    @Param('id') id: string,
+    @Body() body: { status: 'PENDING' | 'VERIFIED' | 'REJECTED' },
+  ) {
+    return this.adminService.updateDocumentStatus(id, body.status);
+  }
+
+  @Get('orders/:id/approvals/:approvalId/portal-link')
+  async getPortalLink(
+    @Param('id') orderId: string,
+    @Param('approvalId') approvalId: string,
+  ) {
+    return this.adminService.getOrCreatePortalLink(orderId, approvalId);
   }
 }

@@ -54,7 +54,7 @@ async function request<T>(
   }
 
   const url = `${BASE_URL}${endpoint}`;
-  
+
   // Log en desarrollo para debugging
   if (import.meta.env.DEV) {
     console.log(`[API Request] ${options.method || "GET"} ${url}`);
@@ -70,22 +70,22 @@ async function request<T>(
       } catch {
         err = { message: `Server error: ${res.status} ${res.statusText}` };
       }
-      
+
       const msg =
         (err && typeof err === "object" && "message" in err && err.message) ||
         `Request failed with status ${res.status}`;
-        
+
       if (res.status === 401) throw new AuthenticationError(String(msg), 401);
       if (res.status === 403) throw new ForbiddenError(String(msg));
       if (res.status === 404) throw new NotFoundError(String(msg));
-      
+
       // Para errores 500, usar NetworkError
       if (res.status >= 500) {
         throw new NetworkError(
           `Server error: ${msg}. Please try again later or contact support.`
         );
       }
-      
+
       throw new Error(String(msg));
     }
     return res.json();
@@ -106,7 +106,7 @@ async function request<T>(
       }
       throw new NetworkError(errorMessage);
     }
-    
+
     // Si es un Error genérico con mensaje "An unexpected error occurred", 
     // convertirlo a NetworkError para mejor manejo
     if (
@@ -121,7 +121,7 @@ async function request<T>(
       }
       throw networkError;
     }
-    
+
     if (import.meta.env.DEV) {
       console.error("[API Error] Unexpected error:", e);
     }
@@ -173,6 +173,16 @@ export const api = {
   },
 
   getClients: () => request<any[]>("/admin/clients"),
+  createClient: (data: {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }) =>
+    request<any>("/admin/clients", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   getClientDetails: (id: string) => request<any>(`/admin/clients/${id}`),
   deleteClient: (id: string) =>
     request<{ success: boolean; message: string; deleted: any }>(
@@ -209,6 +219,16 @@ export const api = {
   getStaff: () => request<any[]>("/admin/staff"),
 
   getOrders: () => request<any[]>("/admin/orders"),
+  createOrder: (data: {
+    userId: string;
+    serviceId: string;
+    status?: string;
+    metadata?: any;
+  }) =>
+    request<any>("/admin/orders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
   getOrderDetails: (id: string) => request<any>(`/admin/orders/${id}`),
   updateOrderStatus: (id: string, status: string, notes?: string) =>
     request<any>(`/admin/orders/${id}/status`, {
@@ -231,7 +251,12 @@ export const api = {
 
   requestOrderDocument: (
     id: string,
-    data: { documentName: string; message?: string; docType?: string },
+    data: {
+      documentName: string;
+      message?: string;
+      docType?: string;
+      requireLogin?: boolean;
+    },
   ) =>
     request<any>(`/admin/orders/${id}/request-document`, {
       method: "POST",
@@ -470,6 +495,19 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+  removeClientDocument: (userId: string, docId: string) =>
+    request<any>(`/admin/clients/${userId}/documents/${docId}`, {
+      method: "DELETE",
+    }),
+  updateDocumentStatus: (id: string, status: "PENDING" | "VERIFIED" | "REJECTED") =>
+    request<any>(`/admin/documents/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  getPortalLink: (orderId: string, approvalId: string) =>
+    request<{ portalUrl: string }>(
+      `/admin/orders/${orderId}/approvals/${approvalId}/portal-link`,
+    ),
   deleteFormField: (formId: string, fieldId: string) =>
     request<any>(`/admin/forms/${formId}/fields/${fieldId}`, {
       method: "DELETE",

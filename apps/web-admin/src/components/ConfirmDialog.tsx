@@ -53,17 +53,17 @@ export const ConfirmDialog = ({
       buttonText: "#FFFFFF",
     },
     warning: {
-      icon: "#F59E0B",
+      icon: "#D97706", // Refined Amber 600
       bg: "#FFFBEB",
       border: "#FDE68A",
-      buttonBg: "#F59E0B",
+      buttonBg: "#D97706",
       buttonText: "#FFFFFF",
     },
     info: {
       icon: "#2563EB",
       bg: "#EFF6FF",
       border: "#BFDBFE",
-      buttonBg: "#2563EB",
+      buttonBg: "#0F172A", // Darker primary for info
       buttonText: "#FFFFFF",
     },
   };
@@ -143,14 +143,14 @@ export const ConfirmDialog = ({
                   </Text>
                 </View>
               ) : (
-              <Text
+                <Text
                   style={[
                     styles.confirmButtonText,
                     { color: colors.buttonText },
                   ]}
-              >
-                {confirmText}
-              </Text>
+                >
+                  {confirmText}
+                </Text>
               )}
             </TouchableOpacity>
           </View>
@@ -163,22 +163,22 @@ export const ConfirmDialog = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.65)", // Deeper, more premium backdrop
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
   },
   dialog: {
     width: "100%",
-    maxWidth: 480,
+    maxWidth: 440,
     backgroundColor: "#FFFFFF",
     borderRadius: 0,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#1E293B", // Darker, sharper border
     ...(Platform.OS === "web"
       ? {
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        }
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+      }
       : {}),
   } as any,
   header: {
@@ -217,8 +217,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     ...(Platform.OS === "web"
       ? {
-          cursor: "pointer",
-        }
+        cursor: "pointer",
+      }
       : {}),
   } as any,
   content: {
@@ -240,19 +240,19 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   cancelButton: {
-    minWidth: 120,
-    height: 44,
+    minWidth: 100,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     backgroundColor: "#FFFFFF",
     borderRadius: 0,
     ...(Platform.OS === "web"
       ? {
-          cursor: "pointer",
-        }
+        cursor: "pointer",
+      }
       : {}),
   } as any,
   cancelButtonText: {
@@ -262,16 +262,16 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   confirmButton: {
-    minWidth: 120,
-    height: 44,
+    minWidth: 100,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     borderRadius: 0,
     ...(Platform.OS === "web"
       ? {
-          cursor: "pointer",
-        }
+        cursor: "pointer",
+      }
       : {}),
   } as any,
   confirmButtonDisabled: {

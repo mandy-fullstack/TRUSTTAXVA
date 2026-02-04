@@ -95,6 +95,22 @@
   "clients": {
     "title": "Clients",
     "add_client": "Add Client",
+    "create_client": "Create client",
+    "create_title": "Invite New Client",
+    "create_hint": "Invite a client to collaborate securely. They will receive an email to set up their portal access.",
+    "optional": "Optional",
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "invalid_email": "Please enter a valid email address",
+    "sending": "Sending...",
+    "send_invite": "Send Invitation",
+    "invite_sent_title": "Invitation Sent",
+    "reinvite_sent_title": "Invitation Re-sent",
+    "invite_sent_msg": "The invitation has been successfully sent to the client.",
+    "invite_failed": "Failed to send the invitation. Please try again.",
+    "invite_info": "The invitation expires in 7 days for security reasons.",
+    "phone": "Phone",
+    "email": "Email",
     "search_placeholder": "Search clients...",
     "no_clients": "No clients found",
     "no_clients_yet": "No Clients Yet",
@@ -116,7 +132,8 @@
     "delete_error_message": "Failed to delete the client. Please try again.",
     "actions": "Actions",
     "profile_complete": "Profile complete",
-    "joined": "Joined"
+    "joined": "Joined",
+    "invitation_pending": "Invitation pending"
   },
   "staff": {
     "title": "Staff & Team",

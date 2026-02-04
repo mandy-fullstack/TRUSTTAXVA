@@ -771,7 +771,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     padding: 4,
-    borderRadius: 4,
+    borderRadius: 0,
   },
   imagePreviewWrapper: {
     width: 220,

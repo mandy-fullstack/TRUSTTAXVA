@@ -42,17 +42,17 @@ export const AlertDialog = ({
     },
     warning: {
       icon: AlertCircle,
-      iconColor: "#F59E0B",
+      iconColor: "#D97706", // Refined Amber 600
       bg: "#FFFBEB",
       border: "#FDE68A",
-      buttonBg: "#F59E0B",
+      buttonBg: "#D97706",
     },
     info: {
       icon: Info,
       iconColor: "#2563EB",
       bg: "#EFF6FF",
       border: "#BFDBFE",
-      buttonBg: "#2563EB",
+      buttonBg: "#0F172A", // Darker primary for info
     },
   };
 
@@ -114,24 +114,24 @@ export const AlertDialog = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(15, 23, 42, 0.65)", // Deeper, more premium backdrop
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 24,
     zIndex: 9999,
     elevation: 9999,
   },
   dialog: {
     width: "100%",
-    maxWidth: 480,
+    maxWidth: 440,
     backgroundColor: "#FFFFFF",
     borderRadius: 0,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#1E293B", // Darker, sharper border
     ...(Platform.OS === "web"
       ? {
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        }
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+      }
       : {}),
   } as any,
   header: {
@@ -170,8 +170,8 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     ...(Platform.OS === "web"
       ? {
-          cursor: "pointer",
-        }
+        cursor: "pointer",
+      }
       : {}),
   } as any,
   content: {
@@ -193,16 +193,16 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   button: {
-    minWidth: 120,
-    height: 44,
+    minWidth: 100,
+    height: 40,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     borderRadius: 0,
     ...(Platform.OS === "web"
       ? {
-          cursor: "pointer",
-        }
+        cursor: "pointer",
+      }
       : {}),
   } as any,
   buttonText: {

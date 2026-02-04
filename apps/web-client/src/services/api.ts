@@ -776,6 +776,36 @@ class ApiService {
         });
     }
 
+    // --- Public Portal (no auth) ---
+    async getPortalDocumentRequest(token: string): Promise<{
+        approvalId: string;
+        orderId: string;
+        orderDisplayId: string;
+        documentName: string;
+        message?: string;
+        docType: string;
+        expiresAt: string;
+    }> {
+        return this.request(`/portal/document-request/${encodeURIComponent(token)}`, {
+            method: "GET",
+        });
+    }
+
+    async uploadPortalDocumentRequest(
+        token: string,
+        file: File,
+    ): Promise<{ success: boolean; documentId: string }> {
+        const formData = new FormData();
+        formData.append("file", file);
+        return this.request(
+            `/portal/document-request/${encodeURIComponent(token)}/upload`,
+            {
+                method: "POST",
+                body: formData,
+            },
+        );
+    }
+
     // Add future modules here (Orders, Appointments, etc.)
 }
 

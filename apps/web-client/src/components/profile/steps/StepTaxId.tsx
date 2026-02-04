@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   iconBox: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: 0,
     backgroundColor: "#EFF6FF",
     alignItems: "center",
     justifyContent: "center",
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 12,
     backgroundColor: "#F8FAFC",
-    borderRadius: 6,
+    borderRadius: 0,
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },

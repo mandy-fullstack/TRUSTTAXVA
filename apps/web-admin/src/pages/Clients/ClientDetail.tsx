@@ -27,10 +27,10 @@ import {
   Folder,
   Download,
   Trash2,
-  Edit2, // Added for rename
-  Upload, // Added for upload
-  X, // Added for modal
-  // Eye, // Removed duplicate
+  Edit2,
+  Upload,
+  X,
+  History,
 } from "lucide-react";
 import { api } from "../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
@@ -38,6 +38,7 @@ import { Layout } from "../../components/Layout";
 import { FileIcon } from "../../components/FileIcon";
 import { RenameModal } from "../../components/RenameModal";
 import { API_BASE_URL } from "../../config/api";
+import { useTranslation } from "react-i18next";
 // import { ConfirmDialog } from '../../components/ConfirmDialog'; // Removed unused
 
 const MOBILE_BREAKPOINT = 768;
@@ -78,6 +79,7 @@ function fullName(
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { width } = useWindowDimensions();
   const isMobile = width < MOBILE_BREAKPOINT;
   const [client, setClient] = useState<any>(null);
@@ -1032,6 +1034,66 @@ export function ClientDetailPage() {
           title="Rename Document"
         />
 
+        {/* Activity History */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <History size={18} color="#334155" />
+            <H4 style={styles.sectionTitle}>
+              {t("clients.activity_history", "Historial de Actividad")}
+            </H4>
+          </View>
+          <View style={styles.card}>
+            {!client.auditLogs || client.auditLogs.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>{t("clients.no_activity", "No hay actividad reciente.")}</Text>
+              </View>
+            ) : (
+              <View style={styles.timeline}>
+                {client.auditLogs.map((log: any, index: number) => (
+                  <View key={log.id} style={styles.timelineItem}>
+                    <View style={styles.timelineLine}>
+                      <View style={styles.timelineDot} />
+                      {index < client.auditLogs.length - 1 && <View style={styles.timelineConnector} />}
+                    </View>
+                    <View style={styles.timelineContent}>
+                      <View style={styles.timelineHeader}>
+                        <Text style={styles.timelineAction}>
+                          {formatAuditAction(log.action)}
+                        </Text>
+                        <Text style={styles.timelineDate}>
+                          {formatDateTime(log.createdAt)}
+                        </Text>
+                      </View>
+                      <Text style={styles.timelineDetails}>
+                        {log.user?.name || log.user?.email || "System"} • {log.entity}
+                      </Text>
+                      {log.details && Object.keys(log.details).length > 0 && (
+                        <View style={styles.timelineMeta}>
+                          {log.action === "DECRYPT_SENSITIVE_DATA" && (
+                            <Text style={styles.metaText}>
+                              Field: {log.details.field} • {log.details.reason}
+                            </Text>
+                          )}
+                          {log.action === "INVITE_NEW_CLIENT" && (
+                            <Text style={styles.metaText}>
+                              {t("clients.email_sent", "Email enviado")}: {log.details.emailSent ? "✅" : "❌"}
+                            </Text>
+                          )}
+                          {log.action === "REINVITE_CLIENT" && (
+                            <Text style={styles.metaText}>
+                              {t("clients.email_sent", "Email enviado")}: {log.details.emailSent ? "✅" : "❌"}
+                            </Text>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+
         {/* Invoices */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
@@ -1096,6 +1158,23 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
+function formatAuditAction(action: string): string {
+  const map: Record<string, string> = {
+    INVITE_NEW_CLIENT: "Client Invited",
+    REINVITE_CLIENT: "Client Re-invited",
+    DECRYPT_SENSITIVE_DATA: "Sensitive Data Viewed",
+    UPDATE_USER_PROFILE: "Profile Updated",
+    ORDER_STATUS_CHANGE: "Order Status Updated",
+  };
+  return (
+    map[action] ||
+    action
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (l) => l.toUpperCase())
+  );
+}
+
 const styles = StyleSheet.create({
   scroll: { flex: 1, width: "100%" },
   mainContainer: { flex: 1, height: "100%", flexDirection: "column" },
@@ -1154,6 +1233,66 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
   },
   refreshText: { fontSize: 13, color: "#64748B", fontWeight: "500" },
+  timeline: {
+    paddingVertical: 8,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    minHeight: 60,
+  },
+  timelineLine: {
+    width: 24,
+    alignItems: "center",
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#3B82F6",
+    marginTop: 6,
+    zIndex: 2,
+  },
+  timelineConnector: {
+    flex: 1,
+    width: 2,
+    backgroundColor: "#E2E8F0",
+    marginVertical: -2,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: 20,
+    paddingLeft: 8,
+  },
+  timelineHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  timelineAction: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1E293B",
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: "#94A3B8",
+  },
+  timelineDetails: {
+    fontSize: 13,
+    color: "#64748B",
+    marginBottom: 4,
+  },
+  timelineMeta: {
+    backgroundColor: "#F8FAFC",
+    padding: 6,
+    borderRadius: 4,
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#475569",
+    fontStyle: "italic",
+  },
   avatar: {
     width: 64,
     height: 64,

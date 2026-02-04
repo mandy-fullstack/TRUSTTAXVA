@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   reviewAvatar: {
     width: 48,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 0,
     backgroundColor: "#2563EB",
     alignItems: "center",
     justifyContent: "center",

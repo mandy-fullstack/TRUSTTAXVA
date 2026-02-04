@@ -31,13 +31,11 @@ import { SMSModule } from '../sms/sms.module';
     ],
     providers: [
         AuthService,
-        PrismaService,
-        EncryptionService,
         JwtStrategy,
         TwoFactorService,
         TokenService,
     ],
     controllers: [AuthController],
-    exports: [AuthService],
+    exports: [AuthService, TokenService],
 })
 export class AuthModule { }

@@ -15,10 +15,7 @@ import { AiModule } from '../common/services/ai.module';
   controllers: [DocumentsController],
   providers: [
     DocumentsService,
-    PrismaService,
-    EncryptionService,
-    StorageService,
   ],
   exports: [DocumentsService],
 })
-export class DocumentsModule {}
+export class DocumentsModule { }

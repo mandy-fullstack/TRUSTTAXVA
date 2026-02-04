@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 6,
     backgroundColor: "#F1F5F9",
-    borderRadius: 3,
+    borderRadius: 0,
     overflow: "hidden",
   },
   fill: {

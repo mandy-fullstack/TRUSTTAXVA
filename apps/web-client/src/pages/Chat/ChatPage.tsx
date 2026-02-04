@@ -218,7 +218,7 @@ export const ChatPage = () => {
                       style={{
                         width: 8,
                         height: 8,
-                        borderRadius: 4,
+                        borderRadius: 0,
                         backgroundColor: socketConnected
                           ? "#22C55E"
                           : "#EF4444",

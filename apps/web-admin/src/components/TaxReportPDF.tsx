@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563EB",
     color: "white",
     fontSize: 8,
-    borderRadius: 2,
+    borderRadius: 0,
   },
   tableHeader: {
     flexDirection: "row",

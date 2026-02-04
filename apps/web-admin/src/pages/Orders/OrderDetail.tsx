@@ -23,6 +23,8 @@ import {
     ShieldCheck,
     Search,
     Filter,
+    Copy,
+    Check,
 } from "lucide-react";
 import { DocumentCard } from "../../components/DocumentCard";
 import { DocumentPreviewModal } from "../../components/DocumentPreviewModal";
@@ -124,6 +126,7 @@ export const OrderDetailPage = () => {
     const [notes, setNotes] = useState("");
     const [newUpdate, setNewUpdate] = useState({ title: "", description: "" });
     const [postingUpdate, setPostingUpdate] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     // New Approval State
     const [newApproval, setNewApproval] = useState({
@@ -138,6 +141,7 @@ export const OrderDetailPage = () => {
         documentName: "",
         message: "",
         docType: "OTHER",
+        requireLogin: false,
     });
     const [requestingDoc, setRequestingDoc] = useState(false);
 
@@ -222,10 +226,21 @@ export const OrderDetailPage = () => {
                 documentName: docRequest.documentName.trim(),
                 message: docRequest.message.trim() || undefined,
                 docType: docRequest.docType || "OTHER",
+                requireLogin: !!docRequest.requireLogin,
             });
-            setDocRequest({ documentName: "", message: "", docType: "OTHER" });
+            setDocRequest({
+                documentName: "",
+                message: "",
+                docType: "OTHER",
+                requireLogin: false,
+            });
             await fetchOrder();
-            Alert.alert("Éxito", "Solicitud de documento enviada al cliente (email + dashboard).");
+            Alert.alert(
+                "Éxito",
+                docRequest.requireLogin
+                    ? "Solicitud enviada (requiere login en el portal del cliente)."
+                    : "Solicitud enviada (portal privado sin login por email).",
+            );
         } catch (error) {
             console.error("Failed to request document:", error);
             Alert.alert("Error", "No se pudo solicitar el documento. Intenta nuevamente.");
@@ -331,50 +346,116 @@ export const OrderDetailPage = () => {
                         <Card style={styles.card}>
                             <View style={styles.cardHeader}>
                                 <AlertCircle size={20} color="#64748B" />
-                                <Text style={styles.label}>Solicitudes de Aprobación</Text>
+                                <Text style={styles.label}>Centro de Solicitudes (Request Center)</Text>
                             </View>
 
                             {order.approvals?.length > 0 ? (
                                 <View style={styles.approvalList}>
-                                    {order.approvals.map((approval: any) => (
-                                        <View key={approval.id} style={styles.approvalItem}>
-                                            <View style={styles.approvalHeader}>
-                                                <Text style={styles.approvalTitle}>
-                                                    {approval.title}
-                                                </Text>
-                                                <View
-                                                    style={[
-                                                        styles.statusDot,
-                                                        approval.status === "APPROVED"
-                                                            ? styles.dotGreen
-                                                            : approval.status === "REJECTED"
-                                                                ? styles.dotRed
-                                                                : styles.dotYellow,
-                                                    ]}
-                                                />
-                                                <Text style={styles.approvalStatusText}>
-                                                    {approval.status}
-                                                </Text>
-                                            </View>
-                                            <Text style={styles.approvalDesc}>
-                                                {approval.description}
-                                            </Text>
-                                            {approval.clientNote && (
-                                                <View style={styles.clientNoteBox}>
-                                                    <Text style={styles.clientNoteLabel}>
-                                                        Respuesta del cliente:
-                                                    </Text>
-                                                    <Text style={styles.clientNoteText}>
-                                                        {approval.clientNote}
-                                                    </Text>
+                                    {order.approvals.map((approval: any) => {
+                                        const isDocRequest = approval.type === "DOCUMENT_REQUEST";
+                                        const isCompleted = approval.status === "COMPLETED";
+                                        const clientNoteData = isCompleted && approval.clientNote ?
+                                            (() => {
+                                                try { return JSON.parse(approval.clientNote); }
+                                                catch (e) { return null; }
+                                            })() : null;
+
+                                        return (
+                                            <View key={approval.id} style={styles.approvalItem}>
+                                                <View style={styles.approvalHeader}>
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text style={styles.approvalTitle}>
+                                                            {approval.title}
+                                                        </Text>
+                                                        <Text style={styles.approvalType}>
+                                                            {approval.type}
+                                                        </Text>
+                                                    </View>
+                                                    <View
+                                                        style={[
+                                                            styles.statusBadge,
+                                                            approval.status === "APPROVED" || approval.status === "COMPLETED"
+                                                                ? styles.badgeGreen
+                                                                : approval.status === "REJECTED"
+                                                                    ? styles.badgeRed
+                                                                    : styles.badgeYellow,
+                                                        ]}
+                                                    >
+                                                        <Text style={styles.statusBadgeText}>
+                                                            {approval.status}
+                                                        </Text>
+                                                    </View>
                                                 </View>
-                                            )}
-                                        </View>
-                                    ))}
+
+                                                <Text style={styles.approvalDesc}>
+                                                    {approval.description}
+                                                </Text>
+
+                                                {isDocRequest && !isCompleted && (
+                                                    <View style={styles.portalActionRow}>
+                                                        <TouchableOpacity
+                                                            style={styles.portalLinkButton}
+                                                            onPress={async () => {
+                                                                try {
+                                                                    const { portalUrl } = await api.getPortalLink(order.id, approval.id);
+                                                                    navigator.clipboard.writeText(portalUrl);
+                                                                    setCopiedId(approval.id);
+                                                                    setTimeout(() => setCopiedId(null), 2000);
+                                                                } catch (e) {
+                                                                    alert("Error al obtener portal link");
+                                                                }
+                                                            }}
+                                                        >
+                                                            {copiedId === approval.id ? (
+                                                                <>
+                                                                    <Check size={14} color="#10B981" />
+                                                                    <Text style={[styles.portalLinkText, { color: "#10B981" }]}>Copiado</Text>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Copy size={14} color="#2563EB" />
+                                                                    <Text style={styles.portalLinkText}>Copiar Link de Portal</Text>
+                                                                </>
+                                                            )}
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+
+                                                {isCompleted && clientNoteData?.documentId && (
+                                                    <View style={styles.completedRequestDoc}>
+                                                        <View style={styles.completedRequestHeader}>
+                                                            <Check size={16} color="#10B981" />
+                                                            <Text style={styles.completedRequestTitle}>Documento recibido:</Text>
+                                                        </View>
+                                                        <DocumentCard
+                                                            document={{
+                                                                id: clientNoteData.documentId,
+                                                                title: approval.title,
+                                                                type: approval.type,
+                                                                uploadedAt: approval.updatedAt || new Date(),
+                                                            }}
+                                                            variant="compact"
+                                                        />
+                                                    </View>
+                                                )}
+
+                                                {approval.clientNote && !isCompleted && (
+                                                    <View style={styles.clientNoteBox}>
+                                                        <Text style={styles.clientNoteLabel}>
+                                                            Respuesta del cliente:
+                                                        </Text>
+                                                        <Text style={styles.clientNoteText}>
+                                                            {approval.clientNote}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        );
+                                    })}
                                 </View>
                             ) : (
                                 <Text style={styles.noData}>
-                                    No hay solicitudes de aprobación pendientes.
+                                    No hay solicitudes de aprobación o documentos pendientes.
                                 </Text>
                             )}
 
@@ -455,6 +536,26 @@ export const OrderDetailPage = () => {
                                         <option value="W2_FORM">W2_FORM</option>
                                         <option value="PAYSTUB">PAYSTUB</option>
                                         <option value="LEGAL_DOCUMENT">LEGAL_DOCUMENT</option>
+                                    </select>
+                                </View>
+                                <View style={styles.selectWrap}>
+                                    <select
+                                        value={docRequest.requireLogin ? "login" : "portal"}
+                                        onChange={(e) =>
+                                            setDocRequest({
+                                                ...docRequest,
+                                                requireLogin: e.target.value === "login",
+                                            })
+                                        }
+                                        style={styles.select as any}
+                                        aria-label="Document request access mode"
+                                    >
+                                        <option value="portal">
+                                            Portal privado (sin login, link por email)
+                                        </option>
+                                        <option value="login">
+                                            Requiere login (Dashboard del cliente)
+                                        </option>
                                     </select>
                                 </View>
                                 <Button
@@ -2046,7 +2147,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     approvalTitle: { fontSize: 15, fontWeight: "700", color: "#0F172A", flex: 1 },
-    statusDot: { width: 8, height: 8, borderRadius: 4 },
+    statusDot: { width: 8, height: 8, borderRadius: 0 },
     dotYellow: { backgroundColor: "#EAB308" },
     dotGreen: { backgroundColor: "#22C55E" },
     dotRed: { backgroundColor: "#EF4444" },
@@ -2585,7 +2686,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#F1F5F9",
         paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         fontWeight: "500",
     },
 
@@ -2597,7 +2698,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#EFF6FF",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         borderWidth: 1,
         borderColor: "#BFDBFE",
     },
@@ -2612,7 +2713,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#ECFDF5",
         borderWidth: 1,
         borderColor: "#A7F3D0",
-        borderRadius: 4,
+        borderRadius: 0,
     },
     idDocText: { fontSize: 12, fontWeight: "600", color: "#065F46" },
 
@@ -2697,12 +2798,76 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         gap: 12,
+        backgroundColor: "#F8FAFC",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        borderStyle: "dashed",
     },
     noDocumentsText: {
         fontSize: 14,
-        color: "#94A3B8",
-        textAlign: "center",
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
         lineHeight: 20,
+    },
+
+    // Request Center
+    approvalType: {
+        fontSize: 10,
+        fontWeight: "700",
+        color: "#64748B",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        marginTop: 2,
+    },
+    badgeGreen: {
+        backgroundColor: "#DCFCE7",
+        borderColor: "#86EFAC",
+    },
+    badgeRed: {
+        backgroundColor: "#FEE2E2",
+        borderColor: "#FCA5A5",
+    },
+    badgeYellow: {
+        backgroundColor: "#FEF9C3",
+        borderColor: "#FDE047",
+    },
+    portalActionRow: {
+        marginTop: 12,
+        flexDirection: "row",
+        gap: 12,
+    },
+    portalLinkButton: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        backgroundColor: "#EFF6FF",
+        borderWidth: 1,
+        borderColor: "#BFDBFE",
+        borderRadius: 0,
+    },
+    portalLinkText: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: "#2563EB",
+    },
+    completedRequestDoc: {
+        marginTop: 12,
+        padding: 12,
+        backgroundColor: "#F0FDF4",
+        borderWidth: 1,
+        borderColor: "#BBF7D0",
+        borderRadius: 0,
+    },
+    completedRequestHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        marginBottom: 8,
+    },
+    completedRequestTitle: {
+        fontSize: 13,
+        fontWeight: "700",
+        color: "#065F46",
     },
 });

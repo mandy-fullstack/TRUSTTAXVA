@@ -9,7 +9,7 @@ export class AppController {
     private readonly appService: AppService,
     private readonly authService: AuthService,
     private readonly emailService: EmailService,
-  ) {}
+  ) { }
 
   @Get()
   getHello(): string {
@@ -22,11 +22,11 @@ export class AppController {
       console.log('[DEBUG] Test login endpoint called:', { email: body.email });
       const user = await this.authService.validateUser(body.email, body.password);
       console.log('[DEBUG] validateUser result:', { hasUser: !!user });
-      
+
       if (!user) {
         return { success: false, error: 'Invalid credentials', step: 'validateUser' };
       }
-      
+
       const result = await this.authService.login(user);
       console.log('[DEBUG] login result:', { hasToken: !!result.access_token });
       return { success: true, result };
@@ -45,12 +45,12 @@ export class AppController {
   async testEmail(@Body() body: { email: string; type?: string }) {
     const testEmail = body.email || 'test@example.com';
     const emailType = body.type || 'password-reset';
-    
+
     try {
       console.log(`[DEBUG] Testing email: ${emailType} to ${testEmail}`);
-      
+
       let result: any;
-      
+
       switch (emailType) {
         case 'password-reset':
           result = await this.emailService.sendPasswordResetEmail(
@@ -92,6 +92,13 @@ export class AppController {
             'http://localhost:5173',
           );
           break;
+        case 'client-invitation':
+          result = await this.emailService.sendClientInvitationEmail(
+            testEmail,
+            'test-client-token-123',
+            { name: 'Test Client', origin: 'http://localhost:5173' },
+          );
+          break;
         default:
           return {
             success: false,
@@ -103,10 +110,11 @@ export class AppController {
               'password-changed',
               'admin-invitation',
               'document-uploaded',
+              'client-invitation',
             ],
           };
       }
-      
+
       return {
         success: true,
         emailType,
@@ -136,7 +144,7 @@ export class AppController {
       process.env.SMTP_PASSWORD &&
       process.env.SMTP_HOST
     );
-    
+
     return {
       smtpConfigured: hasSMTP,
       smtpHost: process.env.SMTP_HOST || 'not set',

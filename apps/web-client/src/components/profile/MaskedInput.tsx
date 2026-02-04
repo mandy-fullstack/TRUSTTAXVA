@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   unsavedBadge: {
     minWidth: 12,
     height: 12,
-    borderRadius: 6,
+    borderRadius: 0,
     backgroundColor: "#2563EB",
     justifyContent: "center",
     alignItems: "center",

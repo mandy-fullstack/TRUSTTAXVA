@@ -5,8 +5,10 @@ import {
     ActivityIndicator,
 } from "react-native";
 import { Text } from "@trusttax/ui";
-import { Download, Eye, ExternalLink, ShieldCheck, Clock } from "lucide-react";
+import { Download, Eye, ExternalLink, ShieldCheck, Clock, X } from "lucide-react";
 import { DocumentPreviewModal } from "./DocumentPreviewModal";
+import { api } from "../services/api";
+
 import {
     FaFilePdf,
     FaFileImage,
@@ -41,8 +43,10 @@ interface DocumentCardProps {
         uploadedAt: string | Date;
         url?: string;
         orderId?: string;
+        status?: "PENDING" | "VERIFIED" | "REJECTED";
     };
     showActions?: boolean;
+    onStatusUpdate?: (docId: string, status: "PENDING" | "VERIFIED" | "REJECTED") => void;
     variant?: "default" | "compact" | "inline";
 }
 
@@ -288,6 +292,7 @@ function isNewDocument(uploadedAt: string | Date): boolean {
 export function DocumentCard({
     document,
     showActions = true,
+    onStatusUpdate,
     variant = "default",
 }: DocumentCardProps) {
     const {
@@ -300,6 +305,7 @@ export function DocumentCard({
         loading,
     } = useDocumentViewer();
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [localStatus, setLocalStatus] = useState(document.status || "PENDING");
 
     const handleView = async () => {
         try {
@@ -330,6 +336,18 @@ export function DocumentCard({
             await previewDocument(document.id, document.mimeType || undefined);
         } catch (error: any) {
             alert(`Error al previsualizar documento: ${error.message}`);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+    const handleStatusUpdate = async (newStatus: "PENDING" | "VERIFIED" | "REJECTED") => {
+        try {
+            setActionLoading(`status-${newStatus}`);
+            await api.updateDocumentStatus(document.id, newStatus);
+            setLocalStatus(newStatus);
+            if (onStatusUpdate) onStatusUpdate(document.id, newStatus);
+        } catch (error: any) {
+            alert(`Error al actualizar estado: ${error.message}`);
         } finally {
             setActionLoading(null);
         }
@@ -430,6 +448,43 @@ export function DocumentCard({
                             </View>
                         )}
                         {isIdentityDoc && <ShieldCheck size={14} color="#059669" />}
+                        <View
+                            style={[
+                                styles.statusBadgeSimple,
+                                localStatus === "VERIFIED"
+                                    ? styles.statusBadgeVerified
+                                    : localStatus === "REJECTED"
+                                        ? styles.statusBadgeRejected
+                                        : styles.statusBadgePending,
+                            ]}
+                        >
+                            <View
+                                style={[
+                                    styles.statusDot,
+                                    localStatus === "VERIFIED"
+                                        ? styles.statusDotVerified
+                                        : localStatus === "REJECTED"
+                                            ? styles.statusDotRejected
+                                            : styles.statusDotPending,
+                                ]}
+                            />
+                            <Text
+                                style={[
+                                    styles.statusBadgeText,
+                                    localStatus === "VERIFIED"
+                                        ? styles.statusBadgeTextVerified
+                                        : localStatus === "REJECTED"
+                                            ? styles.statusBadgeTextRejected
+                                            : styles.statusBadgeTextPending,
+                                ]}
+                            >
+                                {localStatus === "VERIFIED"
+                                    ? "VERIFICADO"
+                                    : localStatus === "REJECTED"
+                                        ? "RECHAZADO"
+                                        : "PENDIENTE"}
+                            </Text>
+                        </View>
                     </View>
                     <View style={styles.metaRow}>
                         <Text style={styles.metaText}>{fileType}</Text>
@@ -448,63 +503,98 @@ export function DocumentCard({
                 </View>
             </View>
 
-            {showActions && (
-                <View style={styles.actions}>
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.viewButton]}
-                        onPress={handleView}
-                        disabled={loading || !!actionLoading}
-                    >
-                        {loading || actionLoading === "view" ? (
-                            <ActivityIndicator size="small" color="#FFF" />
-                        ) : (
-                            <>
-                                <Eye size={16} color="#FFF" />
-                                <Text style={styles.actionButtonText}>Ver</Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+            {
+                showActions && (
+                    <View style={styles.actions}>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.viewButton]}
+                            onPress={handleView}
+                            disabled={loading || !!actionLoading}
+                        >
+                            {loading || actionLoading === "view" ? (
+                                <ActivityIndicator size="small" color="#FFF" />
+                            ) : (
+                                <>
+                                    <Eye size={16} color="#FFF" />
+                                    <Text style={styles.actionButtonText}>Ver</Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.downloadButton]}
-                        onPress={handleDownload}
-                        disabled={loading || !!actionLoading}
-                    >
-                        {loading || actionLoading === "download" ? (
-                            <ActivityIndicator size="small" color="#2563EB" />
-                        ) : (
-                            <>
-                                <Download size={16} color="#2563EB" />
-                                <Text
-                                    style={[styles.actionButtonText, styles.downloadButtonText]}
-                                >
-                                    Descargar
-                                </Text>
-                            </>
-                        )}
-                    </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.downloadButton]}
+                            onPress={handleDownload}
+                            disabled={loading || !!actionLoading}
+                        >
+                            {loading || actionLoading === "download" ? (
+                                <ActivityIndicator size="small" color="#2563EB" />
+                            ) : (
+                                <>
+                                    <Download size={16} color="#2563EB" />
+                                    <Text
+                                        style={[styles.actionButtonText, styles.downloadButtonText]}
+                                    >
+                                        Descargar
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
 
-                    {/* Preview siempre habilitado para todos los tipos de archivo */}
-                    <TouchableOpacity
-                        style={[styles.actionButton, styles.previewButton]}
-                        onPress={handlePreview}
-                        disabled={loading || !!actionLoading}
-                    >
-                        {loading || actionLoading === "preview" ? (
-                            <ActivityIndicator size="small" color="#059669" />
-                        ) : (
-                            <>
-                                <Eye size={16} color="#059669" />
-                                <Text
-                                    style={[styles.actionButtonText, styles.previewButtonText]}
-                                >
-                                    Preview
-                                </Text>
-                            </>
+                        {/* Preview siempre habilitado para todos los tipos de archivo */}
+                        <TouchableOpacity
+                            style={[styles.actionButton, styles.previewButton]}
+                            onPress={handlePreview}
+                            disabled={loading || !!actionLoading}
+                        >
+                            {loading || actionLoading === "preview" ? (
+                                <ActivityIndicator size="small" color="#059669" />
+                            ) : (
+                                <>
+                                    <Eye size={16} color="#059669" />
+                                    <Text
+                                        style={[styles.actionButtonText, styles.previewButtonText]}
+                                    >
+                                        Preview
+                                    </Text>
+                                </>
+                            )}
+                        </TouchableOpacity>
+
+                        {localStatus !== "VERIFIED" && (
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.verifyButton]}
+                                onPress={() => handleStatusUpdate("VERIFIED")}
+                                disabled={loading || !!actionLoading}
+                            >
+                                {actionLoading === "status-VERIFIED" ? (
+                                    <ActivityIndicator size="small" color="#FFF" />
+                                ) : (
+                                    <>
+                                        <ShieldCheck size={16} color="#FFF" />
+                                        <Text style={styles.actionButtonText}>Verificar</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
                         )}
-                    </TouchableOpacity>
-                </View>
-            )}
+
+                        {localStatus !== "REJECTED" && (
+                            <TouchableOpacity
+                                style={[styles.actionButton, styles.rejectButton]}
+                                onPress={() => handleStatusUpdate("REJECTED")}
+                                disabled={loading || !!actionLoading}
+                            >
+                                {actionLoading === "status-REJECTED" ? (
+                                    <ActivityIndicator size="small" color="#EF4444" />
+                                ) : (
+                                    <>
+                                        <X size={16} color="#EF4444" />
+                                        <Text style={[styles.actionButtonText, styles.rejectButtonText]}>Rechazar</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                )}
 
             {/* Preview Modal */}
             <DocumentPreviewModal
@@ -519,7 +609,7 @@ export function DocumentCard({
                 }}
                 onViewExternal={() => viewDocument(document.id)}
             />
-        </View>
+        </View >
     );
 }
 
@@ -579,7 +669,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FEF3C7",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
     },
     newBadgeText: {
         fontSize: 9,
@@ -657,6 +747,67 @@ const styles = StyleSheet.create({
         color: "#059669",
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     },
+    verifyButton: {
+        backgroundColor: "#10B981",
+    },
+    rejectButton: {
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#EF4444",
+    },
+    rejectButtonText: {
+        color: "#EF4444",
+    },
+    statusBadgeSimple: {
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 5,
+        borderWidth: 1,
+    },
+    statusBadgePending: {
+        backgroundColor: "#FFFBEB",
+        borderColor: "#FDE68A",
+    },
+    statusBadgeVerified: {
+        backgroundColor: "#F0FDF4",
+        borderColor: "#BBF7D0",
+    },
+    statusBadgeRejected: {
+        backgroundColor: "#FEF2F2",
+        borderColor: "#FECACA",
+    },
+    statusDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 0,
+    },
+    statusDotPending: {
+        backgroundColor: "#D97706",
+    },
+    statusDotVerified: {
+        backgroundColor: "#10B981",
+    },
+    statusDotRejected: {
+        backgroundColor: "#EF4444",
+    },
+    statusBadgeText: {
+        fontSize: 9,
+        fontWeight: "800",
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+        letterSpacing: 0.5,
+    },
+    statusBadgeTextPending: {
+        color: "#B45309",
+    },
+    statusBadgeTextVerified: {
+        color: "#15803D",
+    },
+    statusBadgeTextRejected: {
+        color: "#B91C1C",
+    },
     // Compact variant
     compactCard: {
         flexDirection: "row",
@@ -721,7 +872,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#EFF6FF",
         paddingHorizontal: 6,
         paddingVertical: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         borderWidth: 1,
         borderColor: "#BFDBFE",
     },
@@ -735,7 +886,7 @@ const styles = StyleSheet.create({
     },
     compactActionButton: {
         padding: 8,
-        borderRadius: 4,
+        borderRadius: 0,
         backgroundColor: "#ECFDF5",
         borderWidth: 1,
         borderColor: "#059669",
