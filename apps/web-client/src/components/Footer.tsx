@@ -29,7 +29,7 @@ export const Footer = () => {
   const navItems = getPublicNav();
 
   const companyName = profile?.dba || profile?.companyName || "TrustTax";
-  const companyPhone = profile?.phone || "(540) 876-9748";
+  const companyPhone = profile?.phone || "(888) 652-1989 / (540) 876-9748";
   const companyEmail = profile?.email || "contact@trusttax.com";
   const companyAddress = profile?.address || "123 Business Ave, VA";
 
@@ -264,6 +264,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
+    // @ts-ignore - web specific
+    cursor: "pointer",
   },
   navSection: {
     flex: 3,
@@ -361,6 +363,8 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontSize: 13,
     fontWeight: "300",
+    // @ts-ignore - web specific
+    cursor: "pointer",
   },
   legalDot: {
     width: 3,

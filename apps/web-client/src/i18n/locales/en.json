@@ -259,6 +259,9 @@
   },
   "auth": {
     "sms_opt_in_label": "I agree to receive recurring SMS messages at the number provided.",
+    "sms_registration": {
+      "full_disclaimer": "By checking this box, you agree to receive TEXT messages from {{companyName}} related to Customer care, Account notifications, and Marketing at the phone number provided above. You may reply STOP to opt-out at any time. For assistance reply HELP at {{phone}}. Messages and data rates may apply. Message frequency will vary. Learn more on our [Privacy Policy](privacy) and [Terms and Conditions](terms)."
+    },
     "welcome_back": "Welcome Back",
     "sign_in_to_continue": "Sign in to access your portal",
     "email_label": "Email Address",
@@ -1077,7 +1080,7 @@
     }
   },
   "legal": {
-    "last_updated": "Last Updated: January 27, 2026",
+    "last_updated": "Last Updated: February 4, 2026",
     "privacy_policy": "Privacy Policy",
     "terms_of_service": "Terms of Service",
     "sms_consent": {
@@ -1101,12 +1104,12 @@
       "opt_in_1": "Providing your mobile phone number during account registration or profile setup",
       "opt_in_2": "Checking the SMS consent checkbox in your account settings",
       "opt_in_3": "Replying 'YES' or 'START' to a promotional SMS message",
-      "opt_in_4": "Visiting our SMS consent page and completing the opt-in form",
+      "opt_in_4": "Visiting our [SMS consent page](sms-consent) and completing the opt-in form",
       "opt_out": "How to Opt-Out",
       "opt_out_text": "You can opt-out of receiving SMS messages at any time by:",
       "opt_out_1": "Replying 'STOP', 'END', 'CANCEL', 'UNSUBSCRIBE', or 'QUIT' to any SMS message from us",
       "opt_out_2": "Unchecking the SMS consent option in your account settings",
-      "opt_out_3": "Contacting our customer support team at {{phone}}",
+      "opt_out_3": "Contacting our customer support team at [{{phone}}](phone)",
       "opt_out_warning": "Note: After opting out, you will no longer receive SMS messages from us. However, you may still receive important account-related messages via email. Opting out of SMS does not affect your ability to use our services.",
       "rates": "Message and Data Rates May Apply",
       "rates_text": "Standard message and data rates may apply to SMS messages sent and received, as determined by your mobile carrier. We are not responsible for any charges incurred as a result of receiving SMS messages from us.",
@@ -1115,16 +1118,25 @@
       "other_carriers": "Other participating carriers",
       "carriers_note": "Carrier support may vary, and we cannot guarantee SMS delivery to all carriers or phone numbers.",
       "privacy": "Privacy and Security",
-      "privacy_text": "Your mobile phone number and SMS preferences are protected in accordance with our Privacy Policy. We do not sell, rent, or share your phone number with third parties for their marketing purposes. SMS messages are sent through secure, encrypted channels.",
+      "privacy_text": "Your mobile phone number and SMS preferences are protected in accordance with our [Privacy Policy](privacy). We do not sell, rent, or share your phone number with third parties for their marketing purposes. SMS messages are sent through secure, encrypted channels.",
+      "sms_sharing_title": "SMS Data Protection",
+      "sms_sharing_clause": "SMS opt-in and phone numbers collected for SMS communication purposes will not be shared with any third party and affiliates for marketing purposes. Learn more in our [SMS Consent Policy](sms-consent).",
       "help": "Help and Support",
       "help_text": "If you need assistance with SMS messages or have questions about this policy, please contact us:",
-      "phone": "Phone:",
-      "email": "Email:",
+      "phone": "[Phone: {{phone}}](phone)",
+      "email": "[Email: {{email}}](email)",
       "changes": "Changes to This Policy",
       "changes_text": "We reserve the right to modify this SMS Consent Policy at any time. We will notify you of any material changes by posting the updated policy on our website and updating the 'Last Updated' date. Your continued use of SMS services after such changes constitutes acceptance of the updated policy.",
       "acknowledgment_title": "Consent Acknowledgment",
       "acknowledgment": "By opting in to receive SMS messages from {{companyName}}, you acknowledge that you have read, understood, and agree to this SMS Consent Policy. You understand that you can opt-out at any time and that message and data rates may apply.",
-      "related": "Related Policies"
+      "related": "Related Policies",
+      "disclosures": {
+        "title": "Standard Messaging Disclosures",
+        "rates": "Standard message and data rates may apply.",
+        "opt_out": "Reply STOP to opt-out at any time.",
+        "frequency": "Message frequency varies.",
+        "help_sentence": "For assistance, text \"HELP\" or visit our [Privacy Policy](privacy) and [Terms of Service](terms) pages."
+      }
     },
     "sms_test": {
       "title": "SMS Consent Test | {{companyName}}",
@@ -1139,6 +1151,11 @@
       "title": "Privacy Policy | {{companyName}}",
       "description": "Learn how we collect, use, and protect your personal information.",
       "page_title": "Privacy Policy",
+      "summary_title": "Quick Summary",
+      "summary_1": "We collect information to provide and improve our tax services.",
+      "summary_2": "Your data is encrypted using industry-standard protocols.",
+      "summary_3": "We do not sell or rent your personal information to third parties.",
+      "summary_4": "SMS data is never shared with third parties for marketing. See our [SMS Consent Policy](sms-consent) for details.",
       "intro": "{{companyName}} (\"we,\" \"our,\" or \"us\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our tax preparation, immigration services, and related services (collectively, the \"Services\").",
       "intro_2": "Please read this Privacy Policy carefully. By using our Services, you agree to the collection and use of information in accordance with this policy.",
       "collect": "Information We Collect",
@@ -1152,6 +1169,8 @@
       "personal_6": "Tax information (W-2s, 1099s, deductions, dependents)",
       "personal_7": "Bank account and routing numbers for refunds",
       "personal_8": "Immigration status and documentation",
+      "sms_sharing_title": "SMS Data Protection",
+      "sms_sharing_clause": "SMS opt-in and phone numbers collected for SMS communication purposes will not be shared with any third party and affiliates for marketing purposes. Learn more in our [SMS Consent Policy](sms-consent).",
       "automatic_info": "Automatically Collected Information",
       "automatic_1": "IP address and device information",
       "automatic_2": "Browser type and version",
@@ -1191,7 +1210,7 @@
       "rights_3": "Deletion: Request deletion of your account and data (subject to legal retention requirements)",
       "rights_4": "Opt-Out: Unsubscribe from marketing communications",
       "rights_5": "Data Portability: Request your data in a portable format",
-      "rights_contact": "To exercise these rights, please contact us at {{email}} or {{phone}}.",
+      "rights_contact": "To exercise these rights, please contact us at [{{email}}](email) or [{{phone}}](phone).",
       "cookies": "Cookies and Tracking Technologies",
       "cookies_text": "We use cookies and similar tracking technologies to enhance your experience, analyze usage, and assist with marketing efforts. You can control cookies through your browser settings, but disabling cookies may limit some functionality of our Services.",
       "children": "Children's Privacy",
@@ -1201,7 +1220,9 @@
       "contact": "Contact Us",
       "contact_text": "If you have questions or concerns about this Privacy Policy or our data practices, please contact us:",
       "company": "Company:",
-      "address": "Address:",
+      "address": "[Address: {{address}}](address)",
+      "email": "[Email: {{email}}](email)",
+      "phone": "[Phone: {{phone}}](phone)",
       "related": "Related Policies"
     },
     "terms": {
@@ -1211,7 +1232,7 @@
       "intro": "Welcome to {{companyName}}. These Terms of Service (\"Terms\") govern your access to and use of our tax preparation, immigration services, and related services (collectively, the \"Services\"). By accessing or using our Services, you agree to be bound by these Terms.",
       "intro_2": "If you do not agree to these Terms, please do not use our Services.",
       "acceptance": "Acceptance of Terms",
-      "acceptance_text": "By creating an account, accessing our website, or using any of our Services, you acknowledge that you have read, understood, and agree to be bound by these Terms and our Privacy Policy. These Terms constitute a legally binding agreement between you and {{companyName}}.",
+      "acceptance_text": "By creating an account, accessing our website, or using any of our Services, you acknowledge that you have read, understood, and agree to be bound by these Terms and our [Privacy Policy](privacy). These Terms constitute a legally binding agreement between you and {{companyName}}.",
       "eligibility": "Eligibility",
       "eligibility_text": "You must be at least 18 years old and have the legal capacity to enter into contracts to use our Services. By using our Services, you represent and warrant that:",
       "eligibility_1": "You are at least 18 years of age",
@@ -1241,7 +1262,7 @@
       "irs_warning": "You are legally responsible for the accuracy of all information on your tax returns, regardless of who prepares them.",
       "data_protection": "Data Protection & Encryption",
       "data_protection_text": "Your sensitive personal information, including Social Security Number (SSN), driver's license number, and passport number, is protected using industry-standard AES-256-GCM encryption. This means your data is encrypted before being stored in our secure database and can only be decrypted by authorized personnel when necessary for tax preparation services.",
-      "data_protection_2": "By using our Services, you consent to the secure storage and processing of your sensitive information as described in our Privacy Policy.",
+      "data_protection_2": "By using our Services, you consent to the secure storage and processing of your sensitive information as described in our [Privacy Policy](privacy).",
       "electronic_signature": "Electronic Signature and Transactions",
       "electronic_signature_text": "By activating your profile and using our Services, you agree to conduct transactions electronically. You acknowledge that your digital acceptance of these Terms and any electronic signatures on tax documents carry the same legal weight as physical signatures under the Electronic Signatures in Global and National Commerce Act (E-SIGN Act) and applicable state laws.",
       "fees": "Fees and Payment",
@@ -1260,8 +1281,8 @@
       "governing_text": "These Terms shall be governed by and construed in accordance with the laws of the Commonwealth of Virginia, without regard to its conflict of law provisions.",
       "contact": "Contact Us",
       "contact_text": "If you have questions about these Terms, please contact us:",
-      "email": "Email:",
-      "phone": "Phone:",
+      "email": "[Email: {{email}}](email)",
+      "phone": "[Phone: {{phone}}](phone)",
       "related": "Related Policies"
     }
   },

@@ -53,7 +53,7 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
           setDlExpiration(driverLicense.expirationDate || "");
         }
       } catch (error) {
-        console.log("Lazy load DL failed", error);
+        // Silent catch for lazy load
       }
     };
     fetchDL();
@@ -84,7 +84,6 @@ export const Step3DriverLicense: React.FC<Step3DLProps> = ({
       await api.uploadProfileDocument(file, "DL");
       setUploadSuccess(true);
     } catch (err: any) {
-      console.error(err);
       setUploadError(
         t("profile_wizard.common.upload_failed", "Failed to upload document."),
       );

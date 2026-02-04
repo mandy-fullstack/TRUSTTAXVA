@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CompanyService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(CompanyService.name);
+
+  constructor(private prisma: PrismaService) { }
 
   private normalizeNotificationSenderName(value: any): string | null {
     if (value === undefined) return null;
@@ -64,7 +66,7 @@ export class CompanyService {
       const errorMessage = error.message || '';
       const metaMessage = error.meta?.message || '';
       const fullMessage = `${errorMessage} ${metaMessage}`.toLowerCase();
-      
+
       const isColumnMissingError =
         error.code === 'P2010' ||
         error.meta?.code === '42703' ||
@@ -74,10 +76,10 @@ export class CompanyService {
         fullMessage.includes('notification_sender_name');
 
       if (isColumnMissingError) {
-        console.warn(
-          '⚠️ notificationSenderName column does not exist. Fetching profile without it. To enable this feature, run: ALTER TABLE "CompanyProfile" ADD COLUMN "notificationSenderName" TEXT;'
+        this.logger.warn(
+          'notificationSenderName column does not exist. Fetching profile without it.'
         );
-        
+
         // Try to fetch using raw query to exclude the problematic column
         try {
           const profiles = await (this.prisma.client as any).$queryRaw`
@@ -87,16 +89,16 @@ export class CompanyService {
             FROM "CompanyProfile"
             LIMIT 1
           `;
-          
+
           if (profiles && profiles.length > 0) {
             // Fallback: if stored in themeOptions JSON, expose it as notificationSenderName
             const themeOptions = (profiles[0] as any).themeOptions;
             const fromTheme =
               this.isPlainObject(themeOptions) &&
-              typeof themeOptions.notificationSenderName === 'string'
+                typeof themeOptions.notificationSenderName === 'string'
                 ? this.normalizeNotificationSenderName(
-                    themeOptions.notificationSenderName,
-                  )
+                  themeOptions.notificationSenderName,
+                )
                 : null;
 
             return {
@@ -104,7 +106,7 @@ export class CompanyService {
               notificationSenderName: fromTheme,
             };
           }
-          
+
           // If no profile exists, create one without notificationSenderName
           const newProfile = await (this.prisma.client as any).$queryRaw`
             INSERT INTO "CompanyProfile" ("companyName", email, phone, address, "primaryColor", "secondaryColor")
@@ -113,25 +115,20 @@ export class CompanyService {
                       "businessHours", "socialLinks", "primaryColor", "secondaryColor", 
                       "updatedAt", "faviconUrl", "logoUrl", "themeOptions"
           `;
-          
+
           // Add notificationSenderName as null since it doesn't exist
           return {
             ...newProfile[0],
             notificationSenderName: null,
           };
         } catch (rawError: any) {
-          console.error('[CompanyService] Error fetching profile with raw query:', rawError);
+          this.logger.error('Error fetching profile with raw query', rawError.stack);
           throw rawError;
         }
       }
-      
+
       // For any other error, log and throw
-      console.error('[CompanyService] Error in getProfile:', {
-        code: error.code,
-        meta: error.meta,
-        message: error.message,
-        name: error.name,
-      });
+      this.logger.error(`Error in getProfile: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -153,12 +150,12 @@ export class CompanyService {
             try {
               updateData[key] = JSON.parse(data[key]);
             } catch (e) {
-              console.warn(`[CompanyService] Invalid JSON for ${key}, setting to null:`, e);
+              this.logger.warn(`Invalid JSON for ${key}, setting to null: ${e.message}`);
               updateData[key] = null;
             }
           }
         } else {
-        updateData[key] = data[key];
+          updateData[key] = data[key];
         }
       }
     });
@@ -171,40 +168,20 @@ export class CompanyService {
     if (hasNotificationSenderName) {
       updateData.notificationSenderName = normalizedNotificationSenderName;
     }
-    
-    console.log('[CompanyService] Updating profile with data:', {
-      keys: Object.keys(updateData),
-      hasBusinessHours: 'businessHours' in updateData,
-      hasSocialLinks: 'socialLinks' in updateData,
-      hasThemeOptions: 'themeOptions' in updateData,
-      businessHoursType: updateData.businessHours ? typeof updateData.businessHours : 'undefined',
-      socialLinksType: updateData.socialLinks ? typeof updateData.socialLinks : 'undefined',
-      themeOptionsType: updateData.themeOptions ? typeof updateData.themeOptions : 'undefined',
-    });
-    
+
+    this.logger.log(`Updating profile: fields [${Object.keys(updateData).join(', ')}]`);
+
     try {
       return await (this.prisma.client as any).companyProfile.update({
         where: { id: profile.id },
         data: updateData,
       });
     } catch (error: any) {
-      // Log the full error first for debugging
-      console.error('[CompanyService] Full error details:', {
-        code: error.code,
-        meta: error.meta,
-        message: error.message,
-        name: error.name,
-        errorString: String(error),
-        errorKeys: Object.keys(error),
-        updateDataKeys: Object.keys(updateData),
-        updateDataSample: JSON.stringify(updateData).substring(0, 500),
-      });
-
       // Check if error is about missing column (PostgreSQL error code 42703 or Prisma P2010)
       const errorMessage = error.message || '';
       const metaMessage = error.meta?.message || '';
       const fullMessage = `${errorMessage} ${metaMessage}`.toLowerCase();
-      
+
       const isColumnMissingError =
         error.code === 'P2010' ||
         error.meta?.code === '42703' ||
@@ -216,10 +193,10 @@ export class CompanyService {
       // If error is about missing notificationSenderName column, retry without it
       if (isColumnMissingError && hasNotificationSenderName) {
         const { notificationSenderName, ...dataWithoutField } = updateData;
-        console.warn(
-          '⚠️ notificationSenderName column does not exist in database. Saving without it. To enable this feature, run: ALTER TABLE "CompanyProfile" ADD COLUMN "notificationSenderName" TEXT;'
+        this.logger.warn(
+          'notificationSenderName column does not exist in database. Saving without it.'
         );
-        
+
         try {
           // Fallback persistence: store it inside themeOptions JSON when the column doesn't exist
           if (normalizedNotificationSenderName !== null) {
@@ -245,23 +222,20 @@ export class CompanyService {
             data: dataWithoutField,
             select: this.selectWithoutNotificationSenderName,
           });
-          
+
           // Maintain API contract: return notificationSenderName (stored in themeOptions fallback)
           return {
             ...updated,
             notificationSenderName: normalizedNotificationSenderName,
           };
         } catch (retryError: any) {
-          console.error('[CompanyService] Error on retry without notificationSenderName:', {
-            code: retryError.code,
-            meta: retryError.meta,
-            message: retryError.message,
-          });
+          this.logger.error(`Error on retry without notificationSenderName: ${retryError.message}`, retryError.stack);
           throw retryError;
         }
       }
-      
-      // For any other error, re-throw as-is
+
+      // For any other error, log and re-throw
+      this.logger.error(`Update profile failed: ${error.message}`, error.stack);
       throw error;
     }
   }

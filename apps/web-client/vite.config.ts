@@ -20,6 +20,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom"],
   },
+  esbuild: {
+    drop: ["console", "debugger"],
+  },
   build: {
     rollupOptions: {
       output: {

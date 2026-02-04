@@ -259,6 +259,9 @@
   },
   "auth": {
     "sms_opt_in_label": "Acepto recibir mensajes SMS recurrentes al número proporcionado.",
+    "sms_registration": {
+      "full_disclaimer": "Al marcar esta casilla, usted acepta recibir mensajes de TEXTO de {{companyName}} relacionados con atención al cliente, notificaciones de cuenta y marketing al número de teléfono proporcionado arriba. Puede responder STOP para darse de baja en cualquier momento. Para obtener ayuda, responda HELP al {{phone}}. Pueden aplicarse tarifas de mensajes y datos. La frecuencia de los mensajes variará. Obtenga más información en nuestra [Política de Privacidad](privacy) y [Términos y Condiciones](terms)."
+    },
     "welcome_back": "Bienvenido de nuevo",
     "sign_in_to_continue": "Inicia sesión para acceder a tu portal",
     "email_label": "Correo Electrónico",
@@ -1078,7 +1081,7 @@
     }
   },
   "legal": {
-    "last_updated": "Última actualización: 27 de enero de 2026",
+    "last_updated": "Última actualización: 4 de febrero de 2026",
     "privacy_policy": "Política de Privacidad",
     "terms_of_service": "Términos de Servicio",
     "sms_consent": {
@@ -1102,12 +1105,12 @@
       "opt_in_1": "Proporcionar tu número de teléfono móvil durante el registro de cuenta o configuración de perfil",
       "opt_in_2": "Marcar la casilla de consentimiento SMS en la configuración de tu cuenta",
       "opt_in_3": "Responder 'SÍ' o 'INICIAR' a un mensaje SMS promocional",
-      "opt_in_4": "Visitar nuestra página de consentimiento SMS y completar el formulario de inscripción",
+      "opt_in_4": "Visitar nuestra [página de consentimiento SMS](sms-consent) y completar el formulario de inscripción",
       "opt_out": "Cómo Darse de Baja",
       "opt_out_text": "Puedes darte de baja de recibir mensajes SMS en cualquier momento mediante:",
       "opt_out_1": "Responder 'STOP', 'END', 'CANCELAR', 'DARTE DE BAJA' o 'SALIR' a cualquier mensaje SMS nuestro",
       "opt_out_2": "Desmarcar la opción de consentimiento SMS en la configuración de tu cuenta",
-      "opt_out_3": "Contactando a nuestro equipo de soporte al cliente en {{phone}}",
+      "opt_out_3": "Contactando a nuestro equipo de soporte al cliente en [{{phone}}](phone)",
       "opt_out_warning": "Nota: Después de darte de baja, ya no recibirás mensajes SMS de nosotros. Sin embargo, aún puedes recibir mensajes importantes relacionados con tu cuenta por correo electrónico. Darte de baja de SMS no afecta tu capacidad de usar nuestros servicios.",
       "rates": "Pueden Aplicarse Tarifas de Mensajes y Datos",
       "rates_text": "Pueden aplicarse tarifas estándar de mensajes y datos a los mensajes SMS enviados y recibidos, según lo determine tu operador móvil. No somos responsables de ningún cargo incurrido como resultado de recibir mensajes SMS de nosotros.",
@@ -1116,16 +1119,25 @@
       "other_carriers": "Otros operadores participantes",
       "carriers_note": "El soporte de operadores puede variar, y no podemos garantizar la entrega de SMS a todos los operadores o números telefónicos.",
       "privacy": "Privacidad y Seguridad",
-      "privacy_text": "Tu número de teléfono móvil y preferencias SMS están protegidos de acuerdo con nuestra Política de Privacidad. No vendemos, alquilamos ni compartimos tu número telefónico con terceros para sus propósitos de marketing. Los mensajes SMS se envían a través de canales seguros y encriptados.",
+      "privacy_text": "Tu número de teléfono móvil y preferencias SMS están protegidos de acuerdo con nuestra [Política de Privacidad](privacy). No vendemos, alquilamos ni compartimos tu número telefónico con terceros para sus propósitos de marketing. Los mensajes SMS se envían a través de canales seguros y encriptados.",
+      "sms_sharing_title": "Protección de Datos SMS",
+      "sms_sharing_clause": "El consentimiento de SMS y los números de teléfono recopilados para fines de comunicación por SMS no se compartirán con terceros ni afiliados para fines de marketing. Obtenga más información en nuestra [Política de Consentimiento SMS](sms-consent).",
       "help": "Ayuda y Soporte",
       "help_text": "Si necesitas asistencia con mensajes SMS o tienes preguntas sobre esta política, por favor contáctanos:",
-      "phone": "Teléfono:",
-      "email": "Correo:",
+      "phone": "[Teléfono: {{phone}}](phone)",
+      "email": "[Correo: {{email}}](email)",
       "changes": "Cambios a Esta Política",
       "changes_text": "Nos reservamos el derecho de modificar esta Política de Consentimiento SMS en cualquier momento. Te notificaremos de cualquier cambio material publicando la política actualizada en nuestro sitio web y actualizando la fecha de 'Última actualización'. Tu uso continuo de los servicios SMS después de dichos cambios constituye la aceptación de la política actualizada.",
       "acknowledgment_title": "Reconocimiento de Consentimiento",
       "acknowledgment": "Al inscribirte para recibir mensajes SMS de {{companyName}}, reconoces que has leído, entendido y aceptas esta Política de Consentimiento SMS. Entiendes que puedes darte de baja en cualquier momento y que pueden aplicarse tarifas de mensajes y datos.",
-      "related": "Políticas Relacionadas"
+      "related": "Políticas Relacionadas",
+      "disclosures": {
+        "title": "Divulgaciones Estándar de Mensajería",
+        "rates": "Pueden aplicarse tarifas estándar de mensajes y datos.",
+        "opt_out": "Responda STOP para darse de baja en cualquier momento.",
+        "frequency": "La frecuencia de los mensajes varía.",
+        "help_sentence": "Para obtener ayuda, envíe un mensaje de texto con la palabra \"HELP\" o visite nuestras páginas de [Política de Privacidad](privacy) y [Términos de Servicio](terms)."
+      }
     },
     "sms_test": {
       "title": "Prueba de Consentimiento SMS | {{companyName}}",
@@ -1140,6 +1152,11 @@
       "title": "Política de Privacidad | {{companyName}}",
       "description": "Aprende cómo recopilamos, usamos y protegemos tu información personal.",
       "page_title": "Política de Privacidad",
+      "summary_title": "Resumen Rápido",
+      "summary_1": "Recopilamos información para proporcionar y mejorar nuestros servicios fiscales.",
+      "summary_2": "Tus datos están encriptados usando protocolos estándar de la industria.",
+      "summary_3": "No vendemos ni alquilamos su información personal a terceros.",
+      "summary_4": "Los datos de SMS nunca se comparten con terceros para marketing. Consulte nuestra [Política de Consentimiento SMS](sms-consent) para más detalles.",
       "intro": "{{companyName}} (\"nosotros\", \"nuestro\" o \"nos\") se compromete a proteger tu privacidad. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y protegemos tu información cuando usas nuestros servicios de preparación de impuestos, servicios de inmigración y servicios relacionados (colectivamente, los \"Servicios\").",
       "intro_2": "Por favor lee esta Política de Privacidad cuidadosamente. Al usar nuestros Servicios, aceptas la recopilación y uso de información de acuerdo con esta política.",
       "collect": "Información que Recopilamos",
@@ -1153,6 +1170,8 @@
       "personal_6": "Información fiscal (W-2s, 1099s, deducciones, dependientes)",
       "personal_7": "Números de cuenta bancaria y ruta para reembolsos",
       "personal_8": "Estado de inmigración y documentación",
+      "sms_sharing_title": "Protección de Datos SMS",
+      "sms_sharing_clause": "El consentimiento de SMS y los números de teléfono recopilados para fines de comunicación por SMS no se compartirán con terceros ni afiliados para fines de marketing. Obtenga más información en nuestra [Política de Consentimiento SMS](sms-consent).",
       "automatic_info": "Información Recopilada Automáticamente",
       "automatic_1": "Dirección IP e información del dispositivo",
       "automatic_2": "Tipo y versión del navegador",
@@ -1192,7 +1211,7 @@
       "rights_3": "Eliminación: Solicitar la eliminación de tu cuenta y datos (sujeto a requisitos legales de retención)",
       "rights_4": "Darse de Baja: Cancelar la suscripción de comunicaciones de marketing",
       "rights_5": "Portabilidad de Datos: Solicitar tus datos en un formato portable",
-      "rights_contact": "Para ejercer estos derechos, por favor contáctanos en {{email}} o {{phone}}.",
+      "rights_contact": "Para ejercer estos derechos, por favor contáctanos en [{{email}}](email) o [{{phone}}](phone).",
       "cookies": "Cookies y Tecnologías de Seguimiento",
       "cookies_text": "Usamos cookies y tecnologías de seguimiento similares para mejorar tu experiencia, analizar el uso y ayudar con esfuerzos de marketing. Puedes controlar las cookies a través de la configuración de tu navegador, pero deshabilitar las cookies puede limitar algunas funcionalidades de nuestros Servicios.",
       "children": "Privacidad de Menores",
@@ -1202,7 +1221,9 @@
       "contact": "Contáctanos",
       "contact_text": "Si tienes preguntas o inquietudes sobre esta Política de Privacidad o nuestras prácticas de datos, por favor contáctanos:",
       "company": "Compañía:",
-      "address": "Dirección:",
+      "address": "[Dirección: {{address}}](address)",
+      "email": "[Correo: {{email}}](email)",
+      "phone": "[Teléfono: {{phone}}](phone)",
       "related": "Políticas Relacionadas"
     },
     "terms": {
@@ -1212,7 +1233,7 @@
       "intro": "Bienvenido a {{companyName}}. Estos Términos de Servicio (\"Términos\") rigen tu acceso y uso de nuestros servicios de preparación de impuestos, servicios de inmigración y servicios relacionados (colectivamente, los \"Servicios\"). Al acceder o usar nuestros Servicios, aceptas estar sujeto a estos Términos.",
       "intro_2": "Si no estás de acuerdo con estos Términos, por favor no uses nuestros Servicios.",
       "acceptance": "Aceptación de los Términos",
-      "acceptance_text": "Al crear una cuenta, acceder a nuestro sitio web o usar cualquiera de nuestros Servicios, reconoces que has leído, entendido y aceptas estar sujeto a estos Términos y nuestra Política de Privacidad. Estos Términos constituyen un acuerdo legalmente vinculante entre tú y {{companyName}}.",
+      "acceptance_text": "Al crear una cuenta, acceder a nuestro sitio web o usar cualquiera de nuestros Servicios, reconoces que has leído, entendido y aceptas estar sujeto a estos Términos y nuestra [Política de Privacidad](privacy). Estos Términos constituyen un acuerdo legalmente vinculante entre tú y {{companyName}}.",
       "eligibility": "Elegibilidad",
       "eligibility_text": "Debes tener al menos 18 años y tener la capacidad legal para celebrar contratos para usar nuestros Servicios. Al usar nuestros Servicios, declaras y garantizas que:",
       "eligibility_1": "Tienes al menos 18 años de edad",
@@ -1242,7 +1263,7 @@
       "irs_warning": "Eres legalmente responsable de la precisión de toda la información en tus declaraciones de impuestos, independientemente de quién las prepare.",
       "data_protection": "Protección de Datos y Encriptación",
       "data_protection_text": "Tu información personal sensible, incluyendo Número de Seguro Social (SSN), número de licencia de conducir y número de pasaporte, está protegida usando encriptación AES-256-GCM estándar de la industria. Esto significa que tus datos se encriptan antes de ser almacenados en nuestra base de datos segura y solo pueden ser desencriptados por personal autorizado cuando sea necesario para servicios de preparación de impuestos.",
-      "data_protection_2": "Al usar nuestros Servicios, consientes al almacenamiento seguro y procesamiento de tu información sensible como se describe en nuestra Política de Privacidad.",
+      "data_protection_2": "Al usar nuestros Servicios, consientes al almacenamiento seguro y procesamiento de tu información sensible como se describe en nuestra [Política de Privacidad](privacy).",
       "electronic_signature": "Firma Electrónica y Transacciones",
       "electronic_signature_text": "Al activar tu perfil y usar nuestros Servicios, aceptas realizar transacciones electrónicamente. Reconoces que tu aceptación digital de estos Términos y cualquier firma electrónica en documentos fiscales tienen el mismo peso legal que las firmas físicas bajo la Ley de Firmas Electrónicas en Comercio Global y Nacional (Ley E-SIGN) y las leyes estatales aplicables.",
       "fees": "Tarifas y Pago",
@@ -1261,8 +1282,8 @@
       "governing_text": "Estos Términos se regirán e interpretarán de acuerdo con las leyes del Commonwealth de Virginia, sin tener en cuenta sus disposiciones de conflicto de leyes.",
       "contact": "Contáctanos",
       "contact_text": "Si tienes preguntas sobre estos Términos, por favor contáctanos:",
-      "email": "Correo:",
-      "phone": "Teléfono:",
+      "email": "[Correo: {{email}}](email)",
+      "phone": "[Teléfono: {{phone}}](phone)",
       "related": "Políticas Relacionadas"
     }
   },

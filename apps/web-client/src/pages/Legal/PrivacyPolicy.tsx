@@ -1,20 +1,36 @@
-import { View, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, StyleSheet, ScrollView, Linking, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Text, H1, H2 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
 import { PageMeta } from "../../components/PageMeta";
 import { useCompany } from "../../context/CompanyContext";
-import { Shield, Lock, Eye, FileText } from "lucide-react";
+import { Shield, Lock, Eye, FileText, Phone } from "lucide-react";
+import { renderLinkedText } from "../../utils/text";
 
 export const PrivacyPolicyPage = () => {
     const { t } = useTranslation();
     const { profile } = useCompany();
     const companyName = profile?.companyName || "TrustTax";
     const companyEmail = profile?.email || "contact@trusttax.com";
-    const companyPhone = profile?.phone || "(540) 876-9748";
+    const companyPhone = profile?.phone || "(888) 652-1989 / (540) 876-9748";
     const companyAddress = profile?.address || "123 Business Ave, VA";
-    const openUrl = (url: string) =>
-        Linking.openURL(url).catch((e) => console.error("Failed to open URL", e));
+    const navigate = useNavigate();
+
+    const contactLinks = {
+        email: {
+            label: companyEmail,
+            onPress: () => Linking.openURL(`mailto:${companyEmail}`)
+        },
+        phone: {
+            label: companyPhone,
+            onPress: () => Linking.openURL(`tel:${companyPhone.replace(/[^0-9]/g, "")}`)
+        },
+        address: {
+            label: companyAddress,
+            onPress: () => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(companyAddress)}`)
+        }
+    };
 
     return (
         <PublicLayout>
@@ -37,7 +53,7 @@ export const PrivacyPolicyPage = () => {
                         {t("legal.privacy.page_title", "Privacy Policy")}
                     </H1>
                     <Text style={styles.lastUpdated}>
-                        {t("legal.last_updated", "Last Updated: January 27, 2026")}
+                        {t("legal.last_updated")}
                     </Text>
                 </View>
 
@@ -47,7 +63,7 @@ export const PrivacyPolicyPage = () => {
                         <Text style={styles.paragraph}>
                             {t(
                                 "legal.privacy.intro",
-                                `${companyName} ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our tax preparation, immigration services, and related services (collectively, the "Services").`,
+                                { companyName },
                             )}
                         </Text>
                         <Text style={styles.paragraph}>
@@ -56,6 +72,47 @@ export const PrivacyPolicyPage = () => {
                                 "Please read this Privacy Policy carefully. By using our Services, you agree to the collection and use of information in accordance with this policy.",
                             )}
                         </Text>
+                    </View>
+
+                    {/* Quick Summary */}
+                    <View style={styles.summaryBox}>
+                        <H2 style={styles.summaryTitle}>
+                            {t("legal.privacy.summary_title")}
+                        </H2>
+                        <View style={styles.summaryGrid}>
+                            <View style={styles.summaryItem}>
+                                <Eye size={20} color="#2563EB" />
+                                <Text style={styles.summaryText}>
+                                    {t("legal.privacy.summary_1")}
+                                </Text>
+                            </View>
+                            <View style={styles.summaryItem}>
+                                <Lock size={20} color="#2563EB" />
+                                <Text style={styles.summaryText}>
+                                    {t("legal.privacy.summary_2")}
+                                </Text>
+                            </View>
+                            <View style={styles.summaryItem}>
+                                <Shield size={20} color="#2563EB" />
+                                <Text style={styles.summaryText}>
+                                    {t("legal.privacy.summary_3")}
+                                </Text>
+                            </View>
+                            <View style={styles.summaryItem}>
+                                <Phone size={20} color="#2563EB" />
+                                <Text style={styles.summaryText}>
+                                    {renderLinkedText(
+                                        t("legal.privacy.summary_4"),
+                                        {
+                                            "sms-consent": {
+                                                label: t("legal.sms_consent.title", "SMS Consent Policy"),
+                                                onPress: () => navigate("/legal/sms-consent")
+                                            }
+                                        }
+                                    )}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
 
                     {/* Information We Collect */}
@@ -312,9 +369,28 @@ export const PrivacyPolicyPage = () => {
                                 "If you opt in to receive SMS messages, we use your phone number and messaging preferences to send service-related communications (order updates, reminders, and document requests). Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help.",
                             )}
                         </Text>
-                        <Text style={styles.link} onPress={() => openUrl("/legal/sms-consent")}>
-                            {t("legal.sms_consent.page_title", "SMS Consent Policy")}
-                        </Text>
+                        <View style={styles.highlightBox}>
+                            <Shield size={18} color="#2563EB" />
+                            <Text style={styles.highlightText}>
+                                {renderLinkedText(
+                                    t("legal.privacy.sms_sharing_clause"),
+                                    {
+                                        "sms-consent": {
+                                            label: t("legal.sms_consent.title", "SMS Consent Policy"),
+                                            onPress: () => navigate("/legal/sms-consent")
+                                        }
+                                    }
+                                )}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => navigate("/legal/sms-consent")}
+                            style={styles.linkWrapper}
+                        >
+                            <Text style={styles.link}>
+                                {t("legal.sms_consent.page_title", "SMS Consent Policy")}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Information Sharing */}
@@ -419,10 +495,9 @@ export const PrivacyPolicyPage = () => {
                             </Text>
                         </View>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.privacy.rights_contact",
-                                "To exercise these rights, please contact us at {email} or {phone}.",
-                                { email: companyEmail, phone: companyPhone },
+                            {renderLinkedText(
+                                t("legal.privacy.rights_contact", { email: companyEmail, phone: companyPhone }),
+                                contactLinks
                             )}
                         </Text>
                     </View>
@@ -482,13 +557,13 @@ export const PrivacyPolicyPage = () => {
                                 {t("legal.privacy.company", "Company:")} {companyName}
                             </Text>
                             <Text style={styles.contactItem}>
-                                {t("legal.privacy.address", "Address:")} {companyAddress}
+                                {renderLinkedText(t("legal.privacy.address", { address: companyAddress }), contactLinks)}
                             </Text>
                             <Text style={styles.contactItem}>
-                                {t("legal.privacy.email", "Email:")} {companyEmail}
+                                {renderLinkedText(t("legal.privacy.email", { email: companyEmail }), contactLinks)}
                             </Text>
                             <Text style={styles.contactItem}>
-                                {t("legal.privacy.phone", "Phone:")} {companyPhone}
+                                {renderLinkedText(t("legal.privacy.phone", { phone: companyPhone }), contactLinks)}
                             </Text>
                         </View>
                     </View>
@@ -499,18 +574,22 @@ export const PrivacyPolicyPage = () => {
                             {t("legal.privacy.related", "Related Policies")}
                         </H2>
                         <View style={styles.linkList}>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/terms" style={styles.link}>
-                                    {t("legal.terms_of_service", "Terms of Service")}
-                                </a>
-                            </Text>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/sms-consent" style={styles.link}>
-                                    {t("legal.sms_consent.title", "SMS Consent Policy")}
-                                </a>
-                            </Text>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/terms")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.terms_of_service", "Terms of Service")}</Text>
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/sms-consent")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.sms_consent.title", "SMS Consent Policy")}</Text>
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
@@ -599,6 +678,25 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     },
+    highlightBox: {
+        padding: 16,
+        backgroundColor: "#F0F9FF",
+        borderLeftWidth: 4,
+        borderLeftColor: "#2563EB",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginTop: 12,
+        marginBottom: 16,
+    },
+    highlightText: {
+        flex: 1,
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#075985",
+        fontWeight: "600",
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    },
     contactBox: {
         marginTop: 12,
         padding: 16,
@@ -611,6 +709,37 @@ const styles = StyleSheet.create({
         lineHeight: 24,
         color: "#334155",
         marginBottom: 4,
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    },
+    summaryBox: {
+        backgroundColor: "#F8FAFC",
+        padding: 24,
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        marginBottom: 32,
+    },
+    summaryTitle: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#0F172A",
+        marginBottom: 20,
+        textTransform: "uppercase",
+        letterSpacing: 1,
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    },
+    summaryGrid: {
+        gap: 16,
+    },
+    summaryItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 16,
+    },
+    summaryText: {
+        flex: 1,
+        fontSize: 14,
+        color: "#334155",
+        lineHeight: 20,
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     },
     linkList: {
@@ -627,5 +756,10 @@ const styles = StyleSheet.create({
         color: "#2563EB",
         textDecorationLine: "underline",
         fontWeight: "600",
+        // @ts-ignore - web specific
+        cursor: "pointer",
+    },
+    linkWrapper: {
+        marginBottom: 8,
     },
 });

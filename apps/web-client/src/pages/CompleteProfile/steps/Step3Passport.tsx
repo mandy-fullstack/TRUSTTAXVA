@@ -53,7 +53,7 @@ export const Step3Passport: React.FC<Step3PassportProps> = ({
           setPassportExpiration(passport.expirationDate || "");
         }
       } catch (error) {
-        console.log("Lazy load Passport failed", error);
+        // Silent catch for lazy load
       }
     };
     fetchPassport();
@@ -83,7 +83,6 @@ export const Step3Passport: React.FC<Step3PassportProps> = ({
       await api.uploadProfileDocument(file, "PASSPORT");
       setUploadSuccess(true);
     } catch (err: any) {
-      console.error(err);
       setUploadError(
         t("profile_wizard.common.upload_failed", "Failed to upload document."),
       );

@@ -31,7 +31,6 @@ const CompleteProfilePage: React.FC = () => {
         // Decrypted data (SSN, DL, Passport) will be lazy-loaded in their respective steps
         // to prevent loading bottlenecks.
 
-        console.log("[CompleteProfile] Me:", me);
 
         const initialData = {
           firstName: me.firstName || "",
@@ -268,13 +267,13 @@ const CompleteProfilePage: React.FC = () => {
           subtitle={
             isPassport
               ? t(
-                  "profile_wizard.step3_passport.subtitle",
-                  "SECURE ENCRYPTED UPLOAD & VERIFICATION.",
-                )
+                "profile_wizard.step3_passport.subtitle",
+                "SECURE ENCRYPTED UPLOAD & VERIFICATION.",
+              )
               : t(
-                  "profile_wizard.step3_dl.subtitle",
-                  "SECURE ENCRYPTED UPLOAD & VERIFICATION.",
-                )
+                "profile_wizard.step3_dl.subtitle",
+                "SECURE ENCRYPTED UPLOAD & VERIFICATION.",
+              )
           }
         >
           {isPassport ? (

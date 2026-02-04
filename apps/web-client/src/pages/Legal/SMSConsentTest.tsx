@@ -1,5 +1,6 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Text, H1 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
 import { PageMeta } from "../../components/PageMeta";
@@ -10,6 +11,7 @@ import { MessageSquare, CheckCircle } from "lucide-react";
 export const SMSConsentTestPage = () => {
     const { t } = useTranslation();
     const { profile } = useCompany();
+    const navigate = useNavigate();
     const companyName = profile?.companyName || "TrustTax";
 
     return (
@@ -65,18 +67,33 @@ export const SMSConsentTestPage = () => {
                             {t("legal.sms_test.related_links", "Related Information")}
                         </Text>
                         <View style={styles.linksList}>
-                            {/* eslint-disable-next-line react-native/no-inline-styles */}
-                            <a href="/legal/sms-consent" style={styles.link as any}>
-                                {t("legal.sms_consent.title", "SMS Consent Policy")}
-                            </a>
-                            {/* eslint-disable-next-line react-native/no-inline-styles */}
-                            <a href="/legal/privacy" style={styles.link as any}>
-                                {t("legal.privacy_policy", "Privacy Policy")}
-                            </a>
-                            {/* eslint-disable-next-line react-native/no-inline-styles */}
-                            <a href="/legal/terms" style={styles.link as any}>
-                                {t("legal.terms_of_service", "Terms of Service")}
-                            </a>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/sms-consent")}
+                                style={styles.link as any}
+                                accessibilityRole="link"
+                            >
+                                <Text style={styles.linkText}>
+                                    {t("legal.sms_consent.title", "SMS Consent Policy")}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/privacy")}
+                                style={styles.link as any}
+                                accessibilityRole="link"
+                            >
+                                <Text style={styles.linkText}>
+                                    {t("legal.privacy_policy", "Privacy Policy")}
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/terms")}
+                                style={styles.link as any}
+                                accessibilityRole="link"
+                            >
+                                <Text style={styles.linkText}>
+                                    {t("legal.terms_of_service", "Terms of Service")}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -169,10 +186,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     link: {
+        marginBottom: 8,
+    } as any,
+    linkText: {
         fontSize: 14,
         color: "#2563EB",
         textDecorationLine: "underline",
-        marginBottom: 8,
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
-    } as any,
+        // @ts-ignore - web specific
+        cursor: "pointer",
+    },
 });

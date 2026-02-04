@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, useEffect, type ReactNode } from "react";
 import {
   View,
   StyleSheet,
@@ -6,6 +6,7 @@ import {
   type DimensionValue,
   Platform,
 } from "react-native";
+import { useLocation } from "react-router-dom";
 import { useCompany } from "../context/CompanyContext";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
@@ -17,6 +18,12 @@ interface PublicLayoutProps {
 export const PublicLayout = ({ children }: PublicLayoutProps) => {
   const { profile } = useCompany();
   const theme = profile?.themeOptions || {};
+  const { pathname } = useLocation();
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [pathname]);
 
   return (
     <>
@@ -48,17 +55,20 @@ export const PublicLayout = ({ children }: PublicLayoutProps) => {
       >
         <Header />
 
-        {/* Content Section */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
           <View
             id="main-content"
             style={styles.mainContent}
             tabIndex={-1}
             {...(Platform.OS === "web"
               ? {
-                  // @ts-ignore - web-specific props
-                  onFocus: (e: any) => (e.target.style.outline = "none"),
-                }
+                // @ts-ignore - web-specific props
+                onFocus: (e: any) => (e.target.style.outline = "none"),
+              }
               : {})}
           >
             {children}

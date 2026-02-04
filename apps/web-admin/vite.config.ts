@@ -15,6 +15,9 @@ export default defineConfig({
   server: {
     port: 5176,
   },
+  esbuild: {
+    drop: ["console", "debugger"],
+  },
   build: {
     // The only remaining big chunk is the optional PDF renderer, which is lazy-loaded.
     // Bump the warning limit slightly to avoid noise while keeping other warnings meaningful.

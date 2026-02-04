@@ -2,6 +2,7 @@ import {
     Injectable,
     NotFoundException,
     InternalServerErrorException,
+    Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,6 +12,8 @@ import { EncryptionService } from '../common/services/encryption.service';
 
 @Injectable()
 export class OrdersService {
+    private readonly logger = new Logger(OrdersService.name);
+
     constructor(
         private prisma: PrismaService,
         private chatGateway: ChatGateway,
@@ -40,8 +43,8 @@ export class OrdersService {
             });
 
             if (existingDraft) {
-                console.log(
-                    `[OrdersService] Found existing draft ${existingDraft.id} for user ${userId}, reusing.`,
+                this.logger.log(
+                    `Found existing draft ${existingDraft.id} for user ${userId}, reusing.`,
                 );
 
                 // If metadata is provided, we should update the existing draft's progress
@@ -156,9 +159,8 @@ export class OrdersService {
                                 data: { orderId: order.id },
                             })
                             .catch((err: any) =>
-                                console.warn(
-                                    `Failed to link document ${upload.id} to order ${order.id}`,
-                                    err,
+                                this.logger.warn(
+                                    `Failed to link document ${upload.id} to order ${order.id}: ${err.message}`,
                                 ),
                             );
                     }
@@ -179,9 +181,8 @@ export class OrdersService {
                                 data: { orderId: order.id },
                             })
                             .catch((e: any) =>
-                                console.warn(
-                                    `[OrdersService.create] Failed to link doc ${doc.id}`,
-                                    e,
+                                this.logger.warn(
+                                    `Failed to link doc ${doc.id}: ${e.message}`,
                                 ),
                             );
                     }
@@ -276,9 +277,8 @@ export class OrdersService {
                                 data: { orderId },
                             })
                             .catch((e: any) =>
-                                console.warn(
-                                    `[OrdersService] Failed to link W2 ${upload.id}`,
-                                    e,
+                                this.logger.warn(
+                                    `Failed to link W2 ${upload.id}: ${e.message}`,
                                 ),
                             );
                     }
@@ -297,9 +297,8 @@ export class OrdersService {
                                 data: { orderId },
                             })
                             .catch((e: any) =>
-                                console.warn(
-                                    `[OrdersService] Failed to link missing doc ${doc.id}`,
-                                    e,
+                                this.logger.warn(
+                                    `Failed to link missing doc ${doc.id}: ${e.message}`,
                                 ),
                             );
                     }
@@ -356,13 +355,11 @@ export class OrdersService {
                 },
             });
         } catch (error) {
-            console.error(
-                '[OrdersService] Error fetching orders for user ' + userId,
-                error,
+            this.logger.error(
+                `Error fetching orders for user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+                error instanceof Error ? error.stack : undefined,
             );
-            throw new InternalServerErrorException(
-                `Failed to fetch orders: ${error instanceof Error ? error.message : String(error)}`,
-            );
+            throw new InternalServerErrorException('Failed to fetch orders');
         }
     }
 
@@ -581,8 +578,8 @@ export class OrdersService {
                     );
                 }
             }
-        } catch (error) {
-            console.error('Failed to send admin push notification:', error);
+        } catch (error: any) {
+            this.logger.error(`Failed to send admin push notification: ${error.message}`, error.stack);
         }
     }
 }

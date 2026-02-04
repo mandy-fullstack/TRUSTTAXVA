@@ -12,11 +12,9 @@ export const useSocket = (roomId?: string) => {
 
   useEffect(() => {
     if (roomId && isConnected) {
-      console.log("Joining room:", roomId);
       socket.emit("joinRoom", roomId);
 
       return () => {
-        console.log("Leaving room:", roomId);
         socket.emit("leaveRoom", roomId);
       };
     }

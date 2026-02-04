@@ -51,11 +51,6 @@ i18n
 i18n.on("languageChanged", (lng) => {
   const baseLang = lng.split("-")[0];
   document.documentElement.lang = baseLang;
-
-  // Pro Tip: Update the title or meta description if needed for SEO
-  console.log(
-    `[i18n] Language changed to: ${lng} (System detected or User selected)`,
-  );
 });
 
 // Immediate execution for the very first load

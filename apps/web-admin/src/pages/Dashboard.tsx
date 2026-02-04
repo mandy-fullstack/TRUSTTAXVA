@@ -49,7 +49,7 @@ export function DashboardPage() {
         const data = await api.getDashboardMetrics();
         if (!cancelled) setMetrics(data);
       } catch (e) {
-        console.error("Failed to load metrics:", e);
+        // Silent catch for initial metrics
       } finally {
         if (!cancelled) setLoadingMetrics(false);
       }
@@ -63,32 +63,29 @@ export function DashboardPage() {
   useEffect(() => {
     if (!isConnected || !socket) return;
 
-    const handleOrderUpdate = (data: any) => {
-      console.log("📊 Dashboard: Order update received", data);
+    const handleOrderUpdate = () => {
       // Refresh metrics when order status changes
       api.getDashboardMetrics()
         .then((newMetrics) => {
           setMetrics(newMetrics);
         })
-        .catch((e) => {
-          console.error("Failed to refresh metrics:", e);
+        .catch(() => {
+          // Silent catch for metrics refresh
         });
     };
 
-    const handleNewOrder = (data: any) => {
-      console.log("📊 Dashboard: New order received", data);
+    const handleNewOrder = () => {
       // Refresh metrics when new order is created
       api.getDashboardMetrics()
         .then((newMetrics) => {
           setMetrics(newMetrics);
         })
-        .catch((e) => {
-          console.error("Failed to refresh metrics:", e);
+        .catch(() => {
+          // Silent catch for metrics refresh
         });
     };
 
     const handleMetricsUpdate = (data: any) => {
-      console.log("📊 Dashboard: Metrics update received", data);
       // Direct metrics update from server
       if (data.metrics) {
         setMetrics(data.metrics);
@@ -108,8 +105,8 @@ export function DashboardPage() {
           .then((newMetrics) => {
             setMetrics(newMetrics);
           })
-          .catch((e) => {
-            console.error("Failed to refresh metrics:", e);
+          .catch(() => {
+            // Silent catch for metrics refresh
           });
       }
     });
@@ -210,11 +207,11 @@ export function DashboardPage() {
             label={t("dashboard.pending")}
             value={loadingMetrics ? "..." : String(metrics?.pendingOrders ?? 0)}
             trend
-                  trendValue={
-                    (metrics?.pendingOrders ?? 0) > 0
-                      ? t("dashboard.action_required")
-                      : t("dashboard.all_clear")
-                  }
+            trendValue={
+              (metrics?.pendingOrders ?? 0) > 0
+                ? t("dashboard.action_required")
+                : t("dashboard.all_clear")
+            }
             trendColor={
               (metrics?.pendingOrders ?? 0) > 0 ? "#F59E0B" : "#10B981"
             }
@@ -240,16 +237,16 @@ export function DashboardPage() {
         >
           <LayoutDashboard size={48} color="#E2E8F0" />
           <Spacer size="lg" />
-                <H4 style={styles.emptyTitle}>{t("dashboard.operational_dashboard")}</H4>
-                <Spacer size="sm" />
-                <Text style={styles.emptyText}>
-                  {(metrics?.totalOrders ?? 0) > 0
-                    ? t("dashboard.total_orders_message", {
-                        total: metrics?.totalOrders ?? 0,
-                        completed: metrics?.completedOrders ?? 0,
-                      })
-                    : t("dashboard.all_systems_normal")}
-                </Text>
+          <H4 style={styles.emptyTitle}>{t("dashboard.operational_dashboard")}</H4>
+          <Spacer size="sm" />
+          <Text style={styles.emptyText}>
+            {(metrics?.totalOrders ?? 0) > 0
+              ? t("dashboard.total_orders_message", {
+                total: metrics?.totalOrders ?? 0,
+                completed: metrics?.completedOrders ?? 0,
+              })
+              : t("dashboard.all_systems_normal")}
+          </Text>
         </View>
       </ScrollView>
     </Layout>

@@ -1,18 +1,44 @@
-import { View, StyleSheet, ScrollView, Linking } from "react-native";
+import { View, StyleSheet, ScrollView, Linking, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Text, H1, H2 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
 import { PageMeta } from "../../components/PageMeta";
 import { useCompany } from "../../context/CompanyContext";
 import { Shield, Phone, MessageSquare, AlertCircle } from "lucide-react";
+import { renderLinkedText } from "../../utils/text";
 
 export const SMSConsentPage = () => {
     const { t } = useTranslation();
     const { profile } = useCompany();
+    const navigate = useNavigate();
     const companyName = profile?.companyName || "TrustTax";
-    const companyPhone = profile?.phone || "(540) 876-9748";
-    const openUrl = (url: string) =>
-        Linking.openURL(url).catch((e) => console.error("Failed to open URL", e));
+    const companyPhone = profile?.phone || "(888) 652-1989 / (540) 876-9748";
+    const companyEmail = profile?.email || "contact@trusttax.com";
+
+    const contactLinks = {
+        email: {
+            label: companyEmail,
+            onPress: () => Linking.openURL(`mailto:${companyEmail}`)
+        },
+        phone: {
+            label: companyPhone,
+            onPress: () => Linking.openURL(`tel:${companyPhone.replace(/[^0-9]/g, "")}`)
+        },
+        "sms-consent": {
+            label: t("legal.sms_consent.page_title", "SMS Consent Policy"),
+            onPress: () => navigate("/legal/sms-consent")
+        },
+        privacy: {
+            label: t("legal.privacy_policy", "Privacy Policy"),
+            onPress: () => navigate("/legal/privacy")
+        },
+        terms: {
+            label: t("legal.terms_of_service", "Terms of Service"),
+            onPress: () => navigate("/legal/terms")
+        }
+    };
+
 
     return (
         <PublicLayout>
@@ -35,7 +61,7 @@ export const SMSConsentPage = () => {
                         {t("legal.sms_consent.page_title", "SMS Consent Policy")}
                     </H1>
                     <Text style={styles.lastUpdated}>
-                        {t("legal.last_updated", "Last Updated: January 27, 2026")}
+                        {t("legal.last_updated")}
                     </Text>
                 </View>
 
@@ -43,12 +69,10 @@ export const SMSConsentPage = () => {
                     {/* Introduction */}
                     <View style={styles.section}>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.sms_consent.intro",
-                                `By providing your mobile phone number to ${companyName} and opting in to receive SMS (text message) communications, you agree to the terms and conditions outlined in this SMS Consent Policy.`,
-                            )}
+                            {t("legal.sms_consent.intro", { companyName })}
                         </Text>
                     </View>
+
 
                     {/* What We Send */}
                     <View style={styles.section}>
@@ -61,7 +85,7 @@ export const SMSConsentPage = () => {
                         <Text style={styles.paragraph}>
                             {t(
                                 "legal.sms_consent.what_we_send_text",
-                                `${companyName} may send you SMS messages for the following purposes:`,
+                                { companyName },
                             )}
                         </Text>
                         <View style={styles.list}>
@@ -171,9 +195,9 @@ export const SMSConsentPage = () => {
                             </Text>
                             <Text style={styles.listItem}>
                                 •{" "}
-                                {t(
-                                    "legal.sms_consent.opt_in_4",
-                                    "Visiting our SMS consent page and completing the opt-in form",
+                                {renderLinkedText(
+                                    t("legal.sms_consent.opt_in_4"),
+                                    contactLinks
                                 )}
                             </Text>
                         </View>
@@ -210,10 +234,9 @@ export const SMSConsentPage = () => {
                             </Text>
                             <Text style={styles.listItem}>
                                 •{" "}
-                                {t(
-                                    "legal.sms_consent.opt_out_3",
-                                    "Contacting our customer support team at {phone}",
-                                    { phone: companyPhone },
+                                {renderLinkedText(
+                                    t("legal.sms_consent.opt_out_3", { phone: companyPhone }),
+                                    contactLinks
                                 )}
                             </Text>
                         </View>
@@ -260,14 +283,24 @@ export const SMSConsentPage = () => {
                             {t("legal.sms_consent.privacy", "Privacy Policy")}
                         </H2>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.sms_consent.privacy_text",
-                                "For information about how we handle personal information used in our messaging program, please review our Privacy Policy.",
+                            {renderLinkedText(
+                                t("legal.sms_consent.privacy_text"),
+                                {
+                                    privacy: {
+                                        label: t("legal.privacy_policy", "Privacy Policy"),
+                                        onPress: () => navigate("/legal/privacy")
+                                    }
+                                }
                             )}
                         </Text>
-                        <Text style={styles.link} onPress={() => openUrl("/legal/privacy")}>
-                            {t("legal.privacy_policy", "Privacy Policy")}
-                        </Text>
+                        <TouchableOpacity
+                            onPress={() => navigate("/legal/privacy")}
+                            style={styles.linkWrapper}
+                        >
+                            <Text style={styles.linkItem}>
+                                • <Text style={styles.link}>{t("legal.privacy_policy", "Privacy Policy")}</Text>
+                            </Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Specific Opt-In Path */}
@@ -281,9 +314,14 @@ export const SMSConsentPage = () => {
                                 "Mobile/Web App: Dashboard → Settings → Preferences → SMS Messages → Opt-In.",
                             )}
                         </Text>
-                        <Text style={styles.link} onPress={() => openUrl("/legal/sms-test")}>
-                            {t("legal.sms_test.page_title", "SMS Consent Test")}
-                        </Text>
+                        <TouchableOpacity
+                            onPress={() => navigate("/legal/sms-consent")}
+                            style={styles.linkWrapper}
+                        >
+                            <Text style={styles.linkItem}>
+                                • <Text style={styles.link}>{t("legal.sms_consent.page_title", "SMS Consent Policy")}</Text>
+                            </Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Supported Carriers */}
@@ -331,11 +369,22 @@ export const SMSConsentPage = () => {
                             </H2>
                         </View>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.sms_consent.privacy_text",
-                                "Your mobile phone number and SMS preferences are protected in accordance with our Privacy Policy. We do not sell, rent, or share your phone number with third parties for their marketing purposes. SMS messages are sent through secure, encrypted channels.",
+                            {renderLinkedText(
+                                t("legal.sms_consent.privacy_text"),
+                                {
+                                    privacy: {
+                                        label: t("legal.privacy_policy", "Privacy Policy"),
+                                        onPress: () => navigate("/legal/privacy")
+                                    }
+                                }
                             )}
                         </Text>
+                        <View style={styles.highlightBox}>
+                            <Shield size={18} color="#2563EB" />
+                            <Text style={styles.highlightText}>
+                                {t("legal.sms_consent.sms_sharing_clause")}
+                            </Text>
+                        </View>
                     </View>
 
                     {/* Help and Support */}
@@ -351,11 +400,38 @@ export const SMSConsentPage = () => {
                         </Text>
                         <View style={styles.contactBox}>
                             <Text style={styles.contactItem}>
-                                {t("legal.sms_consent.phone", "Phone:")} {companyPhone}
+                                {renderLinkedText(t("legal.sms_consent.phone", { phone: companyPhone }), contactLinks)}
                             </Text>
                             <Text style={styles.contactItem}>
-                                {t("legal.sms_consent.email", "Email:")}{" "}
-                                {profile?.email || "contact@trusttax.com"}
+                                {renderLinkedText(t("legal.sms_consent.email", { email: companyEmail }), contactLinks)}
+                            </Text>
+                        </View>
+                    </View>
+
+                    {/* Standard Messaging Disclosures */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <AlertCircle size={20} color="#2563EB" />
+                            <H2 style={styles.sectionTitle}>
+                                {t("legal.sms_consent.disclosures.title")}
+                            </H2>
+                        </View>
+                        <View style={styles.list}>
+                            <Text style={styles.listItem}>
+                                • {t("legal.sms_consent.disclosures.rates")}
+                            </Text>
+                            <Text style={styles.listItem}>
+                                • {t("legal.sms_consent.disclosures.opt_out")}
+                            </Text>
+                            <Text style={styles.listItem}>
+                                • {t("legal.sms_consent.disclosures.frequency")}
+                            </Text>
+                            <Text style={styles.listItem}>
+                                •{" "}
+                                {renderLinkedText(
+                                    t("legal.sms_consent.disclosures.help_sentence"),
+                                    contactLinks
+                                )}
                             </Text>
                         </View>
                     </View>
@@ -398,18 +474,22 @@ export const SMSConsentPage = () => {
                             {t("legal.sms_consent.related", "Related Policies")}
                         </H2>
                         <View style={styles.linkList}>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/privacy" style={styles.link}>
-                                    {t("legal.privacy_policy", "Privacy Policy")}
-                                </a>
-                            </Text>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/terms" style={styles.link}>
-                                    {t("legal.terms_of_service", "Terms of Service")}
-                                </a>
-                            </Text>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/privacy")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.privacy_policy", "Privacy Policy")}</Text>
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/terms")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.terms_of_service", "Terms of Service")}</Text>
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
@@ -489,6 +569,25 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
     },
+    highlightBox: {
+        padding: 16,
+        backgroundColor: "#F0F9FF",
+        borderLeftWidth: 4,
+        borderLeftColor: "#2563EB",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        marginTop: 12,
+        marginBottom: 16,
+    },
+    highlightText: {
+        flex: 1,
+        fontSize: 14,
+        lineHeight: 20,
+        color: "#075985",
+        fontWeight: "600",
+        fontFamily: "Inter, system-ui, Avenir, Helvetica, Arial, sans-serif",
+    },
     alertBox: {
         flexDirection: "row",
         gap: 12,
@@ -554,5 +653,10 @@ const styles = StyleSheet.create({
         color: "#2563EB",
         textDecorationLine: "underline",
         fontWeight: "600",
+        // @ts-ignore - web specific
+        cursor: "pointer",
+    },
+    linkWrapper: {
+        marginBottom: 8,
     },
 });

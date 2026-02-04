@@ -1,17 +1,40 @@
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, Linking, TouchableOpacity } from "react-native";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Text, H1, H2 } from "@trusttax/ui";
 import { PublicLayout } from "../../components/PublicLayout";
 import { PageMeta } from "../../components/PageMeta";
 import { useCompany } from "../../context/CompanyContext";
 import { FileText, AlertCircle, Shield, CheckCircle } from "lucide-react";
+import { renderLinkedText } from "../../utils/text";
 
 export const TermsOfServicePage = () => {
     const { t } = useTranslation();
     const { profile } = useCompany();
+    const navigate = useNavigate();
     const companyName = profile?.companyName || "TrustTax";
     const companyEmail = profile?.email || "contact@trusttax.com";
-    const companyPhone = profile?.phone || "(540) 876-9748";
+    const companyPhone = profile?.phone || "(888) 652-1989 / (540) 876-9748";
+
+    const contactLinks = {
+        email: {
+            label: companyEmail,
+            onPress: () => Linking.openURL(`mailto:${companyEmail}`)
+        },
+        phone: {
+            label: companyPhone,
+            onPress: () => Linking.openURL(`tel:${companyPhone.replace(/[^0-9]/g, "")}`)
+        },
+        privacy: {
+            label: t("legal.privacy_policy", "Privacy Policy"),
+            onPress: () => navigate("/legal/privacy")
+        },
+        "sms-consent": {
+            label: t("legal.sms_consent.title", "SMS Consent Policy"),
+            onPress: () => navigate("/legal/sms-consent")
+        }
+    };
+
 
     return (
         <PublicLayout>
@@ -44,7 +67,7 @@ export const TermsOfServicePage = () => {
                         <Text style={styles.paragraph}>
                             {t(
                                 "legal.terms.intro",
-                                `Welcome to ${companyName}. These Terms of Service ("Terms") govern your access to and use of our tax preparation, immigration services, and related services (collectively, the "Services"). By accessing or using our Services, you agree to be bound by these Terms.`,
+                                { companyName },
                             )}
                         </Text>
                         <Text style={styles.paragraph}>
@@ -64,10 +87,14 @@ export const TermsOfServicePage = () => {
                             </H2>
                         </View>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.terms.acceptance_text",
-                                "By creating an account, accessing our website, or using any of our Services, you acknowledge that you have read, understood, and agree to be bound by these Terms and our Privacy Policy. These Terms constitute a legally binding agreement between you and {companyName}.",
-                                { companyName },
+                            {renderLinkedText(
+                                t("legal.terms.acceptance_text", { companyName }),
+                                {
+                                    privacy: {
+                                        label: t("legal.privacy_policy", "Privacy Policy"),
+                                        onPress: () => navigate("/legal/privacy")
+                                    }
+                                }
                             )}
                         </Text>
                     </View>
@@ -123,7 +150,7 @@ export const TermsOfServicePage = () => {
                         <Text style={styles.paragraph}>
                             {t(
                                 "legal.terms.services_text",
-                                `${companyName} provides professional tax preparation, immigration services, and business consulting services. Our Services include:`,
+                                { companyName },
                             )}
                         </Text>
                         <View style={styles.list}>
@@ -278,9 +305,14 @@ export const TermsOfServicePage = () => {
                             )}
                         </Text>
                         <Text style={styles.paragraph}>
-                            {t(
-                                "legal.terms.data_protection_2",
-                                "By using our Services, you consent to the secure storage and processing of your sensitive information as described in our Privacy Policy.",
+                            {renderLinkedText(
+                                t("legal.terms.data_protection_2"),
+                                {
+                                    privacy: {
+                                        label: t("legal.privacy_policy", "Privacy Policy"),
+                                        onPress: () => navigate("/legal/privacy")
+                                    }
+                                }
                             )}
                         </Text>
                     </View>
@@ -407,10 +439,10 @@ export const TermsOfServicePage = () => {
                         </Text>
                         <View style={styles.contactBox}>
                             <Text style={styles.contactItem}>
-                                {t("legal.terms.email", "Email:")} {companyEmail}
+                                {renderLinkedText(t("legal.terms.email", { email: companyEmail }), contactLinks)}
                             </Text>
                             <Text style={styles.contactItem}>
-                                {t("legal.terms.phone", "Phone:")} {companyPhone}
+                                {renderLinkedText(t("legal.terms.phone", { phone: companyPhone }), contactLinks)}
                             </Text>
                         </View>
                     </View>
@@ -421,18 +453,22 @@ export const TermsOfServicePage = () => {
                             {t("legal.terms.related", "Related Policies")}
                         </H2>
                         <View style={styles.linkList}>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/privacy" style={styles.link}>
-                                    {t("legal.privacy_policy", "Privacy Policy")}
-                                </a>
-                            </Text>
-                            <Text style={styles.linkItem}>
-                                • {/* eslint-disable-next-line react-native/no-inline-styles */}
-                                <a href="/legal/sms-consent" style={styles.link}>
-                                    {t("legal.sms_consent.title", "SMS Consent Policy")}
-                                </a>
-                            </Text>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/privacy")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.privacy_policy", "Privacy Policy")}</Text>
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => navigate("/legal/sms-consent")}
+                                style={styles.linkWrapper}
+                            >
+                                <Text style={styles.linkItem}>
+                                    • <Text style={styles.link}>{t("legal.sms_consent.title", "SMS Consent Policy")}</Text>
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
@@ -557,5 +593,10 @@ const styles = StyleSheet.create({
         color: "#2563EB",
         textDecorationLine: "underline",
         fontWeight: "600",
+        // @ts-ignore - web specific
+        cursor: "pointer",
+    },
+    linkWrapper: {
+        marginBottom: 8,
     },
 });

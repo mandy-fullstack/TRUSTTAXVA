@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform } from "react-native";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Text, Button } from "@trusttax/ui";
 import { PhoneNumberInput } from "../../../components/PhoneNumberInput";
-import { Check, Phone } from "lucide-react";
+import { Phone, Check } from "lucide-react";
 import { isValidPhoneNumber } from "libphonenumber-js";
+import { useCompany } from "../../../context/CompanyContext";
+import { renderLinkedText } from "../../../utils/text";
 
 interface Step1PhoneProps {
   phoneNumber: string;
@@ -26,7 +28,11 @@ export const Step1Phone = ({
 }: Step1PhoneProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { profile } = useCompany();
   const [localError, setLocalError] = useState("");
+
+  const companyName = profile?.companyName || "TrustTax";
+  const companyPhone = profile?.phone || "(888) 652-1989 / (540) 876-9748";
 
   const handleNext = () => {
     setLocalError("");
@@ -113,40 +119,29 @@ export const Step1Phone = ({
               </View>
               <View style={styles.checkboxTextContainer}>
                 <Text style={styles.smsLabel}>
-                  {t(
-                    "auth.sms_opt_in_label",
-                    "I agree to receive recurring SMS messages at the number provided.",
-                  )}
+                  {t("auth.sms_opt_in_label")}
                 </Text>
               </View>
             </TouchableOpacity>
 
-            <Text style={styles.smsDisclosure}>
-              {t(
-                "sms.disclosure_text",
-                "Message frequency varies. Message and data rates may apply. Reply STOP to cancel, HELP for help.",
+            <Text style={styles.smsDescriptionText}>
+              {renderLinkedText(
+                t("auth.sms_registration.full_disclaimer", {
+                  companyName,
+                  phone: companyPhone
+                }),
+                {
+                  privacy: {
+                    label: t("legal.privacy_policy", "Privacy Policy"),
+                    onPress: () => navigate("/legal/privacy")
+                  },
+                  terms: {
+                    label: t("legal.terms_of_service", "Terms and Conditions"),
+                    onPress: () => navigate("/legal/terms")
+                  }
+                }
               )}
             </Text>
-
-            <View style={styles.smsLinksRow}>
-              <TouchableOpacity
-                onPress={() => navigate("/legal/sms-consent")}
-                style={styles.smsLinkTouch}
-              >
-                <Text style={styles.smsLink}>
-                  {t("sms.read_consent", "Read SMS Consent Policy")}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.smsLinkSep}>•</Text>
-              <TouchableOpacity
-                onPress={() => navigate("/legal/privacy")}
-                style={styles.smsLinkTouch}
-              >
-                <Text style={styles.smsLink}>
-                  {t("sms.read_privacy", "Read Privacy Policy")}
-                </Text>
-              </TouchableOpacity>
-            </View>
 
             {/* OTP verification temporarily disabled until RingCentral is ready */}
           </View>
@@ -259,10 +254,17 @@ const styles = StyleSheet.create({
   smsLinkTouch: {
     borderRadius: 0,
   },
-  smsLink: {
+  smsDescriptionText: {
+    marginTop: 12,
+    fontSize: 12,
+    color: "#64748B",
+    lineHeight: 18,
+  },
+  link: {
     color: "#2563EB",
     fontWeight: "600",
-    fontSize: 12,
+    textDecorationLine: "underline",
+    cursor: Platform.OS === "web" ? "pointer" : "auto",
   } as any,
   smsLinkSep: {
     color: "#94A3B8",
