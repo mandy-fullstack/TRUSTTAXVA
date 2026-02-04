@@ -984,6 +984,12 @@ const styles = StyleSheet.create({
   cardRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   cardMain: { flex: 1, gap: 6 },
   cardMeta: { flexDirection: "row", alignItems: "center", gap: 6 },
+  cardActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+    justifyContent: "flex-end",
+  },
 
   emptyState: { padding: 48, alignItems: "center", gap: 12 },
   emptyTitle: { color: "#1E293B" },
